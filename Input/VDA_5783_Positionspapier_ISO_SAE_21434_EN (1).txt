@@ -1,0 +1,2677 @@
+    VDA. |
+
+
+
+
+
+
+
+Position
+Automotive Cyber Security
+
+Recommendation for Cyber Security Interface
+Agreement (CSIA), with reference to ISO/SAE 21434
+
+
+
+
+   hast
+
+
+
+
+
+
+
+
+
+
+    |    #weareready
+
+    AUTOMOTIVE CYBER SECURITY  1
+
+
+
+
+
+
+
+
+
+
+    Berlin, March 2021
+
+
+
+
+
+
+
+
+
+
+General
+
+More than 675 companies from the automobile sector – including manufacturers of motor
+vehicles, manufacturers of their engines, trailers, superstructures and containers, and manu-
+facturers of motor vehicle parts and accessories – have banded together in Germany within
+the framework of the German Association of the Automotive Industry (VDA).
+
+The international ISO/SAE 21434 standard was released in 2021. It defines requirements that
+are relevant to UNECE R 155 (obligatory for the type approval of motor vehicles).
+
+With regard to a Cyber Security Management System (CSMS), it supports the implementa-
+tion of the certification of the vehicle manufacturers which is necessitated by UNECE R 155
+‘Cyber security and cyber security management system’. The use of ISO/SAE 21434 serves
+as a building block in the sense of a reference implementation of a CSMS, in order to simplify
+the required certification. ISO PAS 5112 defines a corresponding certification scheme.
+
+ISO/SAE 21434 is made up of chapters 1 through 15, as well as annexes A through H. Its
+area of applicability relates to the lifecycle of the electronic and software components in motor
+vehicles – This covers everything from development, production, operations and maintenance
+to decommissioning.
+
+This document contains recommended actions, and serves as a resource for chapters 5
+through 15 of ISO/SAE 21434.
+
+    AUTOMOTIVE CYBER SECURITY  2
+
+
+
+
+
+
+
+
+Specification of responsibilities in the Cyber Security Interface
+Agreement within the supply chain
+
+The goal is to implement a security-by-design approach for vehicle systems and components,
+as well as backend systems. The ‘implementation’ is carried out the processes involving the
+corresponding work products. Vehicle systems’ cyber-security risk can thus be controlled
+through the entire service life, from the concept and design phase onwards.
+
+
+Overview and explanation of the RASI matrix
+
+The other individual topics relate to the current ISO/SAE 21434. They are processed in indi-
+vidual sections in conjunction with a particular recommended action. This is done within the
+framework of a RASI matrix. This matrix defines the roles of both the manufacturer (OEM or
+system integrator as C = Customer) and the suppliers (S = Supplier) for ten chapters, and is
+oriented towards the so-called work products (WP) in ISO/SAE 21434.
+
+RASI stands for:
+R = is responsible for conducting the activities resulting in the work product
+A = approves the work product provided by the other party
+S = supports the other party for the activities resulting in the work product
+I = (informed): the organization that is informed of the progress of the activity and NACH
+        [WIRD any KORREKTUR ERGÄNZT] 1
+decisions being made
+
+
+    (Organizational) Overall Cyber Security Management
+
+    The scope of this agreement covers the following workproducts and the
+    Chapter 5 of ISO/SAE 21434 describes organizational measures of the company with regard
+    corresponding
+        activities
+        with    respect    to the framework
+        given    on
+        sheet processes
+    to        overview
+        the lifecycle phasesstretchingup
+        to decommissioning.    For example, this
+        includes
+    and specific roles for employees.
+
+
+     ISO-Chapter                                            ISO/SAE   R A S      I     Interchange            Notes
+                                                         21434:2021                     Agreement
+          5         Organizational Cybersecurity
+                    Management
+                    Cybersecurity policy, rules and      [WP-05-01]   S          C short as deliverable
+                    processes                                                      and full at location
+
+                    Evidence of competence management,   [WP-05-02]   S          C short as deliverable
+                    awareness management, awareness                                and full at location
+                    management and continuous
+          5         improvement
+    Cybersecurity   Organizational cybersecurity audit   [WP-05-05]   S          C short as deliverable
+      Management    report                                                         and full at location
+
+                    Evidence of the organization’s       [WP-05-03]   S          C short as deliverable
+                    management systems                                             and full at location
+
+                    Evidence of tool management          [WP-05-04]   S          C short as deliverable
+                                                                                   and full at location
+
+    6               Project Dependent Cybersecurity
+                    Management
+                    Cybersecurity plan                   [WP-06-01]    S/C         short as deliverable   definition of deliverables and activities accoding to the
+                                                                                   and full at location   OEM milestones
+
+                    Cybersecurity case                   [WP-06-02]   S          C short as deliverable   short: Summary:
+                                                                                   and full at location   – evidence of Supplier that appropriate measures
+          6                                                                                               according Customer requirementes are implemented
+       Project                                                                                            – reason why a case is rated without unreasonable risk
+      Management
+                    Cybersecurity assessment report      [WP-06-03]   S          C short as deliverable
+                                                                                   and full at location
+
+                    Release for post-development report  [WP-06-04]   S          C short as deliverable
+                                                                                   and full at location
+
+          7         Distributed cybersecurity activities
+          7         Cybersecurity interface agreement    [WP-07-01]  S/C    S/C    full as deliverable    Supplier: Customer SDIA for delivered component/SW/
+     Distributed                                                                                          HW (this document)
+    cybersecurity                                                                                         e.g. TIER X+Supplier: Supplier SDIA for delivered
+      activities                                                                                          component/SW/HW
+
+          8         Continual cybersecurity activities
+                    Selected sources for cybersecurity   [WP-08-01]  S/C                                  Supplier: selected the sources
+                    monitoring                                                                            Customer: selected the sources
+
+                    Triggers                             [WP-08-02]  S/C                                  What degree of information is sufficient to trigger an
+                                                                                                          event / incident shall be informed or aligned
+    8
+
+  corresponding activities with respect to the framework given on sheet overview
+
+  AUTOMOTIVE CYBER SECURITY      3
+
+
+ISO-Chapter  ISO/SAE  R  A  S  I  Interchange  [WIRD NACH KORREKTUR ERGÄNZT]  1
+21434:2021  Agreement  Notes
+
+5  Organizational Cybersecurity
+Management
+
+Cybersecurity policy, rules and  [WP-05-01]  S  C  short as deliverable
+processes  and full at location
+Project Dependent Cyber Security Management
+Evidence of competence management,  [WP-05-02]  S  C  short as deliverable
+The scope  of management,
+this agreement
+awareness  awareness  covers the following
+and full at location
+management and continuous  workproducts and the
+corresponding ⁵  improvement  activities  respect pertaining  [WIRD NACH KORREKTUR ERGÄNZT]  1
+to the framework
+This  given on
+chapter (6) contains  the with
+requirements  to the management  of sheet
+cyber-security-
+Cybersecurity  Organizational cybersecurity audit  [WP-05-05]  S  C  short as deliverable  overview
+Management  report  activities, and assigns the following
+related development  and full roles
+Evidence of the organization’s  [WP-05-03]  S  C  short  at locationin the matrix.
+as deliverable
+management systems  and full at location
+
+ISO/SAE  Interchange
+ISO-Chapter  Evidence of tool management  [WP-05-04]  RS  A  S  CI  short  as deliverable  Notes
+21434:2021  and Agreement
+full at location
+
+Project Dependent  Cybersecurity
+56 scope
+Organizational
+The  Cybersecurity
+of this agreement covers the following workproducts and the
+Management
+Management
+corresponding  respect  overview  on sheet
+S/CS  to the Cframework
+short as
+as deliverable
+deliverable   given
+definition of deliverables  and activities
+Cybersecurity activities  accoding to the
+plan  rules and  with
+Cybersecurity  [WP-06-01]
+policy,  [WP-05-01]  short
+and full
+full at
+at location
+processes  and  location  OEM milestones
+
+Cybersecurity of  case  management,  [WP-06-02]  short as
+as deliverable
+Evidence  competence  [WP-05-02]  SS  CC  short  deliverable   short: Summary:
+and full
+full at
+at location
+awareness management, awareness  and  location  – evidence of Supplier that appropriate measures
+6  management and continuous  according Customer requirementes are implemented
+Project5  improvement  – reason why a case is rated without unreasonable risk
+Management  ISO/SAE  Interchange  [WIRD
+Cybersecurity
+ISO-Chapter  Cybersecurity assessment  R  A  S  I
+[WP-06-03]  SS  CC  short
+short as
+as deliverable
+cybersecurity report  deliverable
+audit  [WP-05-05]
+Management  Organizational  21434:2021  Agreement  NotesNACH KORREKTUR ERGÄNZT]  1
+and full
+full at
+at location
+report  and  location
+5  Evidence
+Organizational
+Release  Cybersecurityreport  [WP-06-04]
+for of post-development
+the organization’s  [WP-05-03]  SS  CC  short
+short as
+as deliverable
+Managementsystems  and  deliverable
+management  and full
+full at
+at location
+location
+
+7  Cybersecurity policy, rules and  [WP-05-01]  S  C  short as deliverable
+Distributed
+Evidence  cybersecurity
+of tool
+processes  managementactivities  [WP-05-04]  S  C  short as deliverable
+and full
+full at
+at location
+and  location
+7  Evidence
+Cybersecurity of  interface agreement  [WP-07-01]  S/CS   S/C  C  short
+full as as
+competence  management,  [WP-05-02]  deliverable  Supplier: Customer SDIA for delivered component/SW/
+Project Dependent  Cybersecurity  deliverable
+Distributed6  awareness  HW (this document)
+Distributed  management,  awareness  and full at location
+cybersecurity  Management  Security  Activities  e.g. TIER X+Supplier: Supplier SDIA for delivered
+management
+The  and continuous
+scope  of Cyber
+this
+agreement
+activities  covers  the following workproducts
+5  improvement  plan  component/SW/HW and the
+Continual cybersecurity  [WP-06-01]  S/C  short as deliverable  definition of deliverables and activities accoding to the
+corresponding  activities
+Cybersecurity8  and full as at deliverable
+Organizational  cybersecurity  audit  [WP-05-05]  S  C  short  location  OEM milestones
+Management  Cybersecurity activities with respect to the framework given on sheet overview
+and
+full as at deliverable
+Chapter 7 ʳᵉᵖᵒʳᵗ  location
+explains  collaboration
+between  and  customers,  and the
+covers
+the KORREKTUR
+S/CS  suppliers C  Supplier:  in-
+Selected  selected  sourcesNACH
+sources
+Cybersecurity  for cybersecurity  [WP-08-01]  [WIRD  ERGÄNZT]   1
+casethe  [WP-06-02]  short  short: Summary:  the
+monitoring  and full as at deliverable  sources
+location  Customer: –  evidence selected
+of Supplier  appropriate  that
+Evidence  measures
+of the
+organization’s  regarding
+[WP-05-03]the S  tasks and C  responsibilities
+corporation of an  short
+agreement  into
+a so-called  Cyber
+6  management systems  [WP-08-02]  S/C  and full at location  What –  according Customer requirementes are implemented
+degree  information  sufficient  to trigger anrisk
+reason  why of a case  is rated is without
+Project  Triggers  event (LSV)  unreasonable
+Security  A service interface agreement  / incident shall  be informed  aligned effect
+can
+Management Interface  also or take
+Evidence of tool Agreement
+management  (CSIA).
+[WP-05-04]  SS  CC  short  as
+short  deliverable
+as
+8  Cybersecurity assessment report  [WP-06-03]  deliverable
+ISO/SAE  Interchange
+ISO-Chapter  full at location  Notesindustry.
+Cybersecurity  it is an event or already  an incident
+eventsis primarily used
+[WP-08-03]for S/C  and
+at Continous  full at locationin triage
+this point.  An LSV  development ᴿ   A  S  I  and
+21434:2021  projects  the if automobile
+Cybersecurity  Agreement
+activities  S/CS  distribution
+S/CC  short
+short  as deliverable
+deliverable   weakness,
+Weaknesses  vulnerability, and incident
+from Cybersecurity
+Release  cybersecurity  events  [WP-08-04]the
+for post-development
+report  [WP-06-04]  as
+The ⁶⁵LSV  Project Dependent Cybersecurity
+is
+a document  that  describes  of tasks  responsibilities  associated
+Organizational
+Management  and full at locationand
+Management  S/C  S/C  short  as
+deliverable   weakness,
+vulnerability,  and
+Vulnerability  incident
+with ₇the different  analysis  [WP-08-05]
+phases  product
+development  customer,  supplier
+S/C  across
+short the
+as
+deliverable   definition of the
+anddeliverables
+Cybersecurity  activities accoding to the
+plan  of  [WP-06-01]
+Distributed cybersecurity
+The scope  of this  activities  covers S  the following C  workproducts  and other
+and full as at deliverable
+Cybersecurity  location  OEM milestones
+policy, agreement
+rules and  [WP-05-01]  short
+short full as at deliverable
+Evidence of managed vulnerabilities  [WP-08-06]  S/C  S/C  and
+project ₇  participants.  and the
+processes  and  location
+full as
+at deliverable
+Cybersecurity case  location  Supplier: Customer SDIA for delivered component/SW/
+interface agreement  [WP-06-02]
+[WP-07-01]  S/CS   S/C  C  full  as
+Cybersecurity  short  deliverable  short:
+corresponding  Summary:
+Distributed  activities with respect to the framework given
+HW
+and full as at deliverable  (this  document)
+location  e.g. –  evidence  of Supplier Supplier
+that appropriate
+cybersecurity9  Evidence  on sheet overview
+TIER X+Supplier:  SDIA for measures
+Concept of competence management,  [WP-05-02]  S  C  short  delivered
+according Customer requirementes are implemented
+activities6  awareness management, awareness  and full at location  component/SW/HW
+Project  management and continuous  – reason why a case is rated without unreasonable risk
+Internal  delivered  component/SW/HW
+definition  [WP-09-01]  S/C  S/C  short as deliverable  OEM: TARA under responsibility of the OEM
+Management8  suppliers can be managed in the same way as external suppliers.
+improvement
+Continual
+5  cybersecurity activities  location  TIER1: Out-of-context TARA performed on delivered
+Cybersecurity assessment report  [WP-06-03]  S  C  and
+Cybersecurity  short full as at deliverable
+and full as at deliverable
+Organizational cybersecurity audit  [WP-05-05]  S  C  short  location  component/SW/HW only to verify customer Security
+Management  Goals/Requirements
+selected the sources
+Selected sources for cybersecurity  [WP-08-01]  S/C  and full at location  Supplier:
+report  Customer: selected the sources
+monitoringfor post-development report  [WP-06-04]
+ISO/SAE  Interchange
+ISO-Chapter  Release  RS  A  S  CI  short  as deliverable  Notes  of the OEM
+S/CS  S/C  C  and
+short Agreement
+as at deliverable
+Threat analysis  and  deliverable
+risk assessment  [WP-09-02]
+Evidence  21434:2021  full as  location  OEM: TARA under responsibility
+of the
+organization’s  [WP-05-03]  short
+and full
+full at
+at location
+location  What
+TIER1: degree
+Verifcation
+of OEM TARA is  delivered
+Triggers  [WP-08-02]  S/C  and  of information  suffiof cient  to trigger an
+management systems  component/SW/HW based on out-of-context, generic
+Distributed cybersecurity  event / incident shall be informed or aligned
+57  Organizational  activities
+8  Cybersecurity  TIER1 TARA.
+Evidence of tool management  [WP-05-04]  S  C  short as deliverable
+Managementevents  [WP-08-03]  S/C  triage if it is an event or already an incident
+Continous  Cybersecurity  location  OEM:
+7  Cybersecurity interface agreement  [WP-07-01]  S/C  S/C  full as deliverable  Supplier: Customer SDIA for delivered component/SW/
+short full as at deliverable  Security  Goals under responsibility of the OEM
+Cybersecurity  Cybersecurity goals  [WP-09-03]  S/C  S/C  and
+Distributed  Cybersecurity policy, rules and  [WP-05-01]  S  C  short as deliverable  HW (this  document)
+location  TIER1:  Verifcation
+Security  of OEM  Goals
+activities6  Weaknesses  short full as at deliverable  weakness, vulnerability,  and on incident  of delivered
+cybersecurity  from cybersecurity  events  [WP-08-04]  S/C  S/C  and full at  e.g. TIER  [WIRD  NACH KORREKTUR
+Project Dependent  Cybersecurity  X+Supplier:  Supplier  SDIA  for delivered
+processes  and  location  component/SW/HW
+activities  component/SW/HW  based  out-of-context,  generic  ERGÄNZT]   1
+TIER1
+Management  S/CS  S/CC  short  TARA.vulnerability, and incident
+short as
+as deliverable
+Vulnerability of competence  deliverable   weakness,
+Evidence  analysis  management,  [WP-08-05]
+8  awareness  [WP-05-02]
+Continual
+cybersecurity
+activities  [WP-08-06]
+management, awareness  and full at location
+Cybersecurity
+claims  [WP-09-04]  S/C  S/C S/C  short as deliverable  OEM: Security Claims and Transfer under
+short full as
+as at deliverable
+Cybersecurity  deliverable   definition of deliverables  and activities accoding to the
+plan  [WP-06-01]  S/C
+Evidence of  S/C  short
+managed
+management  vulnerabilities
+and continuous  and  location  responsibility
+and full  of the OEM
+full at
+at location
+location  Supplier:
+and  OEM milestones
+selected the
+Selected sources for cybersecurity  [WP-08-01]  S/C  sources
+improvement  TIER1:  Verifcation
+5  Security Claims and  of OEM
+monitoring  case  [WP-06-02]  S  C  short as deliverable  Customer:  sources  based on
+Transfer  of selected
+delivered the
+ConceptCyber  short: Summary:  component/SW/HW
+Cybersecurity99  Cybersecurity  generic that
+TIER1
+Continual  Security  ActivitiesS  C  short  TARA.  measures
+cybersecurity  audit  [WP-05-05]  and full as at deliverable
+location  out-of-context,
+Concept  Organizational  – evidence of Supplier  appropriate
+Management  degree Customer
+of information  sufficient are to implemented
+report  component/SW/HW definition  [WP-09-01]  S/C  S/C  and  trigger an
+full as at deliverable
+location  according  requirementes is
+6  Triggers  [WP-08-02]  S/C  short  What
+OEM:  TARA  under a  of
+the
+delivered  incident  shall  be rated  OEM  of risk
+informed
+or
+OEM: –  Verifi  of responsibility  aligned
+TARA is  under
+reason /  why cation  responsibility
+case  without
+Project  Verification report  [WP-09-05]  S/C  S/C  short as deliverable  event  unreasonable
+and  location
+and full
+full as at
+at deliverable
+location  TIER1:
+Management8  Evidence of the organization’s  [WP-05-03]  S  C  short  the OEMOut-of-context TARA performed on delivered
+component/SW/HW  to TARA
+verify an of
+TIER1: if Verifcation  customer
+of only
+S/CS  the following C  triage  it is an event  OEM  deliveredSecurity
+or
+Cybersecurity  already  incident
+management  events  [WP-08-03]
+The  systems  and  location
+scope  of this
+agreement
+Continous  Cybersecurity  covers  workproducts
+assessment  report  [WP-06-03]  short full as at deliverable  Goals/Requirements
+component/SW/HW and the
+based to
+Cybersecurity 8 defines continual cyber security activities that  on out-of-context,
+and full should
+Chapter  at location  be
+considered
+activities  Weaknesses  S/CS  S/CCframework  TARA.vulnerability, and incident
+short as
+as deliverable
+deliverable   TIER1
+from  weakness,
+Evidence  cybersecurity  events  [WP-08-04]
+of tool
+corresponding  management  [WP-05-04]  short  be indeᵍᵉⁿᵉʳⁱᶜ-
+activities
+with  respect  to S/C
+the  given  on responsibility
+S/C  short  as at deliverable  sheet  overview
+deliverable   OEM: TARA under  of
+Threat  analysis  and  the OEM
+risk
+assessment  [WP-09-02]  and
+Release for post-development  full as  location monitoring,
+report  [WP-09-06]
+pendent of  a specific  [WP-06-04]  S  short
+development  project.  This  includes  the
+and  evaluation
+full   at
+location  TIER1: Verifcation of OEM TARA of delivered  of
+Cybersecurity  short as deliverable  OEM: Security Concept under responsibility of
+concept  and
+S/C  S/Cgroup C  full  location
+S/CS  short  as at
+deliverable   weakness,
+Vulnerability analysis  [WP-08-05]  S/C  vulnerability,  and
+on incident
+and  out-of-context, generic
+full   at
+location  component/SW/HW
+the OEM, break  down based
+Project Dependent Cybersecurity  TIER1  on  individual  components:
+cyber ⁶  security  its vulnerabilities  TARA.management.
+events,  the
+associated
+7  Management  („Lastenheft“)
+Distributed
+cybersecurity
+activitiesa weak-point  S/Cand
+short as
+Evidence and  deliverable
+of managed  [WP-08-06]  S/C  analysis  and full at location  TIER1: Verifcation of OEM Security Concept of
+S/C  S/C  short  as
+deliverable   OEM:
+Security  Goals
+under
+responsibility
+Cybersecurity  of the OEM
+goals  [WP-09-03]  delivered  component/SW/HW
+based on component/SW/
+7  Cybersecurity  out-of-context,
+interface agreement  [WP-07-01]  S/C  S/C  full as
+deliverable  Supplier:
+Customer
+short full as at deliverable  defi  nition  SDIA  for  delivered
+of deliverables  and
+activities
+Cybersecurity  accoding  to the
+plan  [WP-06-01]  S/C  and  location  TIER1:  Verifcation
+Security  of OEM  Goals
+generic  TIER1  of delivered
+Distributed9  Concept  HW  Security  Concept.
+and  (this  document)
+full at location  component/SW/HW
+cybersecurity  ISO/SAE  Interchange  OEM  milestones  on out-of-context,  based  generic
+e.g. TIER  X+Supplier:  Supplier  SDIA for delivered
+ISO-Chapter  R  A  S  I  TARA.cation of Security
+as deliverable  TIER1
+Verification report for cybersecurity  [WP-09-07]  S/C  S/C  short Agreement  OEM:  Verifi
+activities  delivered  21434:2021  short  component/SW/HW
+Cybersecurity  [WP-09-01]  S/CS  S/C  C  and  NotesConcept under
+case  definition  [WP-06-02]  short as deliverable  OEM: TARA under responsibility of the OEM
+full as  short: Summary:
+at deliverable
+location  responsibility
+concept  component/SW/HW  and  of the OEM
+full   at
+location  TIER1: Security
+Out-of-context
+TARA  performed
+and full at location  – evidence of Supplier that appropriate measures
+Claims  and Security
+Cybersecurity  Transfer  underon deliveredof
+claims  [WP-09-04]  S/C  S/C  short as deliverable  OEM:
+TIER1:  Verifcation
+85  cybersecurity  of OEM  Concept
+Organizational  activities
+Cybersecurity  component/SW/HW
+according  only to verify customer Security
+Customer
+requirementes  are out-of-context,
+and full at location  responsibility  implemented
+delivered  of the OEM
+component/SW/HW
+6  Continual  Goals/Requirements  based on
+reason Verifcation
+why a Security
+case of is OEM
+rated  without Claims
+Security  unreasonable
+generic –  TIER1  Concept.  and  risk
+Project  Management  TIER1:
+Transfer of selected
+Management9  Selected sources for cybersecurity  [WP-08-01]  S/C  Supplier:  delivered
+the component/SW/HW
+out-of-context,  sources  based on
+generic
+the TIER1
+monitoring  short  as  sourcesTARA.
+deliverable   OEM: TARA selected
+under
+responsibility
+Threat  analysis policy,  of the OEM
+and risk
+Cybersecurity  assessment
+assessment  report  [WP-09-02]
+[WP-06-03]  short as
+as deliverable
+rules  deliverable   Customer:
+Concept  Cybersecurity  and  [WP-05-01]  S/CSS  S/C  CC  short
+and
+full   at
+and full  location
+full at
+at location
+and  location  TIER1: Verifcation of OEM TARA of delivered
+C = Customer  processes  R is responsible for conducting the activities resulting in the work product  component/SW/HW  on is suffi
+S/C  S/C  short as deliverable  What  out-of-context,  genericof
+OEM:  Verification  of based
+TARA under
+Verification reportA  approves the work product  responsibility
+Triggers  [WP-09-05]  S/C  degree  of information  cient to triggeran
+S = Supplier  [WP-08-02]
+provided by
+the other party  and full as  TIER1
+location  event
+the
+OEM/ TARA.
+Release for of competence  incident shall be informed or aligned
+post-development S  report  [WP-06-04]  SSresulting in the work CC  product
+Evidence  management,  [WP-05-02]  short
+short  as at deliverable
+supports  the  deliverable
+other party
+for the activities  and  of OEM TARA of delivered
+management,  awareness  full
+and
+full at
+at location
+8  awareness  the organization that is informed  of the progress  location  TIER1: Verifcation
+S/C  activity  and any decisions  made
+S/C  of the
+short  as deliverable  OEM: if being
+Security  Goals or under
+Cybersecurity  responsibility
+goalsI  (informed):  [WP-09-03]  S/C  triage  it is an  event  already  an incidentof the OEM
+events  [WP-08-03]
+management and continuous  component/SW/HW based on out-of-context, generic
+Continous  Cybersecurity
+75  improvement
+Distributed cybersecurity activities  TIER1 TARA.
+Cybersecurity  and full at location  TIER1: Verifcation of OEM Security Goals of delivered
+activities  Weaknesses from cybersecurity events  [WP-08-04]  S/C  S/C  short as deliverable  component/SW/HW based on out-of-context, generic
+weakness,
+Cybersecurity  vulnerability,  and incident
+S/C  short as as  TARA.
+as
+deliverable   TIER1
+OEM: Security  Concept
+under
+responsibility
+Cybersecurity  of
+concept
+cybersecurity  audit  [WP-09-06]
+Cybersecurity  [WP-05-05]  deliverable
+interface
+agreement   [WP-07-01]  S/CS   S/C  S/C  CS  short
+full  deliverable  Supplier:
+Customer
+Management7  Organizational  and full  SDIA  for delivered  component/SW/
+full   at
+location  the OEM, break down on individual components:
+Distributed  report  location  HW
+(this Security
+S/C  S/C S/C  and  document)
+short  as at
+deliverable   weakness,
+vulnerability,  and Transfer
+Vulnerability analysis  [WP-08-05]  short  as  („Lastenheft“)  incident
+Cybersecurity  deliverable   OEM:  Claims and
+cybersecurity  claims  [WP-09-04]  S/C  e.g. TIER X+Supplier: Supplier SDIA under
+TIER1: Verifcation  for delivered
+and  OEM Security Concept of
+full as
+at deliverable
+location  responsibility
+activities  Evidence  of the of OEM
+organization’s  [WP-05-03]  S/CS  S/CC  short  component/SW/HW
+short  as
+Evidence of  deliverable
+of the
+managed
+vulnerabilities  [WP-08-06]  delivered component/SW/HW based on out-of-context,
+management systems  and  TIER1: Verifcation of OEM Security Claims and
+and full
+full at
+at location
+location  generic TIER1
+Transfer  Security  Concept.  based on
+9  of delivered  component/SW/HW
+8  Continual cybersecurity activities  out-of-context, generic TIER1 TARA.
+Concept9  Evidence
+Concept  S/C  S/C  and
+short full as at deliverable  OEM: Verifiselected
+Verifi  of tool management  [WP-05-04]  S  C  short as deliverable  cation of the Security  Concept under
+cation  report for
+for cybersecurity
+Selected  cybersecurity  [WP-09-07]  S/C  location  Supplier:  sources
+sources  [WP-08-01]  location  Customer:
+responsibility
+concept  S/C  S/C  and  of the of OEM
+short full as at deliverable  OEM: Verifiselected
+Verifi  cation  TARA under responsibility of
+cation component/SW/HW
+monitoring  report  definition  [WP-09-05]  S/C  S/C  sources
+delivered  [WP-09-01]  short as deliverable  OEM: TARA under responsibility of the OEM
+and  Security Concept of  OEM
+full   at
+location  TIER1: Verifcation of the
+6  Project Dependent Cybersecurity  and  the OEM
+full   at
+location  delivered
+TIER1: Verifcation
+Out-of-context
+TARA  performed  on delivered
+component/SW/HW
+TIER1:  of OEM  based  on out-of-context,
+degree  TARA  of delivered
+information  suffi
+Triggers  component/SW/HW  cient to triggeran
+only
+to on
+verify is  customer
+generic  TIER1 of Security  Concept.  Security
+Management  [WP-08-02]  S/C  What
+component/SW/HW
+event  based  out-of-context,  generic
+incident shall be informed or aligned
+Goals/Requirements/
+TIER1
+TARA.
+8  Cybersecurity plan  S/C  short as deliverable  triage
+definition
+of is an
+deliverables  and activities
+[WP-06-01]  S/C  if it  event or already  accoding to the
+[WP-08-03]  S/Cresulting S/C  an incident
+S/Cin the work S  product
+Threat analysis events  short as deliverable  OEM: TARA under responsibility of the OEM
+and R  risk is responsible
+assessmentfor conducting
+Continous  Cybersecurity  [WP-09-02]  S/C  short full as at deliverable  OEM: milestones
+Cybersecurity  Security Concept under responsibility of
+C = Customer  concept  [WP-09-06]  and  location  OEM
+Cybersecurity  the activities  and
+and full
+full at
+at location
+location  TIER1: Verifcation of OEM TARA of delivered
+the OEM, break down based
+S = Supplier  A  approves the work product provided by the other party  component/SW/HW  on individual  components:
+activities  Weaknesses  S/CSresulting in the work  („Lastenheft“)  on out-of-context,
+S/CC  product
+short  weakness,
+cybersecurity  events  [WP-08-04]  vulnerability, and incident
+Cybersecurity from
+case  short as
+as deliverable
+deliverable  TIER1  generic
+short:
+S  supports the  Summary:
+other party [WP-06-02]
+for the activities  TARA.
+Verifcation
+and activity  of OEM  Concept
+full at location  – TIER1:
+evidence  of made
+Supplier  that Security
+appropriate
+I  (informed): the organization that is informed of the progress of the  and any decisions  measuresof
+being
+delivered  component/SW/HW
+according  based on
+Customer requirementes  are out-of-context,
+vulnerability,  and incident  implemented
+6  Vulnerability analysis  [WP-08-05]  S/C  S/C  short as deliverable  weakness,
+generic  TIER1  Concept.
+Security  Goals is under
+responsibility
+reason  why a Security  of the OEM
+case  rated  without unreasonable  risk
+Project  Cybersecurity goals  [WP-09-03]  S/C  S/C  short as deliverable  OEM: –
+
+Project  – reason why a case is rated without unreasonable risk
+Management
+Cybersecurity assessment report  [WP-06-03]  S  C  short as deliverable
+and full at location
+
+Release for post-development report  [WP-06-04]  S  C  short as deliverable
+and full at location  AUTOMOTIVE CYBER SECURITY  4
+
+7  Distributed cybersecurity activities  [WIRD NACH KORREKTUR ERGÄNZT]  1
+
+7  Cybersecurity interface agreement  [WP-07-01]  S/C  S/C  full as deliverable  Supplier: Customer SDIA for delivered component/SW/
+Distributed  HW (this document)
+cybersecurity  e.g. TIER X+Supplier: Supplier SDIA for delivered
+activities  component/SW/HW
+
+8  Continual cybersecurity activities
+
+Selected sources for cybersecurity  [WP-08-01]  S/C  Supplier: selected the sources
+Concept
+monitoring  Customer: selected the sources
+The scope  of this agreement
+covers  and is suffi
+S/C  the following workproducts  the
+Triggers  [WP-08-02]  What degree of information  cient to trigger an
+corresponding  event / incident shall be informed or aligned
+activities
+with respect  the concept
+framework
+8respective discoveries  given  on sheet
+The  should  be made to
+in the  chapter  (9) through
+an analysis
+an incident  of
+Continous  Cybersecurity events  [WP-08-03]  S/C  triage if it is an event or already  overview
+Cybersecurity
+the
+product’s  cyber  risks.[WP-08-04]  S/C  S/C   short as deliverable  weakness, vulnerability, and incident
+activities  Weaknesses
+from security
+cybersecurity events
+
+Vulnerability analysis  [WP-08-05]  S/C  S/C   short as deliverable  weakness, vulnerability, and incident
+
+ISO/SAE  S/C  S/C   short as deliverable
+ISO-Chapter  Evidence of managed vulnerabilities  [WP-08-06]  R  A  S  I  Interchange  Notes
+21434:2021  and Agreement
+full at location
+
+95  Concept
+Organizational Cybersecurity
+Management
+delivered component/SW/HW definition  [WP-09-01]  S/C  S/C  short as deliverable  OEM: TARA under responsibility of the OEM
+and full as at deliverable
+Cybersecurity policy, rules and  [WP-05-01]  S  C  short  location  TIER1: Out-of-context TARA performed on delivered
+processes  and full at location  component/SW/HW only to verify customer Security
+Goals/Requirements
+Evidence  of competence  management,  [WP-09-02]
+[WP-05-02]  S/CS  S/C   C  short  as
+short  deliverable
+Threat analysis  and risk assessment  as
+awareness management, awareness  and full at deliverable
+location  OEM: TARA under responsibility of the OEM
+management and continuous  and full at location  TIER1: Verifcation of OEM TARA of delivered
+component/SW/HW based on out-of-context, generic
+5  improvement  TIER1 TARA.
+Cybersecurity   Organizational  cybersecurity audit  [WP-05-05]  S  S/C   C  short  as
+Management  short  deliverable
+Cybersecurity goals  [WP-09-03]   S/C  as
+report  and full at deliverable
+location  OEM: Security Goals under responsibility of the OEM
+and full at location  TIER1: Verifcation of OEM Security Goals of delivered
+Evidence of the organization’s  [WP-05-03]  S  C  short as deliverable  component/SW/HW based on out-of-context, generic
+management systems  and full at location  TIER1 TARA.
+S/CS  S/C   C  short
+short as
+as deliverable
+Cybersecurity  deliverable  OEM: Security Claims and Transfer under
+Evidence  claims  [WP-09-04]
+of tool
+management  [WP-05-04]  and full
+full at
+at location
+and  location  responsibility of the OEM
+TIER1: Verifcation of OEM Security Claims and
+69  Project Dependent Cybersecurity  Transfer of delivered component/SW/HW based on
+Concept  Management  out-of-context, generic TIER1 TARA.
+Verification report  [WP-09-05]  S/C  S/C  short as deliverable  OEM: Verification of TARA under responsibility of
+location  the
+short full as at deliverable  OEM of deliverables and activities accoding to the
+Cybersecurity plan  [WP-06-01]  S/C  and  definition
+and full at location  TIER1:  Verifcation of OEM TARA of delivered
+OEM milestones
+component/SW/HW based on out-of-context, generic
+TARA.
+Cybersecurity case  [WP-06-02]  S  C  short as deliverable  TIER1
+short: Summary:
+and full at location  – evidence of Supplier that appropriate measures
+Concept requirementesSecurity
+according  under responsibility
+6  Cybersecurity concept  [WP-09-06]  S/C  S/C   S  short as deliverable  OEM:  Customer  are implementedof
+OEM, why
+break a case
+down is on  individual
+rated   without components:
+Project  and full at location  – the reason  unreasonable risk
+Management  („Lastenheft“)
+Cybersecurity assessment report  [WP-06-03]  S  C  short as deliverable  TIER1: Verifcation of OEM Security Concept of
+and full at location  delivered component/SW/HW based on out-of-context,
+generic TIER1 Security Concept.
+Release  for report
+post-development
+report  [WP-06-04]  S  S/C   C  short  as
+short  deliverable
+Verification  for cybersecurity  [WP-09-07]  S/C  as
+and full at deliverable
+and full at location  responsibility of the OEM
+concept  location  OEM: Verification of Security Concept under
+7  Distributed cybersecurity activities  TIER1: Verifcation of OEM Security Concept of
+delivered component/SW/HW based on out-of-context,
+generic  TIER1
+7  Cybersecurity interface agreement  [WP-07-01]  S/C  S/C  full as deliverable  Supplier:  Security  Concept.
+Customer
+SDIA  for delivered component/SW/
+Distributed  HW (this document)
+cybersecurity  e.g. TIER X+Supplier: Supplier SDIA for delivered
+activities  R is responsible for conducting the activities resulting in the work product  component/SW/HW  [WIRD NACH KORREKTUR ERGÄNZT]  1
+C = Customer
+S = Supplier  A  approves the work product provided by the other party
+Continual
+cybersecurity S  activities
+Product ⁸  supports  the other party for the activities resulting in the work product
+development
+I  (informed): the organization that is informed of the progress of the activity and any decisions being made
+Selected sources for cybersecurity  [WP-08-01]  S/C  Supplier: selected the sources
+monitoring  Customer: selected the sources
+
+[WIRD  NACH
+S/C  It defines requirements
+What degree of information  suffi
+cient to KORREKTUR
+Triggers  [WP-08-02]development.  trigger
+Chapter 10
+is geared towards product  and is tasks
+for  pro
+event / incident shall be informed or aligned  an -  ERGÄNZT]   2
+duct ⁸
+development.  For example,
+this includes  of event
+S/C  the running and checking  system  analyses,
+triage if it is an  or
+already the
+Cybersecurity  an  incident
+Continous  events  [WP-08-03]
+The
+scope  of this
+agreement
+Cybersecurity  covers  andthe following workproducts
+the
+development  as specification  and  design.  recommendation
+activities  S/C  S/C   short  as deliverableThis
+weakness,
+Weaknesses activities,  vulnerability, and incident  only
+from cybersecurity as
+eventswell
+[WP-08-04]
+corresponding
+serves
+to facilitate activities with respect to the framework given on sheet overview
+communications,
+so that  understanding  can
+S/C  a common  be reached
+S/C   short  as deliverable  weakness,
+Vulnerability analysis  [WP-08-05]  vulnerability,  and incident  at the
+
+system level.
+Other
+detailed  specifications
+Evidence  S/C  S/C   short as deliverable  are explicitly not envisaged.
+of managed
+vulnerabilitiestechnical
+[WP-08-06]requirement
+and full at location
+
+9  Concept
+ISO/SAE  Interchange
+ISO-Chapter  Interchange
+ISO-Chapter  Notes
+short Agreement  Notes  of the OEM
+delivered component/SW/HW definition  ISO/SAE  as deliverable  OEM: TARA under responsibility
+[WP-09-01]  S/CRR   AA  S/CSS  II
+21434:2021
+21434:2021  Agreement
+and full at location  TIER1: Out-of-context TARA performed on delivered
+Organizational  component/SW/HW only to verify customer Security
+105  Product  Cybersecurity
+development  Goals/Requirements
+Management
+Cybersecurity  cations  [WP-10-01]  S/CS   C  S/CC  short
+full as as
+deliverable  „Pflichtenheft“
+deliverable  OEM:  TARA approval
+under responsibility
+Threat  analysis specifi  of the OEM
+and risk
+assessment  [WP-09-02]  it is recommended  to share
+Cybersecurity policy, rules and  [WP-05-01]  S  C  short as deliverable  For mutual
+and full at location  TIER1: Verifcation of OEM TARA of delivered
+the specification.
+processes  and full at location  component/SW/HW
+based  on out-of-context,   generic
+(However, it might be  challenging
+TIER1 TARA.  to overcome
+Evidence of competence management,  [WP-05-02]  S  C  short as deliverable  technical restrictions)
+awareness
+management,  awareness  and  location
+S/CS  S/C   C  short
+short full as
+as at deliverable
+deliverable  OEM: Security  Goals
+under responsibility
+Cybersecurity  of the OEM
+goals  [WP-09-03]
+Cybersecurity
+requirements
+for post-  [WP-10-02]  Product  Requirements
+management and continuous  TIER1:  according TIER1
+and full at location  process,
+TIER1: Verifcation
+of
+OEM Security Goals
+development  delivered  component/SW/HW  of delivered
+only
+5  improvement  component/SW/HW based on out-of-context, generic
+Cybersecurity   Documentation  the modelling,  TIER1 TARA.
+design,  [WP-05-05]
+Organizational of cybersecurity  audit  [WP-10-03]  SS  CC   short
+short as
+Management  as deliverable
+or  deliverable  TIER1: Guidelines, etc according TIER1 System
+programming claims
+languages and coding  [WP-09-04]   S/C  S/C  and  location  and Claims
+report  and  SW process
+full as at
+at deliverable
+short full  location  Engineering
+Cybersecurity  OEM: Security  and Transfer under
+guidelines  and full at location  responsibility of the OEM
+Evidence
+of report
+the organization’s  [WP-05-03]  S  CC   short
+short as
+as deliverable
+Verifi  deliverable  TIER1: Verifcation of OEM Security Claims and
+cation  for the refined  [WP-10-04]  S  FMEA component/SW/HW
+Transfer System  for Security Architecture
+9  management systems  and full at location  TIER1:  of delivered  based on
+cybersecurity specification  and full at location  according
+TIER1 generic
+out-of-context,  process,  delivered
+TIER1
+10  TARA.component/
+Concept  SW/HW only
+Product  Evidence of tool management  [WP-05-04]  S  C  short as deliverable
+S/CS  S/C   C  and
+short full as
+as at deliverable
+Verification report  [WP-09-05]  deliverable
+Development  Weaknesses  location  OEM: Verification of TARA under responsibility of
+found during product  [WP-10-05]  short
+6  development  and full at location  the OEM
+Project Dependent Cybersecurity  and full at location  TIER1: Verifcation of OEM TARA of delivered
+Management  component/SW/HW based on out-of-context, generic
+Integration   and verification  [WP-10-06]  S  C  C  short as deliverable  TIER1
+TIER1: TARA.
+Test Specifications according TIER1 process,
+specifi
+cation  and full  at
+location  delivered  component/SW/HW
+S/C  S/C   S  short  nition  only
+of
+deliverables  and activities
+Cybersecurity  [WP-06-01]  S/C  accodingto the
+If needed the OEM may contract responsibility
+suppliers
+short as  to ofperfom
+as deliverable
+deliverable  defi
+Cybersecurity plan  OEM:  Security  Concept under
+concept  [WP-09-06]  and  milestones
+and full  additional  verification
+full at
+at location
+location  OEM
+the
+OEM,
+break  down tests
+on individual components:
+Cybersecurity  short as  („Lastenheft“)
+as deliverable
+deliverable  TIER1:
+Integration and case  short: Summary:
+verification reports  [WP-06-02]
+[WP-10-07]  SS  CC   short  Test  Reports  TIER1
+TIER1:  Verifcation  process,of
+of according
+and full at location  –  evidence  of  OEM  Security  Concept
+and full at location  delivered  Supplier  that appropriate
+delivered component/SW/HW
+component/SW/HW only
+based – e.g.:
+according  out-of-context,
+6  Customer  on measures
+Requirements
+generic –  TIER1  tests requirementes
+Security
+why a case   is rated  without unreasonable risk
+Project  – – reason  Concept.  are implemented
+Fuzz-Testing
+of vehicle
+interfaces
+Management  Verification report for cybersecurity  [WP-09-07]  S/C  S/C  short as deliverable  OEM: –  Penetration-Test
+Verification  of Security Concept under
+Report
+Cybersecurity assessment report  [WP-06-03]  S  C  short as deliverable  – Vulnerabilty
+full  at
+location  responsibility –  of on the
+concept  and  Information  OEM
+and  HW-/SW-BOM
+full  at
+location  TIER1: Verifcation of OEM Security Concept of
+delivered component/SW/HW based on out-of-context,
+11  Cybersecurity
+Validation  report  [WP-06-04]  S  C  short as deliverable  generic TIER1 Security Concept.
+Release for post-development
+and full at location
+11  Validation report  [WP-11-01]  C  S  short as deliverable  OEM: Validation of Security Goals under responsibility
+7  Distributed cybersecurity R  is  activities
+Cybersecurity  and full at location  of the OEM
+C = Customer  responsible
+for conducting the activities resulting in the work product
+Validation7  A  approves the work product provided by the other party  OEM may perfom own Penetration-Test
+S = Supplier  Cybersecurity interface S  agreement  [WP-07-01]   S/Cresulting
+S/C  in the work product
+supports  the other party  full as deliverable  Supplier: Customer SDIA for delivered component/SW/
+for the activities
+12  Production  I  (informed): the organization that is informed of the progress of the activity and any decisions
+Distributed  HW (this  document)
+being
+made  Supplier SDIA for delivered
+cybersecurity  e.g. TIER X+Supplier:
+activities  Production control plan  [WP-12-01]  S/C  C  short as deliverable  TIER1:
+component/SW/HW
+Manufacturing Control Plan according TIER1
+
+  10  Product development
+
+  Cybersecurity specifications  [WP-10-01]  S  C  C  full as deliverable  „Pflichtenheft“
+  For mutual approval it is recommended to share
+  the specification.
+  (However, it might be challenging to overcome
+  AUTOMOTIVE  CYBER SECURITY  52
+  technical restrictions)[WIRD  NACH KORREKTUR  ERGÄNZT]
+
+  Cybersecurity requirements for post-  [WP-10-02]  S  C  short as deliverable  TIER1: Product Requirements according TIER1
+  development  process, delivered component/SW/HW only
+
+  Documentation of the modelling, design,  [WP-10-03]  S  C  short as deliverable  TIER1: Guidelines,  [WIRD NACH KORREKTUR ERGÄNZT]  1
+  etc according TIER1 System
+  or programming languages and coding  and full at location  Engineering and SW process
+  guidelines
+
+  Verification report for the refined  [WP-10-04]  S  C  short as deliverable  TIER1: System FMEA for Security Architecture
+  10  cybersecurity specification  and full at location  according TIER1 process, delivered component/
+  Product  Security Validation  SW/HW only
+  Cyber
+  Development  Weaknesses found during product  [WP-10-05]  S  C  short as deliverable
+  development  ISO/SAE  and Interchange
+  ISO-Chapter  21434:2021  R  A  S  I  full at location  Notes
+  The scope  of and  Agreement
+  this
+  agreement
+  Integration  verification  covers S  the Cfollowing C  workproducts  and
+  [WP-10-06]  short  as deliverable  TIER1: Test Specifications
+  according
+  [WIRD only  TIER1 process,
+  NACH KORREKTUR
+  Chapter 11 describes the activities for validating cyber security either at  the
+  the vehicle level  or  ERGÄNZT]   2
+  specification  and full at location  delivered component/SW/HW
+  10  Product development  needed the on
+  OEM and
+  may
+  contract
+  suppliers
+  corresponding  with  respect  to the framework  to perfom
+  within  the vehicle. activities  given If  sheet  overview
+  This is done  after
+  the components  have been finalised,  it includes
+  Cybersecurity specifications  [WP-10-01]  S  C  C  full as deliverable  additional  verification tests
+  „Pflichtenheft“
+  Integration  verificarried  For mutual  recommended  to share
+  cation reportsout during
+  [WP-10-07]operation.S  C  short as deliverable  TIER1:  Test approval
+  trials if trials  Reports it according is  TIER1 process,
+  can and
+  be  the specification.
+  and full at location  delivered  component/SW/HW
+  only to – overcome
+  (However,  e.g.:
+  it might be challenging
+  – Requirements tests
+  technical  restrictions)
+  – Fuzz-Testing
+  of vehicle interfaces
+  – Penetration-Test
+  ISO/SAE  Interchange  – Vulnerabilty Report
+  ISO-Chapter  Cybersecurity requirements for post-  [WP-10-02]  S  A  S  CI  short  as deliverable  TIER1: Product Requirements according TIER1
+  development  R  Agreement  process, –  delivered  Notes  only
+  21434:2021  Information  component/SW/HW
+  on HW-/SW-BOM
+
+  115  Documentation of the modelling, design,  [WP-10-03]  S  C  short as deliverable  TIER1: Guidelines, etc according TIER1 System
+  Cybersecurity
+  Organizational Validation
+  or  Cybersecurity
+  programming languages and coding  and full at location  Engineering and SW process
+  Management  ISO/SAE  Interchange
+  ISO-Chapter11  guidelines  Notes
+  Validation report  [WP-11-01]  RC  A  SS  I  short  as deliverable  OEM: Validation of Security  Goals under responsibility
+  21434:2021  Agreement
+  Cybersecurity  Cybersecurity policy, rules and  [WP-05-01]  S  C  and  location  of the OEM
+  short full as at deliverable
+  Validation  Verification report for the refined  [WP-10-04]  S  C  short as deliverable  TIER1: System FMEA for Security Architecture
+  OEM may perfom
+  own
+  processes  and full  Penetration-Test
+  full at
+  at location
+  location  according  [WIRD  NACH  KORREKTUR ERGÄNZT]
+  cybersecurity  specification  and  TIER1 process,  delivered  component/  ERGÄNZT]   12
+  10  Product development  [WIRD  NACH  KORREKTUR
+  10  SW/HW only
+  12  Production
+  Product  Evidence of competence management,  [WP-05-02]  S  C  short as deliverable
+  Cybersecurity  specifiduring
+  cations  [WP-10-01]  SS  C  C  C  short
+  full as
+  Development  awareness  deliverable
+  management,  awareness  and
+  full as
+  at deliverable
+  Weaknesses  location  „Pflichtenheft“
+  found  product  [WP-10-05]  For mutual
+  approval it is Control
+  Production  plan  [WP-12-01]   S/C  C  and  recommended  to shareTIER1
+  management control  short full as at deliverable  Manufacturing  Plan according
+  development  and continuous  location  TIER1:
+  the specifidelivered
+  125  improvement  and full at location  process,  cation.  component/SW/HW only – e.g.:
+  (However, it might be challenging to overcome
+  Production  – Line Control  Plancations according TIER1 process,
+  Production  technical  restrictions)
+  Cybersecurity  Integration and verification  [WP-10-06]  S  C  C  short as deliverable  TIER1:  Test  Specifi
+  Organizational cybersecurity audit  [WP-05-05]  S  C  short as deliverable  – Special Characteristics List
+  cation  and full at location  delivered component/SW/HW only
+  Management  specifi  TISAXProduct
+  report  and full as at deliverable
+  location  TIER1: If –
+  needed  the OEM
+  may contract
+  suppliers TIER1
+  Cybersecurity requirements for post-  [WP-10-02]  S  C  short  Requirements  to perfom
+  additional delivered  according
+  development  verification  tests  only
+  13  Evidence  component/SW/HW
+  Operations
+  and organization’s
+  of the  Maintenance  [WP-05-03]  S  C  short as deliverable  process,
+  Product includes
+  management the
+  systemsmanufacturing and assembly of an
+  and full item
+  Integration  and  at location
+  verifi  reports  [WP-10-07]   SSS  the following CCC  short  as
+  deliverable   TIER1:  Reports etc according
+  TIER1
+  Documentation  the cation  process,
+  modelling,
+  design,  [WP-10-03]  short  as
+  deliverable   TIER1: Test
+  Guidelines,  according the
+  TIER1
+  Cybersecurity  System
+  incident of  response
+  plan  [WP-13-01]  short  as
+  deliverable
+  The ¹³scope  of   this  or component, and is explained
+  agreement
+  covers  workproducts  and
+  or programming languages and coding  and  component/SW/HW
+  and full
+  full at
+  at location
+  location  delivered
+  Operations and  Evidence of tool  and full at location  Engineering  and SW process  only – e.g.:
+  further  management  [WP-05-04]  short as deliverable
+  12.
+  guidelines  Requirements  and tasks S  are defined C  – Requirements in
+  Maintenancein chapter  and full at for
+  Interchange  Fuzz-Testing
+  of vehicle interfaces
+  corresponding  testsorder to imple-
+  activities
+  with  respect  to the framework
+  given –  sheet
+  ISO-Chapter  ISO/SAE  R  A  S  I  locationproduction,  Notes
+  ment ₆ measures  21434:2021  Penetration-Test
+  following
+  from
+  product  development  in the product.
+  This on
+  cation  report for the Support  is also  supposed
+  refined and  [WP-10-04]  S  C  short Agreement
+  as deliverable  TIER1: –  System FMEA for Security overview
+  14  Verifi  Architecture
+  End of  Cybersecurity
+  Project Dependent  Cybersecurity  Vulnerabilty
+  cybersecurity specification  and full at location  according –  Report  to
+  TIER1
+  10  decommissioning  Information  process, delivered component/
+  Management
+  10  in more
+  Product protection
+  development  against subsequent cyberattacks, and strengthen
+  result  SW/HW –  only  on HW-/SW-BOM
+  Product
+  Development  the product.
+  1114  Weaknesses
+  Cybersecurity
+  Procedures  Validation  end of  [WP-06-01]
+  to found
+  communicate  [WP-14-01]   S/C  on changes  mutual information
+  S/C  S/C  S/C  short
+  short as
+  as deliverable
+  deliverable   TIER1+OEM:
+  Cybersecurity  definition of deliverables  and activities  to the
+  plan  as
+  Cybersecurity  specifi  deliverable
+  cationsproduct  [WP-10-05]
+  [WP-10-01]  SS  C  C  C  short
+  full as
+  End of  cybersecurity supportduring  and  deliverable  „Pflichtenheft“  accoding in
+  full   at
+  location  support
+  and  abilities due to external factors which limits
+  full   at
+  location  the
+  development  and  OEM  milestones
+  full   at
+  location  For ability
+  mutual
+  approval  it is recommended  to responsibility
+  Cybersecurity11  to  share
+  Validation report  [WP-11-01]  C  S  short  as  reactof Security
+  deliverable   OEM:  Validation  Goals under
+  the the
+  specifi
+  Support  ISO/SAE  Interchange  cation.
+  and de-  and full at location  of
+  Cybersecurity  OEM
+  (However,
+  Cybersecurity  [WP-06-02]  as  short:  it might be challenging
+  ISO-Chapter  Integration  and case  Summary:
+  verification  [WP-10-06]   RSS  A  SC  CCI  short
+  short  as deliverable
+  commissioning  21434:2021  deliverable   TIER1: Test Specifications according TIER1 process,
+  Validation  Agreement  may restrictions)
+  perfom
+  own that
+  technical  Penetration-Test
+  and full at location  – delivered  Notes  to overcome
+  evidence  of Supplier  appropriate
+  specification  and full at location  OEM  component/SW/HW
+  only  measures
+  If needed the OEM may contract suppliers to perfom
+  6  according Customer requirementes are implemented
+  15  Threat  [WIRD is  NACH  KORREKTUR  ERGÄNZT]   1
+  analysis  and risk  for post-  [WP-10-02]  S  C  short as deliverable  TIER1: –
+  125  Production
+  Organizational
+  Cybersecurity  reason Product
+  why  case  rated without
+  Project  Cybersecurity  additional  verifia cation  tests  unreasonable
+  requirements  Requirements
+  according
+  TIER1  risk
+  Management  Management
+  assessment
+  development methods  process, delivered component/SW/HW only
+  Cybersecurity
+  assessment  report  [WP-06-03]  short as
+  as deliverable
+  Production  control  [WP-12-01]  S/CSS  CCC  short  deliverable   TIER1:
+  short  as
+  deliverable   TIER1: Test
+  Manufacturing  Control Plan
+  Integration and  according
+  verifiplan
+  cation reports  [WP-10-07]  Reports according
+  TIER1
+  process,TIER1
+  and full
+  full as
+  at deliverable
+  and  location  delivered
+  full   at
+  location  process,  delivered  only
+  location  component/SW/HW
+  the modelling,  [WP-10-03]  short  TIER1:  Guidelines,  only of  e.g.:OEM
+  etc according
+  Damage Scenarios  [WP-15-01]   CSS  S  CC  and  TIER1 –  System– e.g.:
+  short  as at
+  deliverable   OEM: TARA  under component/SW/HW
+  Cybersecurity  responsibility   the
+  policy, of  rules and design,  [WP-05-01]  short  as
+  12  Documentation  deliverable  Line Control
+  Requirements
+  programming languages and coding  and  testsprocess
+  and Plan
+  and full  SW
+  full at
+  at location
+  location  Engineering
+  TIER1: – –  Out-of-context
+  processes  and full as at deliverable  TARA performed on delivered
+  Production  or  location  component/SW/HW – –  Special Characteristics  Listverify customer Security
+  Fuzz-Testing
+  guidelines  of vehicle
+  Release for post-development report  [WP-06-04]  S  C  short  TISAX  only to interfaces
+  Evidence of competence management,  [WP-05-02]  S  C  and  location  Goals/Requirements– –   Penetration-Test
+  short full as at deliverable  – Vulnerabilty Report
+  Verification report for the refined  [WP-10-04]  S  C  short as deliverable  TIER1: System FMEA for Security Architecture
+  awareness
+  management,  awareness  and
+  full as at deliverable
+  location  Information  on process,
+  13  Operations cybersecurity  HW-/SW-BOM
+  and
+  Maintenance
+  specifi
+  cation  activities  and full at location  according
+  Distributed  TIER1  delivered  component/
+  Assets with
+  cybersecurity  properties  [WP-15-02]  C  S  short  OEM: –  TARA  under
+  responsibility
+  of the
+  management  OEM
+  and
+  107  cybersecurity  continuous  SW/HW only
+  Product  improvement  and full at location  TIER1: Out-of-context TARA performed on delivered
+  115  Validation  only to for verify
+  customer
+  137  Cybersecurity  Security
+  Cybersecurity  response plan  [WP-13-01]  S  C  short as deliverable
+  Cybersecurity incident
+  interface
+  agreement  [WP-07-01]   S/C  S/C  full as deliverable  component/SW/HW
+  Development  Supplier: Customer SDIA  delivered  component/SW/
+  Cybersecurity
+  The
+  scope  of and
+  this
+  agreement
+  covers SS  the following CC  workproducts
+  Operations  Goals/Requirements
+  and  Weaknesses  and  location
+  found  during
+  Distributed  product  [WP-10-05]  short
+  Operations  Maintenance
+  Organizational  cybersecurity  audit  [WP-05-05]  short full as
+  as at deliverable
+  Management  deliverable
+  Maintenance11  development  location
+  Validation  short  Validation  of Security  Goals
+  under
+  cybersecurity  HW (this document)  and the  responsibility
+  report  report  [WP-11-01]  C  S  and  e.g. TIER  X+Supplier:  Supplier  SDIA  for delivered
+  and full
+  full as at
+  at deliverable
+  Cybersecurity  and  location  OEM:
+  location  given
+  of
+  [WP-15-03]  short full as at deliverable  the OEM
+  activities  Threat scenarios  OEM:  TARA under  the OEM
+  corresponding  component/SW/HW
+  activities with  respect C  to the S  framework  on responsibility
+  Validation  sheet of overview
+  and  location  OEM  Penetration-Test
+  TIER1
+  (S):  Out-of-context
+  14  Integration  performed  TARA
+  End of Cybersecurity
+  Support and  [WP-05-03]
+  cation  [WP-10-06]  SS  C  CC  short
+  short full as
+  as at deliverable
+  deliverable   TIER1: may
+  Test perfom
+  Specifiown
+  cations
+  according
+  Evidence  TIER1 onprocess,
+  of and
+  the verifi
+  specifi  organization’s
+  cationcybersecurity  and full
+  full at
+  at location
+  location  delivered component/SW/HW only to verify customer
+  8  Production  delivered component/SW/HW only
+  Continual
+  management  systems  activities  and
+  12  decommissioning  Security
+  If needed Goals/Requirements
+  the OEM updates.
+  Chapter 13 deals with reactions to cyber security incidents and necessary  may contract suppliers to perfom
+  additional verifimutual
+  cation information
+  Evidence  tests  on changes in
+  of to
+  tool communicate
+  management  S/CCS  S/CS  S/CC  short  Supplier:
+  selected
+  the
+  Selected  sources
+  sources
+  for associated
+  14  Procedures  cybersecurity  [WP-08-01]
+  end
+  of  [WP-05-04]
+  [WP-14-01]   S/C  short as
+  as deliverable
+  Impact  deliverable   TIER1+OEM:
+  ratings  with  impact  [WP-15-04]  short  as  OEM: TARA  under
+  responsibility
+  of according
+  plan  [WP-12-01]   S/C  C  and  the OEM
+  monitoring control  short  location  Customer:  selected  sourcesPlan  TIER1
+  End of  Production  deliverable
+  cybersecurity  support  and full
+  full as at
+  at deliverable
+  location  TIER1:
+  support Manufacturing
+  abilities
+  due the
+  to Control
+  external
+  and full  factors  which limits
+  full as at
+  at deliverable
+  location  TIER1:
+  TIER1
+  (S):  TARA TIER1
+  Integration and verification reports  [WP-10-07]  S  C  short  Test  Reports  performed
+  and  location  process,  delivered  according  process,
+  Cybersecurity1512  categories  the ability  only on– e.g.:
+  to Out-of-context
+  delivered –  react  component/SW/HW
+  component/SW/HW
+  only cient –
+  to e.g.:
+  verify
+  component/SW/HW  customer
+  Line degree  only
+  Support  Control
+  and de-  Triggers
+  Project Dependent Cybersecurity  [WP-08-02]   S/C  and full at location  delivered
+  What  of Plan
+  Threat  analysis  information is suffi  to trigger  an
+  Production6  ISO/SAE  event
+  Interchange  – – Requirements
+  Security  Goals/Requirements
+  tests  List
+  commissioning  Special Characteristics
+  ISO-Chapter  R  A  S  I  / incident  Notes
+  and risk  Management  shall be informed or aligned
+  Agreement  – – Fuzz-Testing  interfaces
+  TISAX  of vehicle
+  assessment8  Attack  21434:2021  Penetration-Test  [WIRD  NACH KORREKTUR ERGÄNZT]  1
+  [WP-15-05]   S/CC  S  short as deliverable  triage
+  OEM: –  TARA  under
+  responsibility
+  of incident
+  methods  the OEM
+  15  Cybersecurity
+  Threat paths
+  analysis  and risk  [WP-08-03]  if it is an  event
+  Continous  events  short full as at deliverable  defi– Vulnerabilty  or already an
+  planCybersecurity  nition  deliverables  and activities  to the
+  location  TIER1  Report  TARA
+  (S): of Component  performed accoding
+  13  Operations  Maintenance  [WP-06-01]   S/C  and  on delivered
+  Organizational
+  Cybersecurity5  Cybersecurity
+  assessment and
+  methods  and full as at deliverable
+  location  component/SW/HW
+  OEM –  milestones
+  Information  on HW-/SW-BOM
+  only and
+  to verify
+  Managementfrom cybersecurity events  [WP-08-04]   S/C  S/C  short  customer Security
+  activities  Weaknesses  weakness,
+  vulnerability,  incident
+  13  Cybersecurity  Goals/Requirements
+  Cybersecurity incident  response plan  [WP-13-01]  S  C  short as deliverable
+  Damage
+  Scenarios  [WP-15-01]  C  S  short  as  OEM:  under responsibility of the OEM
+  Cybersecurity
+  case  [WP-06-02]  S  C  and
+  short full as
+  as at deliverable
+  deliverable   short: TARA
+  11  Validation  Summary:
+  Operations and  Cybersecurity  location
+  policy,
+  rules and  [WP-08-05]
+  [WP-05-01]  short  deliverable
+  short  as at deliverable  weakness, –  vulnerability,  and appropriate
+  Vulnerability  incident
+  analysis  and full
+  full at
+  at deliverable
+  location  TIER1:  Out-of-context
+  location  OEM:  TARA  performed  on delivered
+  evidence  of under
+  Attack  Supplier  that  measures
+  feasibility  ratings  [WP-15-06]   S/C
+  CS  S  S/CC  short  TARA  responsibility
+  Maintenance  and full as  of the OEM
+  processes  and  location  component/SW/HW
+  only
+  to verify
+  customer
+  according  Security
+  Customer
+  requirementes  are on
+  and full as at deliverable  implemented
+  location  OEM:
+  TIER1
+  116  Validation report  [WP-11-01]  C  S  short  (S): Component  TARA  performed  delivered
+  Validation  of Security  Goals
+  under
+  Goals/Requirements–  reason why a case only  responsibility
+  is rated  without
+  Project  S/CS  S/CC  and  unreasonable
+  short full as
+  as at deliverable
+  Evidence  deliverable
+  of competence
+  managed vulnerabilities  [WP-08-06]  component/SW/HW  to verify
+  customer
+  Cybersecurity  location  of  Securityrisk
+  14  Evidence  the OEM
+  End  of Cybersecurity of  Support
+  and
+  Management  management,  [WP-05-02]  short
+  and full
+  full at
+  at location
+  Validation  awareness  location  Goals/Requirements
+  OEM  may
+  perfom
+  own
+  decommissioning  Penetration-Test
+  Assets  management, awareness  and
+  with cybersecurity  [WP-15-02]  CS  S  C  short  OEM:  TARA  under
+  responsibility
+  Cybersecurity  of the OEM
+  assessment properties
+  report  [WP-06-03]  short as
+  as deliverable
+  management  deliverable
+  and ratings
+  continuous  [WP-15-07]  C  S  short
+  and full as at deliverable
+  Concept  location  OEM: TARA under responsibility of the OEM
+  Attack
+  feasibility
+  12149  Production  and full at location  TIER1: Out-of-context TARA performed on delivered
+  improvement  to verify on
+  Procedures  customer
+  to communicate  end of  [WP-14-01]   S/C  S/C  S/C  short as deliverable  component/SW/HW
+  TIER1+OEM: mutual only
+  and full at location  information  changes Securityin
+  TIER1 (S): Component and
+  The ⁵scope  of this  TARA performed
+End of Cyber agreement covers the following workproducts
+  End of  Production  Security  Goals/Requirements
+  cybersecurity  support  and full as at deliverable
+  location  TIER1:
+  support Manufacturing
+  abilities due to Control
+  external Plan
+  Release for component/SW/HW  factors  which limits
+  post-development
+  report  [WP-06-04]  S/C decommissioningC  short as deliverable  component/SW/HW only to verify customer Security
+  short as
+  as deliverable
+  defi  nition  Support  deliverable   OEM:  TARA  under responsibility of the OEM  TIER1
+  Cybersecurity  delivered  control  [WP-09-01]   S/CS   and  the on delivered
+  plan  [WP-12-01]   S/C  C  short  according
+  Organizational cybersecurity audit  [WP-05-05]  S  C  and
+  Cybersecurity  short  the ability
+  to react
+  and full  Goals/Requirements
+  full at
+  at location
+  location  given
+  TIER1: TARA
+  Out-of-context
+  Management  and full at location  process,  delivered  TARA performed  on delivered–
+  and  only  e.g.:
+  full   at
+  location
+  Support and de-  report  activities with respect to the framework
+  corresponding  on component/SW/HW
+  Threat scenarios  [WP-15-03]  C  S  short as deliverable  OEM:  under  sheet  overview
+  responsibility
+  of
+  12  the OEM
+  component/SW/HW only to verify customer Security
+  – Line (S):
+  commissioning  and full  location  TIER1  Control  Plan  TARA performed on
+  Production  Risk   treatment  decisions  [WP-15-08]  CS  S  C  short  Out-of-context
+  short  as at deliverable  OEM:  TARA  under responsibility  the verify
+  7  Evidence  Goals/Requirements–  OEMcustomer
+  Distributed
+  cybersecurity
+  activities  [WP-05-03]  Special  Characteristics  List only of
+  of the  delivered  component/SW/HW  to
+  organization’s  as
+  deliverable  TARA under
+  and  responsibility
+  full   at
+  location  TIER1:  of
+  – TISAXcomponent
+  The ¹⁵₇next-to-last  chapter  – clause [WP-09-02]  Security Goals/Requirements
+  management  systems  14 – regulates  and  of  support   for  cyber  security.
+  full   at
+  Threat  location
+  analysis  and risk
+  riskagreement  the
+  S/C  short  as  TIER1
+  deliverable   OEM:  TARA  under responsibility
+  of the component/SW/
+  Threat  analysis  and  assessment  OEM
+  Cybersecurity
+  interface  [WP-07-01]   S/C  S/C  S/Cthe end
+  full as
+  deliverable  Supplier:
+  Customer
+  assessment  SDIA  for delivered
+  methods  and full as at deliverable
+  Distributed  location  TIER1:
+  HW (this Verifcation
+  13  Evidence  document)of OEM TARA of delivered
+  Operations
+  Impact  and
+  ratings  associated impact  [WP-15-04]  C  S  short as deliverable  OEM:  TARA  under responsibility
+  of tool  of the
+  management  [WP-05-04]  S  C  short  component/SW/HW based on out-of-context, generic
+  cybersecurity  with Maintenance  e.g. TIER  X+Supplier:  Supplier SDIA  for OEM
+  categories  and full at location  TIER1  delivered
+  activities1513  Cybersecurity  TARA.
+  component/SW/HW
+  Damage Scenarios  [WP-15-01]  and full at location  TIER1 (S): Out-of-context TARA performed on
+  CS  resulting in S the work C  product
+  short as
+  as deliverable
+  deliverable   delivered
+  OEM:  TARA  under responsibility
+  of to the verify
+  incident R  is responsible  OEMcustomer
+  response plan  [WP-13-01]  short  component/SW/HW
+  C = Customer  for conductingthe activities  and full  only
+  full at
+  at location
+  ISO/SAE  location  TIER1: Out-of-context TARA performed on delivered
+  Threat analysis  Interchange  Security Goals/Requirements
+  and  and
+  ISO-Chapter
+  S Operations = Supplier  Project  Dependent  the work product  provided by Rthe other A  partyS  I
+  Cybersecurity  Cybersecurity  to verify customer Security
+  goalsA  approves  [WP-09-03]   S/C  S/C  short as deliverable  OEM: Security Goals under responsibility of the OEM
+  cybersecurity
+  and 86risk  Continual  activities  21434:2021  Agreement  component/SW/HW only Notes
+  Maintenance  Management  and
+  full at location  Goals/Requirements
+  assessment  Attack  S  supports the other party for the activities resulting in the work product  TIER1: Verifcation of OEM Security Goals of delivered
+  paths  [WP-15-05]  C  of the progress S  of the
+  short  as deliverable  OEM:  TARA  under the
+  responsibility
+  Ifor (informed):  the  of the OEM generic
+  organization  that is informed  activity  and any decisions
+  being
+  made
+  component/SW/HW
+  methods  S/C  Supplier:  based  on out-of-context,
+  Selected  selected  sources
+  sources  cybersecurity  [WP-08-01]
+  Organizational
+  145  End  of  Cybersecurity
+  Cybersecurity
+  Support
+  and  full as
+  at deliverable
+  location  Customer:
+  TIER1
+  (S):  Component  TARA performed  on delivered
+  TIER1
+  Assets  TARA.
+  with cybersecurity properties  [WP-06-01]
+  [WP-15-02]   S/CC  S  and
+  short  OEM:  TARA  under responsibility
+  short  as  of the OEM
+  deliverable   definition
+  of selected
+  Cybersecurity  deliverables  and activities accoding to the
+  monitoring  plan  the sources
+  component/SW/HW
+  Management  only to verify customer Security
+  decommissioning  and  TIER1: Out-of-context TARA performed on delivered
+  and full
+  full at
+  at location
+  location  OEM milestones
+  Goals/Requirements
+  component/SW/HW only to verify customer Security
+  OEM: degree
+  Cybersecurity claims  [WP-09-04]   S/C  S/C  short as deliverable  What  Security  and Transfer is  under
+  of Claims
+  Triggers  [WP-08-02]   S/C  information  sufficient  to trigger in  an
+  Cybersecurity  rules and  [WP-05-01]
+  14  Procedures
+  to policy,
+  communicate  end of  [WP-06-02]
+  [WP-14-01]  S/CSS  S/C  S/CCC  short
+  short  TIER1+OEM:
+  mutual
+  and  information on changes
+  full as at
+  at deliverable
+  location  Goals/Requirements
+  responsibility
+  of
+  Cybersecurity  the OEM
+  case  short as
+  deliverable   short: Summary:
+  event
+  / incident  shall  be  informed
+  or
+  Attack feasibility  ratings  [WP-15-06]  C  S  short  as at  aligned
+  deliverable   OEM:  TARA  under  of the
+  processes  and  as deliverable  OEM
+  End of  cybersecurity  support  full  location
+  and  location  support
+  abilities
+  due of responsibility
+  to
+  external
+  TIER1:  Verifcation  OEM  factors  which limits
+  and full  Security  Claims  and
+  full   at
+  location  – evidence  of
+  location  TIER1  Supplier  that  appropriate
+  (S): it of is Component  TARA  performed  on  delivered
+  Cybersecurity8  the ability to react  measures
+  Transfer  delivered  component/SW/HW
+  Threat scenarios  [WP-15-03]   S/CC  S  and  based  on
+  short full as at deliverable  OEM:  TARA if  under  the are
+  according  OEM
+  triage  Customer  implemented
+  an  event responsibility
+  or requirementes
+  events  management,  [WP-05-02]  already  an of incident
+  Continous96  [WP-08-03]
+  Support
+  and de-  Cybersecurity  out-of-context, generic TIER1 TARA.
+  Evidence of competence  S  C  short as deliverable  TIER1
+  (S): why
+  – reason  Out-of-context a  performed  TARA  on  risk
+  case is rated  without
+  unreasonable
+  Project  and full at location  component/SW/HW only to verify customer Security
+  Concept
+  Cybersecurity  Goals/Requirements
+  commissioning  awareness management, awareness  and full at location  delivered component/SW/HW only to verify customer
+  Management  management
+  activities  Weaknesses  S/CS  S/C  S/CC  short
+  short  as
+  deliverable   weakness,
+  vulnerability,  and under
+  from  incident
+  cybersecurity   events  [WP-09-05]
+  and  [WP-08-04]   S/C
+  continuous  Security  Goals/Requirements
+  OEM:  Verifi
+  Verifi  cation of TARA  responsibility of
+  cation report
+  Cybersecurity
+  assessment  report  [WP-06-03]  short as
+  as deliverable
+  15  Attack  deliverable   OEM:  TARA
+  Threat feasibility
+  analysis ratings
+  improvement  and risk  [WP-15-07]  C  S  short as deliverable
+  and  location  OEM
+  and full
+  full as at
+  at deliverable
+  5  location  the  under responsibility of the OEM
+  location  TIER1
+  short  (S):  Component  TARA  performed  on delivered
+  weakness,
+  vulnerability,  and TARA
+  Vulnerability analysis  [WP-08-05]   S/C  S/C  TIER1: TARA  incident
+  Verifcation  OEM  of the
+  assessment  delivered
+  ratings methods
+  with associated impact  [WP-15-04]  C  S  and
+  short full as at deliverable  OEM:  under of responsibility
+  Cybersecurity  Impact  only  of  OEM
+  verify
+  component/SW/HW  customer Security
+  based to TARA
+  Organizational  cybersecurity audit  short  as at deliverable  on  out-of-context,
+  categories  deliverable
+  and full as  location  component/SW/HW
+  TIER1
+  Release for post-development  (S): Out-of-context  performed  ongeneric
+  report  [WP-05-05]
+  Management15  [WP-06-04]  SS  CC  short
+  short full
+  as at
+  Evidence Scenarios  deliverable
+  of managed vulnerabilities  [WP-08-06]  TIER1 TARA
+  report  and  TARA.
+  full as
+  at deliverable
+  location  Goals/Requirements
+  delivered  component/SW/HW
+  Damage  [WP-15-01]   S/CC  S  S/C  and  only of to the verify
+  Threat analysis  short  location  OEM:  under responsibility  OEMcustomer
+  and full
+  full at
+  at location
+  location  Security  Goals/Requirements
+  TIER1: Out-of-context
+  and risk  Risk   treatment  decisions  and  TARA performed on delivered
+  [WP-15-08]  S/CCS  S/CS  CS  short
+  short  as  responsibility
+  of customer
+  short as  the OEMSecurityof
+  as deliverable
+  deliverable   OEM:
+  OEM: TARA
+  Security under
+  Cybersecurity  Concept  responsibility
+  concept
+  of the
+  organization’sactivities  [WP-09-06]
+  [WP-05-03]  deliverable   component/SW/HW
+  only under
+  Distributed  to verify
+  assessment7  Evidence  cybersecurity  and
+  full   at
+  9  management  location
+  Concept  and full
+  full as at
+  at deliverable
+  location  TIER1: component TARA under responsibility of
+  Attack  location  the OEM, break down on individual components:
+  paths systems  [WP-15-05]  C  S  and
+  short  OEM:  TARA under responsibility of the OEM
+  methods  Goals/Requirements
+  the
+  TIER1
+  and  („Lastenheft“)
+  fullat location  TIER1
+  7  Cybersecurity  (S):  Component  TARA  performed  on delivered
+  interface
+  agreement  [WP-07-01]   S/C
+  S/CS   S/C  full as
+  deliverable  Supplier:
+  Customer
+  SDIA  for Security
+  TIER1:  Verifcation  OEM  delivered  component/SW/
+  Concept
+  Evidence  only to verify of customer
+  of tool
+  management  as
+  S/C  C  short  deliverable
+  short  as
+  deliverable   OEM:  TARA  under of responsibility
+  delivered  component/SW/HW  of the
+  definition  [WP-05-04]
+  [WP-09-01]  OEM:  TARA  under responsibility  the OEMSecurity
+  Distributed  Assets with cybersecurity properties  [WP-15-02]  C  S  short as deliverable  component/SW/HW  OEM of
+  HW
+  (this  document)
+  delivered  component/SW/HW
+  and  based  on  out-of-context,
+  and full
+  full at
+  at location
+  location  TIER1:  Out-of-context
+  TIER1:  TARA performed  on  delivered
+  Out-of-context
+  cybersecurity  and full at location  Goals/Requirements  TARA  performed on  delivered
+  e.g. TIER  X+Supplier: Supplier  SDIA  for  delivered
+  generic  TIER1 Security  Concept.
+  component/SW/HW only
+  only to
+  to verify
+  verify customer
+  customer Security
+  activities  R is responsible for conducting the activities resulting in the work product  component/SW/HW  Security
+  C = Customer  feasibility  ratings  [WP-15-06] Cthe other party  component/SW/HW
+  S  short as deliverable  OEM:  TARA under responsibility of the OEM
+  Project  Dependent  Goals/Requirements
+  S = Supplier6  Attack  Cybersecurity  Goals/Requirements
+  A  approves   the work product  provided by S/C  S/C  short full as at deliverable  OEM: Verifi
+  Verification   report  for  cybersecurity  [WP-09-07]  and  location  TIER1  cation of Security
+  (S): Component  TARA Concept
+  performed under
+  Management  on delivered
+  8  Continual
+  cybersecurity
+  S  risk  activities
+  supports  the other party for the activities resulting in the work product
+  and
+  full as  location  responsibility
+  of the responsibility
+  conceptscenarios  OEM
+  component/SW/HW
+  only
+  to Security
+  S/CC  of the progress  verify of
+  S/CS  of the
+  short  as at deliverable
+  deliverable   OEM: TARA under  of customer
+  the
+  Threat  analysis  and  assessment  [WP-09-02]  OEMSecurity
+  Threat  [WP-15-03]  short  OEM:  TARA  under of responsibility  the
+  I  (informed): the organization  that is informed  activity  and any decisions  OEM
+  being
+  TIER1:  made
+  Verifcation  OEM  Concept
+  and  Goals/Requirements  of
+  full as at
+  at deliverable
+  location  Supplier:
+  TIER1:  Verifcation
+  location  TIER1  of OEM  of deliveredon  TARA
+  (S):  Out-of-context
+  S/C  and  performed  TARA
+  short full  definition
+  of
+  deliverables  and
+  Cybersecurity  activities  to the
+  planfor cybersecurity  [WP-06-01]  delivered  component/SW/HW
+  based  on accoding
+  selected  out-of-context,
+  the
+  Selected sources  [WP-08-01]   S/C  sources
+  component/SW/HW based on out-of-context,  generic
+  delivered  component/SW/HW
+  and full as at deliverable  only to verify customer
+  location  Customer:
+  OEM milestones
+  generic TIER1
+  Security Concept.
+  selected
+  monitoring  TIER1  the sources  of the OEM
+  Attack  TARA.
+  feasibility ratings  [WP-15-07]  C  S  short  OEM:  TARA  under responsibility
+  Security  Goals/Requirements
+  Cybersecurity  and full at location  TIER1 (S): Component TARA performed on delivered
+  case  [WP-06-02]  short as
+  as deliverable
+  deliverable   What
+  short: degree
+  S/CCS  S/CS  C  short  Summary:
+  of Supplier
+  information  is responsibility
+  sufficient measures
+  Triggers  [WP-08-02]  component/SW/HW  to trigger  an
+  only
+  to verify
+  short  OEM:  customer
+  Security  Goals
+  Cybersecurity  [WP-09-03]  under  of the OEM
+  Impact
+  ratings goals
+  with associated impact  [WP-15-04]   S/C  as at deliverable  OEM:  TARA  under
+  responsibility
+  of
+  the
+  and full at location  – evidence  of  OEMSecurity
+  /  that appropriate
+  incident  shall  informed
+  or
+  and full  location  event  aligned
+  TIER1:  Verifcation
+  of be
+  OEM  Security  Goals
+  categories  and full at location  Goals/Requirements  of delivered
+  C = Customer  R is responsible for conducting the activities resulting in the work product  TIER1 (S): Out-of-context TARA performed on
+  according
+  Customer
+  1586  requirementes  are implemented
+  delivered  component/SW/HW is  based on out-of-context, generic
+  only
+  S = Supplier  reason  to verify customer
+  Project  why a case is rated without unreasonable risk
+  Threat  A  approves the work product provided by the other party  component/SW/HW –
+  analysis  Cybersecurity eventsS  supports the other party [WP-08-03]  S/Cresulting in the work  triage  an event or already  an incident
+  TIER1 if it
+  Risk treatment decisions  [WP-15-08]  C  S  short as deliverable  OEM:  TARA.
+  Continous  TARA  under responsibility of the OEM
+  Management  for the activities  product  Security  Goals/Requirements
+  and risk  and full at location  TIER1: component TARA under responsibility of
+  Cybersecurity
+
+                                                                                                                                             – Requirements tests
+                                                                                                                                             – Fuzz-Testing of vehicle interfaces
+                                                                                                                                             – Penetration-Test
+                                                                                                                                             – Vulnerabilty Report
+                                                                                                                                             – Information on HW-/SW-BOM
+
+       11          Cybersecurity Validation                                                                                                                            AUTOMOTIVE CYBER SECURITY                       6
+
+       11          Validation report                              [WP-11-01]   C       S                 short as deliverable                OEM: Validation of Security Goals under responsibility
+ Cybersecurity                                                                                           and full at location                of the OEM
+   Validation                                                                                                                                OEM may perfom own
+                                                                                                                                                                                                     Penetration-Test
+                                                                                                                                                                       [WIRD          NACH KORREKTUR ERGÄNZT]          1
+       12          Production
+
+                   Production control plan                        [WP-12-01]  S/C                   C    short as deliverable                TIER1: Manufacturing Control Plan according TIER1
+       12                                                                                                and full at location                process, delivered component/SW/HW only – e.g.:
+   Production                                                                                                                                – Line Control Plan
+                                                                                                                                             – Special Characteristics List
+Threat analysis and risk assessment (TARA) methods–                                                                                                    TISAX
+       13          Operations and Maintenance
+
+                   Cybersecurity
+                                  incident agreement
+The ¹³scope             of this                response plan      [WP-13-01]                             short as deliverable
+Operations                                         covers S                        the following C
+    and                 final chapter – viz. number 15 – contains and
+                                                                                                               full at location risk analysis methods like
+The matrix’s                                                                                                                workproducts and the
+  Maintenance                                                                                                              different
+corresponding
+                                  activities
+                                                   with and
+attack    routes, potential                        respect
+                                               damages     threat to
+                                                                                       type.
+       14          End of Cybersecurity Support and                                    the framework given on sheet overview
+                   decommissioning
+
+       14          Procedures to communicate end of               [WP-14-01]  S/C        S/C        S/C  short as deliverable                TIER1+OEM: mutual information on changes in
+     End of        cybersecurity support                                                                 and full at location                support abilities due to external factors which limits
+ Cybersecurity                                                                                                        Interchange            the ability to react
+     Support
+    and de-                                                          ISO/SAE
+  ISO-Chapter                                                                  R       A  S          I                  Agreement                                      Notes
+ commissioning                                                    21434:2021
+
+      155          Organizational
+                   Threat analysis Cybersecurity
+                                        and risk
+                   assessment methods
+                   Management
+
+                   Damage Scenarios                               [WP-15-01]   CS         S          C   short
+                                                                                                         short as
+                   Cybersecurity                                                                                 as deliverable
+                                  policy, rules and               [WP-05-01]                                                   deliverable   OEM: TARA under responsibility of the OEM
+                                                                                                         and full
+                                                                                                               full at
+                                                                                                                          at location
+                   processes                                                                             and                 location        TIER1: Out-of-context TARA performed on delivered
+                                                                                                                                             component/SW/HW only to verify customer Security
+                   Evidence of competence management,             [WP-05-02]   S                     C   short as deliverable                Goals/Requirements
+                   awareness management, awareness                                                       and full at location
+                   Assets with cybersecurity        properties    [WP-15-02]   C          S              short as deliverable                OEM: TARA under responsibility of the OEM
+                   management
+                                 and continuous
+       5           improvement                                                                           and full at location                TIER1: Out-of-context TARA performed on delivered
+ Cybersecurity                                                                                                                               component/SW/HW only to verify customer Security
+   Management      Organizational cybersecurity audit             [WP-05-05]   S                     C   short as deliverable                Goals/Requirements
+                   report                                                                                and full at location
+                   Threat scenarios                               [WP-15-03]   C          S              short as deliverable                OEM: TARA under responsibility of the OEM
+                                                                                                         and full as at deliverable
+                   Evidence of the organization’s                 [WP-05-03]   S                     C   short               location        TIER1 (S): Out-of-context TARA performed on
+                   management systems                                                                    and full at location                delivered component/SW/HW only to verify customer
+                                                                                                                                             Security Goals/Requirements
+                   Evidence
+                            of tool with
+                                        management                [WP-05-04]   S          S          C   short              as
+                   Impact ratings              associated impact  [WP-15-04]   C                         short                 deliverable
+                                                                                                                            as
+                                                                                                         and                   deliverable   OEM: TARA under responsibility of the OEM
+                                                                                                                        atfull
+                   categories                                                                            and                 location
+                                                                                                                        atfull
+       15                                                                                                                    location        TIER1 (S): Out-of-context TARA performed on
+Threat 6analysis   Project Dependent Cybersecurity                                                                                           delivered component/SW/HW only to verify customer
+    and risk       Management                                                                                                                Security Goals/Requirements
+   assessment      Attack paths   plan                            [WP-06-01]
+    methods        Cybersecurity                                  [WP-15-05]  S/CC        S              short as deliverable                OEM: TARA under responsibility of the OEM
+                                                                                                         short as deliverable                definition of deliverables and activities accoding to the
+                                                                                                         and
+                                                                                                                        atfull
+                                                                                                                             location        TIER1
+                                                                                                         and                                                                            (S): Component TARA performed on delivered
+                                                                                                                        atfull
+                                                                                                                             location        OEM milestones
+                                                                                                                                             component/SW/HW only to verify customer Security
+                                                                                                                                             Goals/Requirements
+                   Cybersecurity case                             [WP-06-02]   S                     C   short as deliverable                short: Summary:
+                                                                                                         and full at location                – evidence of Supplier that appropriate measures
+                   Attack feasibility ratings                     [WP-15-06]   C          S              short as deliverable                OEM:       TARA Customer
+                                                                                                                                                                   under responsibility
+                                                                                                                                                                                      of the are
+                                                                                                                                                       according                                      requirementes OEM
+       6                                                                                                 and full at location                TIER1 –    (S): why                                 implemented
+                                                                                                                                                            Component a                               TARA without
+                                                                                                                                                       reason          case is rated  performed  on delivered
+    Project                                                                                                                                                                             unreasonable    risk
+   Management                                                                                                                                component/SW/HW only to verify customer Security
+                                                                                                                                             Goals/Requirements
+                   Cybersecurity assessment report                [WP-06-03]   S                     C   short as deliverable
+                                                                                                         and full as at deliverable
+                   Attack feasibility ratings                     [WP-15-07]   C          S              short               location        OEM: TARA under responsibility of the OEM
+                                                                                                         and full at location                TIER1 (S): Component TARA performed on delivered
+                   Release for post-development report            [WP-06-04]   S                     C   short as deliverable                component/SW/HW only to verify customer Security
+                                                                                                         and full at location                Goals/Requirements
+
+       7           Risk
+                   Distributed
+                                 cybersecurity
+                        treatment    decisions        activities  [WP-15-08]   C          S              short as deliverable                OEM: TARA under responsibility of the OEM
+                                                                                                         and full at location                TIER1: component TARA under responsibility of
+                                                                                                                                                                                      TIER1Customer SDIA for delivered component/SW/
+       7           Cybersecurity interface agreement              [WP-07-01]  S/C  S/C                   full as deliverable                 the
+                                                                                                                                             Supplier:
+  Distributed                                                                                                                                HW (this document)
+ cybersecurity                                                                                                                               e.g. TIER X+Supplier: Supplier SDIA for delivered
+   activities                                      R is responsible for conducting the activities resulting in the work product              component/SW/HW
+C = Customer
+S = Supplier8      Continual cybersecurity A   approves the work product provided by the other party
+                                                    activities
+                                        S      supports the other party for the activities resulting in the work product
+                                                   the organization that is informed                                                                    being
+                                                                              S/C  of the progress of the activity and any decisions                               madethe sources
+                                                                                                                                             Supplier:
+                   Selected sources Ifor (informed):                                                                                                        selected
+                                               cybersecurity      [WP-08-01]
+                   monitoring                                                                                                                Customer: selected the sources
+
+                   Triggers                                       [WP-08-02]  S/C                                                            What degree of information is sufficient to trigger an
+                                                                                                                                             event / incident shall be informed or aligned
+       8
+   Continous       Cybersecurity events                           [WP-08-03]  S/C                                                            triage if it is an event or already an incident
+ Cybersecurity
+   activities      Weaknesses from cybersecurity events           [WP-08-04]  S/C                   S/C  short as deliverable                weakness, vulnerability, and incident
+
+                   Vulnerability analysis                         [WP-08-05]  S/C                   S/C  short as deliverable                weakness, vulnerability, and incident
+
+                   Evidence of managed vulnerabilities            [WP-08-06]  S/C                   S/C  short as deliverable
+                                                                                                         and full at location
+
+            9      Concept
+
+                   delivered component/SW/HW definition           [WP-09-01]  S/C        S/C             short as deliverable                OEM: TARA under responsibility of the OEM
+                                                                                                         and full at location                TIER1: Out-of-context TARA performed on delivered
+                                                                                                                                             component/SW/HW only to verify customer Security
+                                                                                                                                             Goals/Requirements
+
+                   Threat analysis and risk assessment            [WP-09-02]  S/C        S/C             short as deliverable                OEM: TARA under responsibility of the OEM
+                                                                                                         and full at location                TIER1: Verifcation of OEM TARA of delivered
+                                                                                                                                             component/SW/HW based on out-of-context, generic
+                                                                                                                                             TIER1 TARA.
+
+                   Cybersecurity goals                            [WP-09-03]  S/C        S/C             short as deliverable                OEM: Security Goals under responsibility of the OEM
+                                                                                                         and full at location                TIER1: Verifcation of OEM Security Goals of delivered
+                                                                                                                                             component/SW/HW based on out-of-context, generic
+                                                                                                                                             TIER1 TARA.
+
+                   Cybersecurity claims                           [WP-09-04]  S/C        S/C             short as deliverable                OEM: Security Claims and Transfer under
+                                                                                                         and full at location                responsibility of the OEM
+                                                                                                                                             TIER1: Verifcation of OEM Security Claims and
+       9                                                                                                                                     Transfer of delivered component/SW/HW based on
+    Concept                                                                                                                                  out-of-context, generic TIER1 TARA.
+                   Verification report                            [WP-09-05]  S/C        S/C             short as deliverable                OEM: Verification of TARA under responsibility of
+                                                                                                         and full at location                the OEM
+                                                                                                                                             TIER1: Verifcation of OEM TARA of delivered
+                                                                                                                                             component/SW/HW based on out-of-context, generic
+                                                                                                                                             TIER1 TARA.
+
+                   Cybersecurity concept                          [WP-09-06]  S/C        S/C        S    short as deliverable                OEM: Security Concept under responsibility of
+                                                                                                         and full at location                the OEM, break down on individual components:
+                                                                                                                                             („Lastenheft“)
+                                                                                                                                             TIER1: Verifcation of OEM Security Concept of
+                                                                                                                                             delivered component/SW/HW based on out-of-context,
+                                                                                                                                             generic TIER1 Security Concept.
+
+                   Verification report for cybersecurity          [WP-09-07]  S/C        S/C             short as deliverable                OEM: Verification of Security Concept under
+                   concept                                                                               and full at location                responsibility of the OEM
+                                                                                                                                             TIER1: Verifcation of OEM Security Concept of
+                                                                                                                                             delivered component/SW/HW based on out-of-context,
+                                                                                                                                             generic TIER1 Security Concept.
+
+
+C = Customer                            R is responsible for conducting the activities resulting in the work product
+S = Supplier                            A      approves the work product provided by the other party
+                                        S      supports the other party for the activities resulting in the work product
+
+AUTOMOTIVE CYBER SECURITY       7
+[WIRD NACH KORREKTUR ERGÄNZT]   1
+
+
+Annex
+
+
+
+The scope of this agreement covers the following workproducts and the
+corresponding activities with respect to the framework given on sheet overview
+
+
+
+
+
+
+ ISO-Chapter                                              ISO/SAE                         Interchange
+                                                       21434:2021    R    A    S I         Agreement             Notes
+
+      5         Organizational Cybersecurity
+                Management
+
+                Cybersecurity policy, rules and        [WP-05-01]   S            C    short as deliverable
+                processes                                                             and full at location
+
+                Evidence of competence management,     [WP-05-02]   S            C    short as deliverable
+                awareness management, awareness                                       and full at location
+                management and continuous
+      5         improvement
+Cybersecurity   Organizational cybersecurity audit     [WP-05-05]   S            C    short as deliverable
+  Management    report                                                                and full at location
+
+                Evidence of the organization’s         [WP-05-03]   S            C    short as deliverable
+                management systems                                                    and full at location
+
+                Evidence of tool management            [WP-05-04]   S            C    short as deliverable
+                                                                                      and full at location
+
+6               Project Dependent Cybersecurity
+                Management
+
+                Cybersecurity plan                     [WP-06-01]    S/C              short as deliverable   definition of deliverables and activities accoding to the
+                                                                                      and full at location   OEM milestones
+
+                Cybersecurity case                     [WP-06-02]   S            C    short as deliverable   short: Summary:
+                                                                                      and full at location   – evidence of Supplier that appropriate measures
+      6                                                                                                      according Customer requirementes are implemented
+   Project                                                                                                   – reason why a case is rated without unreasonable risk
+  Management
+                Cybersecurity assessment report        [WP-06-03]   S            C    short as deliverable
+                                                                                      and full at location
+
+                Release for post-development report    [WP-06-04]   S            C    short as deliverable
+                                                                                      and full at location
+
+      7         Distributed cybersecurity activities
+
+      7         Cybersecurity interface agreement      [WP-07-01]  S/C    S/C         full as deliverable    Supplier: Customer SDIA for delivered component/SW/
+ Distributed                                                                                                 HW (this document)
+cybersecurity                                                                                                e.g. TIER X+Supplier: Supplier SDIA for delivered
+  activities                                                                                                 component/SW/HW
+
+      8         Continual cybersecurity activities
+
+                Selected sources for cybersecurity     [WP-08-01]  S/C                                       Supplier: selected the sources
+                monitoring                                                                                   Customer: selected the sources
+
+                Triggers                               [WP-08-02]  S/C                                       What degree of information is sufficient to trigger an
+                                                                                                             event / incident shall be informed or aligned
+      8
+  Continous     Cybersecurity events                   [WP-08-03]  S/C                                       triage if it is an event or already an incident
+Cybersecurity
+  activities    Weaknesses from cybersecurity events   [WP-08-04]  S/C          S/C   short as deliverable   weakness, vulnerability, and incident
+
+                Vulnerability analysis                 [WP-08-05]  S/C          S/C   short as deliverable   weakness, vulnerability, and incident
+
+                Evidence of managed vulnerabilities    [WP-08-06]  S/C          S/C   short as deliverable
+                                                                                      and full at location
+
+9               Concept
+
+                delivered component/SW/HW definition   [WP-09-01]  S/C         S/C    short as deliverable   OEM: TARA under responsibility of the OEM
+                                                                                      and full at location   TIER1: Out-of-context TARA performed on delivered
+                                                                                                             component/SW/HW only to verify customer Security
+                                                                                                             Goals/Requirements
+
+                Threat analysis and risk assessment    [WP-09-02]  S/C         S/C    short as deliverable   OEM: TARA under responsibility of the OEM
+                                                                                      and full at location   TIER1: Verifcation of OEM TARA of delivered
+                                                                                                             component/SW/HW based on out-of-context, generic
+                                                                                                             TIER1 TARA.
+
+                Cybersecurity goals                    [WP-09-03]  S/C         S/C    short as deliverable   OEM: Security Goals under responsibility of the OEM
+                                                                                      and full at location   TIER1: Verifcation of OEM Security Goals of delivered
+                                                                                                             component/SW/HW based on out-of-context, generic
+                                                                                                             TIER1 TARA.
+
+                Cybersecurity claims                   [WP-09-04]  S/C         S/C    short as deliverable   OEM: Security Claims and Transfer under
+                                                                                      and full at location   responsibility of the OEM
+                                                                                                             TIER1: Verifcation of OEM Security Claims and
+      9                                                                                                      Transfer of delivered component/SW/HW based on
+   Concept                                                                                                   out-of-context, generic TIER1 TARA.
+                Verification report                    [WP-09-05]  S/C         S/C    short as deliverable   OEM: Verification of TARA under responsibility of
+                                                                                      and full at location   the OEM
+                                                                                                             TIER1: Verifcation of OEM TARA of delivered
+                                                                                                             component/SW/HW based on out-of-context, generic
+                                                                                                             TIER1 TARA.
+
+                Cybersecurity concept                  [WP-09-06]  S/C         S/C  S short as deliverable   OEM: Security Concept under responsibility of
+                                                                                      and full at location   the OEM, break down on individual components:
+                                                                                                             („Lastenheft“)
+                                                                                                             TIER1: Verifcation of OEM Security Concept of
+                                                                                                             delivered component/SW/HW based on out-of-context,
+                                                                                                             generic TIER1 Security Concept.
+
+                Verification report for cybersecurity  [WP-09-07]  S/C         S/C    short as deliverable   OEM: Verification of Security Concept under
+                concept                                                               and full at location   responsibility of the OEM
+                                                                                                             TIER1: Verifcation of OEM Security Concept of
+                                                                                                             delivered component/SW/HW based on out-of-context,
+                                                                                                             generic TIER1 Security Concept.
+
+
+C = Customer   R is responsible for conducting the activities resulting in the work product
+S = Supplier   A   approves the work product provided by the other party
+               S   supports the other party for the activities resulting in the work product
+               I   (informed): the organization that is informed of the progress of the activity and any decisions being made
+
+    [WIRD
+    AUTOMOTIVE
+        NACH KORREKTUR
+        CYBER SECURITY
+        ERGÄNZT]     82
+
+
+
+
+
+
+
+
+
+
+  ISO-Chapter                                             ISO/SAE        R   A   S   I    Interchange               Notes
+                                                          21434:2021                      Agreement
+
+       10       Product development
+
+                Cybersecurity specifications              [WP-10-01]     S   C   C       full as deliverable    „Pflichtenheft“
+                                                                                                                For mutual approval it is recommended to share
+                                                                                                                the specification.
+                                                                                                                (However, it might be challenging to overcome
+                                                                                                                technical restrictions)
+
+                Cybersecurity requirements for post-      [WP-10-02]     S           C   short as deliverable   TIER1: Product Requirements according TIER1
+                development                                                                                     process, delivered component/SW/HW only
+
+                Documentation of the modelling, design,   [WP-10-03]     S           C   short as deliverable   TIER1: Guidelines, etc according TIER1 System
+                or programming languages and coding                                      and full at location   Engineering and SW process
+                guidelines
+
+                Verification report for the refined       [WP-10-04]     S           C   short as deliverable   TIER1: System FMEA for Security Architecture
+       10       cybersecurity specification                                              and full at location   according TIER1 process, delivered component/
+    Product                                                                                                     SW/HW only
+  Development   Weaknesses found during product           [WP-10-05]     S           C   short as deliverable
+                development                                                              and full at location
+
+                Integration and verification              [WP-10-06]     S       C   C   short as deliverable   TIER1: Test Specifications according TIER1 process,
+                specification                                                            and full at location   delivered component/SW/HW only
+                                                                                                                If needed the OEM may contract suppliers to perfom
+                                                                                                                additional verification tests
+
+                Integration and verification reports      [WP-10-07]     S           C   short as deliverable   TIER1: Test Reports according TIER1 process,
+                                                                                         and full at location   delivered component/SW/HW only – e.g.:
+                                                                                                                – Requirements tests
+                                                                                                                – Fuzz-Testing of vehicle interfaces
+                                                                                                                – Penetration-Test
+                                                                                                                – Vulnerabilty Report
+                                                                                                                – Information on HW-/SW-BOM
+
+       11       Cybersecurity Validation
+
+       11       Validation report                         [WP-11-01]     C      S        short as deliverable   OEM: Validation of Security Goals under responsibility
+ Cybersecurity                                                                           and full at location   of the OEM
+   Validation                                                                                                   OEM may perfom own Penetration-Test
+
+       12       Production
+
+                Production control plan                   [WP-12-01]    S/C          C   short as deliverable   TIER1: Manufacturing Control Plan according TIER1
+       12                                                                                and full at location   process, delivered component/SW/HW only – e.g.:
+   Production                                                                                                   – Line Control Plan
+                                                                                                                – Special Characteristics List
+                                                                                                                – TISAX
+
+       13       Operations and Maintenance
+
+       13       Cybersecurity incident response plan      [WP-13-01]     S           C   short as deliverable
+ Operations and                                                                          and full at location
+  Maintenance
+
+       14       End of Cybersecurity Support and
+                decommissioning
+
+       14       Procedures to communicate end of          [WP-14-01]    S/C     S/C S/C  short as deliverable   TIER1+OEM: mutual information on changes in
+     End of     cybersecurity support                                                    and full at location   support abilities due to external factors which limits
+ Cybersecurity                                                                                                  the ability to react
+Support and de-
+ commissioning
+
+       15       Threat analysis and risk
+                assessment methods
+
+                Damage Scenarios                          [WP-15-01]     C       S       short as deliverable   OEM: TARA under responsibility of the OEM
+                                                                                         and full at location   TIER1: Out-of-context TARA performed on delivered
+                                                                                                                component/SW/HW only to verify customer Security
+                                                                                                                Goals/Requirements
+
+                Assets with cybersecurity properties      [WP-15-02]     C       S       short as deliverable   OEM: TARA under responsibility of the OEM
+                                                                                         and full at location   TIER1: Out-of-context TARA performed on delivered
+                                                                                                                component/SW/HW only to verify customer Security
+                                                                                                                Goals/Requirements
+
+                Threat scenarios                          [WP-15-03]     C       S       short as deliverable   OEM: TARA under responsibility of the OEM
+                                                                                         and full at location   TIER1 (S): Out-of-context TARA performed on
+                                                                                                                delivered component/SW/HW only to verify customer
+                                                                                                                Security Goals/Requirements
+
+                Impact ratings with associated impact     [WP-15-04]     C       S       short as deliverable   OEM: TARA under responsibility of the OEM
+       15       categories                                                               and full at location   TIER1 (S): Out-of-context TARA performed on
+Threat analysis                                                                                                 delivered component/SW/HW only to verify customer
+    and risk                                                                                                    Security Goals/Requirements
+   assessment
+    methods     Attack paths                              [WP-15-05]     C       S       short as deliverable   OEM: TARA under responsibility of the OEM
+                                                                                         and full at location   TIER1 (S): Component TARA performed on delivered
+                                                                                                                component/SW/HW only to verify customer Security
+                                                                                                                Goals/Requirements
+
+                Attack feasibility ratings                [WP-15-06]     C       S       short as deliverable   OEM: TARA under responsibility of the OEM
+                                                                                         and full at location   TIER1 (S): Component TARA performed on delivered
+                                                                                                                component/SW/HW only to verify customer Security
+                                                                                                                Goals/Requirements
+
+                Attack feasibility ratings                [WP-15-07]     C       S       short as deliverable   OEM: TARA under responsibility of the OEM
+                                                                                         and full at location   TIER1 (S): Component TARA performed on delivered
+                                                                                                                component/SW/HW only to verify customer Security
+                                                                                                                Goals/Requirements
+
+                Risk treatment decisions                  [WP-15-08]     C       S       short as deliverable   OEM: TARA under responsibility of the OEM
+                                                                                         and full at location   TIER1: component TARA under responsibility of
+                                                                                                                the TIER1
+
+
+    C = Customer   R is responsible for conducting the activities resulting in the work product
+    S = Supplier   A   approves the work product provided by the other party
+                   S   supports the other party for the activities resulting in the work product
+                   I   (informed): the organization that is informed of the progress of the activity and any decisions being made
+
+AUTOMOTIVE CYBER SECURITY  9
+
+
+
+
+
+
+
+
+
+
+Contact Persons
+
+Dr. Marcus Bollig
+Executive board
+marcus.bollig@vda.de
+
+Martin Lorenz
+Head of the Coordination Unit for Security & Data
+martin.lorenz@vda.de
+
+Stephan Krähnert
+Department of Standardization
+stephan.kraehnert@vda.de
+
+Publisher   German Association of the Automotive Industry
+            Behrenstraße 35, 10117 Berlin
+            www.vda.de/en
+
+            Registered representative R001243
+            EU Transparency No. 95574664768-90
+
+Copyright   German Association of the Automotive Industry
+
+            Reprinting and all other forms of duplication are only
+            permitted with indication of the source.
+
+Version     Version 1.0, July 2022
+
+
+
+
+
+
+@VDA_online
+Verband der Automobilindustrie
+

@@ -1,0 +1,8 @@
+Your previous response FAILED quality validation. Fix the following issues:
+
+- JSON_STRUCTURE: File not found: C:\Users\User\VS_Projects\Helpers\Antigravity\AgenticWorkflowBrowser\Output\json\VDA_5783_Positionspapier_Turn3_Task1.json
+
+Rewrite the ENTIRE JSON output from scratch, fixing all issues above.
+Output format: single ```json code block containing the complete JSON array.
+CRITICAL: You MUST output EXACTLY 6 conversation turns. Include at least 20 test_criteria and 5 formal_requirements.
+Prioritize COMPLETING the JSON structure. A truncated JSON is worse than a shorter but complete one.

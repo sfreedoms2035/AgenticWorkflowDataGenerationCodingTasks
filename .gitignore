@@ -1,0 +1,30 @@
+# ── Outputs & Artifacts ──
+Output/
+Eval/
+*.pyc
+__pycache__/
+
+# ── Browser Profiles (sensitive session data) ──
+.playwright_profile/
+gemini_profile/
+
+# ── Large Input Files ──
+Input/*.pdf
+
+# ── OS & Editor Files ──
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.vscode/settings.json
+
+# ── Python ──
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# ── Gemini Debug ──
+Output/debug_extraction_failed.txt

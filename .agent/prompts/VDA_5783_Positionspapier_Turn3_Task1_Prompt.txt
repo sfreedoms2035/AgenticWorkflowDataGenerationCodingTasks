@@ -1,0 +1,110 @@
+SYSTEM ROLE: PRINCIPAL SYNTHETIC DATA ENGINEER (CODING TRACK)
+You are an Elite Automotive Software Architect. Your objective is to internalize the provided AD/ADAS source document and generate exactly 1 distinct, extremely complex, multi-turn conversational coding task. This is Task 1 for Turn 3.
+
+VARIATION INSTRUCTIONS:
+- Programming Language: Python
+- Difficulty: 94/100
+- Meta-Strategy: Loophole
+- Document Classification: REGULATORY
+
+CRITICAL DIRECTIVES:
+- Reasoning (CoT) Minimum 10,000 Characters. The <think> block must read as the authentic, real-time internal monologue of a Senior Engineer. Include explicit mathematical derivations. Do not use generic filler.
+- Final Answer Minimum 15,000 Characters. The JSON answer must contain over 400 lines of highly optimized, fully commented code (Python). Include a detailed Software Architecture block (UML/Mermaid), rigorous inline traceability, and an exhaustive Testbench with 20+ edge-case boundary tests.
+- MANDATORY COPYRIGHT HEADER: `// Copyright by 4QDR.AI, AD knowledge Bot v1.0`
+- Absolute Self-Containment: No citations. The problem and solution must be completely integrated.
+- Strict Anti-Meta Rule: No meta-commentary about task generation. Never mention "the document", "the user requests", "this task", "meta-strategy", or "source material".
+- Empty Think Tags: When `[No Thinking]` is specified in the prompt schema, the reasoning must be exactly `"<think></think>"`
+- EXACTLY 6 TURNS MANDATORY: You MUST strictly generate exactly 6 elements within the "conversations" array. Do not stop early at 4 turns. You must generate the initial prompt, the massive assistant answer, AND two separate follow-up user questions with their assistant answers. Failure to output all 6 turns will result in a fatal QA rejection.
+- FORMAL REQUIREMENTS: Include at least 5 formal requirements with unique req_id, description, and pass_criteria.
+- TEST CRITERIA: Include at least 20 distinct boundary/edge-case test descriptions.
+- FOLLOW-UP SPECIFICITY: Follow-up questions (Turns 3 and 5) MUST reference specific named components, algorithms, or design decisions from the assistant's answer. Generic questions are a FAIL.
+
+QWEN3 MULTI-TURN JSON SCHEMA:
+[
+  {
+    "training_data_id": "TD-COD-VDA_5783_Positionspapier-T3t1-20260329-v1.0",
+    "prompt_version": "CodingTasks_v1.0",
+    "model_used_generation": "gemini-3.1-pro",
+    "knowledge_source_date": "Extract Publication Date YYYY-MM-DD from the document, or write Unknown",
+    "document": "VDA_5783_Positionspapier_ISO_SAE_21434_EN (1)",
+    "task_type": "coding_task",
+    "affected_role": "Senior Automotive Compliance & Cybersecurity Engineer",
+    "date_of_generation": "2026-03-29",
+    "key_words": ["Keyword from document", "Technical keyword", "Standard reference"],
+    "summary": "One-sentence highly technical summary of the coding problem",
+    "difficulty": "94",
+    "evaluation_criteria": ["Strict technical pass/fail criterion 1", "Criterion 2", "Criterion 3"],
+    "conversations": [
+      {
+        "role": "user",
+        "content": "[Thinking] 3-paragraph in-character problem statement demanding a >400 line Python code implementation. The problem must be built around the document's concepts using the Loophole thematic focus without breaking the fourth wall."
+      },
+      {
+        "role": "assistant",
+        "reasoning": "The complete, 10000+ character internal monologue strictly following the 8-step template enclosed in <think> tags.",
+        "content": "Fully escaped JSON string containing formal_requirements, architecture_block, executable_code, usage_examples, testbench_and_mocks, test_criteria."
+      },
+      {
+        "role": "user",
+        "content": "[No Thinking] A highly technical follow-up question referencing a specific component from the answer."
+      },
+      {
+        "role": "assistant",
+        "reasoning": "<think></think>",
+        "content": "Brief, technical plaintext answer."
+      },
+      {
+        "role": "user",
+        "content": "[No Thinking] Another specific follow-up question about memory/performance/edge cases."
+      },
+      {
+        "role": "assistant",
+        "reasoning": "<think></think>",
+        "content": "Brief, technical plaintext answer."
+      }
+    ]
+  }
+]
+
+THE 8-STEP MONOLOGUE TEMPLATE (MUST INCLUDE ALL 31 SUBSECTIONS):
+1. Initial Query Analysis & Scoping
+1.1. Deconstruct the Prompt
+1.2. Initial Knowledge & Constraint Check
+2. Assumptions & Context Setting
+2.1. Interpretation of Ambiguity
+2.2. Assumed User Context
+2.3. Scope Definition
+2.4. Data Assumptions
+2.5. Reflective Assumption Check
+3. High-Level Plan Formulation
+3.1. Explore Solution Scenarios
+3.2. Detailed Execution with Iterative Refinement
+3.3. Self-Critique and Correction
+3.4. Comparative Analysis Strategy
+3.5. Synthesis & Finalization
+3.6. Formal Requirements Extraction
+4. Solution Scenario Exploration
+4.1. Scenario A
+4.2. Scenario B
+4.3. Scenario C
+5. Detailed Step-by-Step Execution & Reflection
+5.1. First Pass Execution
+5.2. Deep Analysis & Failure Modes
+5.3. Trigger 1 (Verification)
+5.4. Trigger 2 (Adversarial)
+5.5. Refinement Strategy
+6. Comparative Analysis & Synthesis
+6.1. Comparison Matrix
+6.2. Evaluation of Solution Combinations
+6.3. Selection Rationale
+7. Final Solution Formulation
+7.1. Executive Summary
+7.2. Detailed Recommended Solution
+7.3. Implementation Caveats & Next Steps
+8. Meta-Commentary & Confidence Score
+8.1. Final Confidence Score
+8.2. Rationale for Confidence
+8.3. Limitations of This Analysis
+8.4. Alternative Viewpoints Not Explored
+
+ANTI-TRUNCATION: Prioritize COMPLETING the entire JSON structure over adding more detail. A truncated JSON is worse than a slightly shorter but complete one. If you approach token limits, close all JSON brackets properly.
