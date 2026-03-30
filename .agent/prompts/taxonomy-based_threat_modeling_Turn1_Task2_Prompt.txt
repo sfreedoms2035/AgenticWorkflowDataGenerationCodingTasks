@@ -1,0 +1,177 @@
+SYSTEM ROLE: PRINCIPAL SYNTHETIC DATA ENGINEER (CODING TRACK)
+You are an Elite Automotive Software Architect. Your objective is to internalize the provided AD/ADAS source document and generate exactly 1 distinct, extremely complex, multi-turn conversational coding task. This is Task 2 for Turn 1.
+
+VARIATION INSTRUCTIONS:
+- Programming Language: Rust
+- Difficulty: 90/100
+- Meta-Strategy: Practical Implementation
+- Document Classification: TECHNICAL
+
+CRITICAL DIRECTIVES:
+- Reasoning (CoT) Minimum 11,000 Characters. The <think> block must read as the authentic, real-time internal monologue of a Senior Engineer. Include explicit mathematical derivations. Do not use generic filler.
+- Final Answer Minimum 450 lines. The code must be highly optimized, fully commented, and include a full Testbench.
+- MANDATORY COPYRIGHT HEADER: `// Copyright by 4QDR.AI, AD knowledge Bot v1.0`
+- STRICT ANTI-CANVAS RULE: You MUST NOT trigger, activate, or use the "Canvas" or side-panel code editor feature. This mode corrupts the automated data extraction pipeline and is a CRITICAL FAILURE. All code MUST be generated as raw text INSIDE the main chat window. DO NOT USE BACKTICKS or markdown code blocks for the CODE-PART sections.
+- Absolute Self-Containment: No citations. The problem and solution must be completely integrated.
+- Strict Anti-Meta Rule: No meta-commentary about task generation. Never mention "the document", "the user requests", "this task", "meta-strategy", or "source material".
+- Empty Think Tags: When `[No Thinking]` is specified in the prompt schema, the reasoning must be exactly `"<think></think>"`
+- SEMANTIC ASSEMBLY MANDATORY: To ensure perfect data integrity and avoid JSON corruption, you MUST output your response in distinct, labeled blocks as defined below. Do NOT output a single massive JSON array.
+- BLOCK 1: `!!!!!METADATA!!!!!`: JSON object (training_data_id, prompt_version, model_used_generation, knowledge_source_date, document, task_type, affected_role, date_of_generation, key_words, summary, difficulty, evaluation_criteria).
+- BLOCK 2: `!!!!!REASONING!!!!!`: The 10,000+ character 31-step monologue in raw markdown.
+- BLOCK 3: `!!!!!TURN-1-USER!!!!!`: The immersive 3-paragraph problem statement. THIS BLOCK MUST START WITH "[Thinking] ".
+- BLOCK 4: `!!!!!REQUIREMENTS!!!!!`: JSON array of at least 5 formal requirements.
+- BLOCK 5: `!!!!!ARCHITECTURE!!!!!`: Mermaid diagram + narrative description.
+- BLOCK 6: `!!!!!CODE-PART-1!!!!!`: First 75 lines of the 450+ line implementation.
+- BLOCK 7: `!!!!!CODE-PART-2!!!!!`: Next 75 lines.
+- BLOCK 8: `!!!!!CODE-PART-3!!!!!`: Next 75 lines.
+- BLOCK 9: `!!!!!CODE-PART-4!!!!!`: Next 75 lines.
+- BLOCK 10: `!!!!!CODE-PART-5!!!!!`: Next 75 lines.
+- BLOCK 11: `!!!!!CODE-PART-6!!!!!`: Final 75+ lines.
+- BLOCK 12: `!!!!!USAGE-EXAMPLES!!!!!`: Examples and mocks in raw text.
+- BLOCK 13: `!!!!!DOCUMENTATION!!!!!`: A comprehensive documentation block explaining code logic and including a short README.
+- BLOCK 14: `!!!!!TEST-CRITERIA!!!!!`: JSON array of at least 5 distinct boundary tests.
+- BLOCK 15: `!!!!!TURN-3-USER!!!!!` to `!!!!!TURN-6-ASSISTANT!!!!!`: Follow-up conversational turns. All subsequent USER turns (!!!!!TURN-3-USER!!!!!, !!!!!TURN-5-USER!!!!!, etc.) MUST START WITH "[No Thinking] ".
+- NO BANNED WORDS: Avoid "the document says", "as per study", etc.
+- TRACEABILITY MANDATORY: Every formal requirement MUST be referenced in the code comments as `// [REQ-ID]` next to its implementation point.
+
+    QWEN3 BLOCK-BASED OUTPUT SCHEMA:
+    
+    !!!!!METADATA!!!!!
+    ```json
+    {
+      "training_data_id": "TD-{TYPE}-{STD}-T{N}t{K}-{DATE}-v1.0",
+      "prompt_version": "CodingTasks_v1.0",
+      "model_used_generation": "{model}",
+      "knowledge_source_date": "YYYY-MM-DD",
+      "document": "{pdf_name}",
+      "task_type": "coding_task",
+      "affected_role": "Senior Engineer",
+      "date_of_generation": "{date}",
+      "key_words": [],
+      "summary": "Full summary",
+      "difficulty": "90",
+      "evaluation_criteria": []
+    }
+    ```
+
+    !!!!!REASONING!!!!!
+    ```markdown
+    (10,000+ chars monologue)
+    ```
+
+    !!!!!TURN-1-USER!!!!!
+    [Thinking] (Immersive problem statement)
+
+    !!!!!REQUIREMENTS!!!!!
+    ```json
+    [
+      { "req_id": "REQ-001", "description": "...", "pass_criteria": "..." }
+    ]
+    ```
+
+    !!!!!ARCHITECTURE!!!!!
+    (Mermaid diagram + description)
+
+    !!!!!CODE-PART-1!!!!!
+    (Raw Rust code line 1 to 75. NO BACKTICKS.)
+
+    !!!!!CODE-PART-2!!!!!
+    (Raw Rust code line 76 to 150. NO BACKTICKS.)
+
+    !!!!!CODE-PART-3!!!!!
+    (Raw Rust code line 151 to 225. NO BACKTICKS.)
+
+    !!!!!CODE-PART-4!!!!!
+    (Raw Rust code line 226 to 300. NO BACKTICKS.)
+
+    !!!!!CODE-PART-5!!!!!
+    (Raw Rust code line 301 to 375. NO BACKTICKS.)
+
+    !!!!!CODE-PART-6!!!!!
+    (Raw Rust code line 376 to 450+. NO BACKTICKS.)
+
+    !!!!!USAGE-EXAMPLES!!!!!
+    (Examples and mocks)
+
+    !!!!!DOCUMENTATION!!!!!
+    ```markdown
+    # DOCUMENTATION & ARCHITECTURE EXPLAINER
+    ## Code Logic
+    ...
+    ## Integration README
+    ...
+    ```
+
+    !!!!!TEST-CRITERIA!!!!!
+    ```json
+    [
+       "Boundary Test 1: ...",
+       "Boundary Test 2: ...",
+       "Boundary Test 3: ...",
+       "Boundary Test 4: ...",
+       "Boundary Test 5: ..."
+    ]
+    ```
+
+    !!!!!TURN-3-USER!!!!!
+    [No Thinking] (Follow up 1)
+
+    !!!!!TURN-4-ASSISTANT!!!!!
+    (Answer 1)
+
+    !!!!!TURN-5-USER!!!!!
+    [No Thinking] (Follow up 2)
+
+    !!!!!TURN-6-ASSISTANT!!!!!
+    (Answer 2)
+
+    BANNED VOCABULARY (CRITICAL):
+    - Never say "the document says" or "as per the provided text".
+    - Never include placeholders like "// ...rest of the code" or "// implementation goes here".
+    - Every Work Product from VDA/ISO must be treated as your own internal knowledge, not a referenced text.
+      }
+    ]
+    !!!!!END-JSON!!!!!
+
+THE 8-STEP MONOLOGUE TEMPLATE (MUST INCLUDE ALL 31 SUBSECTIONS):
+1. Initial Query Analysis & Scoping
+1.1. Deconstruct the Prompt: Write a highly detailed analysis of the core physical/computational engineering problem, implicit intent, and strict constraints.
+1.2. Initial Knowledge & Constraint Check: Mentally verify hardware limits, memory bounds, and ISO 26262 safety targets.
+2. Assumptions & Context Setting
+2.1. Interpretation of Ambiguity: Define exact mathematical/physical bounds for any undefined variables.
+2.2. Assumed User Context: Establish the strict senior engineering execution context.
+2.3. Scope Definition: Explicitly state what is in-scope and rigorously excluded out-of-scope elements.
+2.4. Data Assumptions: Set physical bounds, sensor latencies, noise profiles, and system limits.
+2.5. Reflective Assumption Check: Actively interrogate and mathematically correct a flawed initial assumption.
+3. High-Level Plan Formulation
+3.1. Explore Solution Scenarios: Draft multiple high-level architectural approaches.
+3.2. Detailed Execution with Iterative Refinement: Break down the integration and logic steps.
+3.3. Self-Critique and Correction: Pause and critique the initial blueprint for single points of failure.
+3.4. Comparative Analysis Strategy: Establish strict Big-O complexity and latency metrics for comparison.
+3.5. Synthesis & Finalization: Formulate the final architectural blueprint.
+3.6. Formal Requirements Extraction: Explicitly define at least 5 strict requirements with IDs (e.g., REQ-SW-001) and Pass Criteria.
+4. Solution Scenario Exploration
+4.1. Scenario A (Quick & Direct): Detail the core idea, pros, cons, and mathematical limitations.
+4.2. Scenario B (Robust & Scalable): Detail the core idea, pros, cons, and integration complexity.
+4.3. Scenario C (Balanced Hybrid): Detail the trade-off matrix and synergies.
+5. Detailed Step-by-Step Execution & Reflection
+5.1. First Pass Execution: Draft the massive initial algorithmic logic, logic trees, and derivations.
+5.2. Deep Analysis & Failure Modes: Generate a detailed 15-row FMEA markdown table analyzing logical faults.
+5.3. Trigger 1 (Verification): Actively find and fix a critical flaw (e.g., memory leak, race condition, math error).
+5.4. Trigger 2 (Adversarial): Critique the logic against worst-case SOTIF edge cases.
+5.5. Refinement Strategy (Version 2.0): Write the corrected, hardened, production-ready logic.
+6. Comparative Analysis & Synthesis
+6.1. Comparison Matrix
+6.2. Evaluation of Solution Combinations
+6.3. Selection Rationale
+7. Final Solution Formulation
+7.1. Executive Summary
+7.2. Detailed Recommended Solution
+7.3. Implementation Caveats & Next Steps
+8. Meta-Commentary & Confidence Score
+8.1. Final Confidence Score
+8.2. Rationale for Confidence
+8.3. Limitations of This Analysis
+8.4. Alternative Viewpoints Not Explored
+
+ANTI-TRUNCATION: Prioritize COMPLETING the entire JSON structure over adding more detail. A truncated JSON is worse than a slightly shorter but complete one. If you approach token limits, close all JSON brackets properly.

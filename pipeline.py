@@ -193,7 +193,7 @@ CRITICAL DIRECTIVES:
 - SEMANTIC ASSEMBLY MANDATORY: To ensure perfect data integrity and avoid JSON corruption, you MUST output your response in distinct, labeled blocks as defined below. Do NOT output a single massive JSON array.
 - BLOCK 1: `!!!!!METADATA!!!!!`: JSON object (training_data_id, prompt_version, model_used_generation, knowledge_source_date, document, task_type, affected_role, date_of_generation, key_words, summary, difficulty, evaluation_criteria).
 - BLOCK 2: `!!!!!REASONING!!!!!`: The 10,000+ character 31-step monologue in raw markdown.
-- BLOCK 3: `!!!!!TURN-1-USER!!!!!`: The immersive 3-paragraph problem statement.
+- BLOCK 3: `!!!!!TURN-1-USER!!!!!`: The immersive 3-paragraph problem statement. THIS BLOCK MUST START WITH "[Thinking] ".
 - BLOCK 4: `!!!!!REQUIREMENTS!!!!!`: JSON array of at least 5 formal requirements.
 - BLOCK 5: `!!!!!ARCHITECTURE!!!!!`: Mermaid diagram + narrative description.
 - BLOCK 6: `!!!!!CODE-PART-1!!!!!`: First 75 lines of the 450+ line implementation.
@@ -205,7 +205,7 @@ CRITICAL DIRECTIVES:
 - BLOCK 12: `!!!!!USAGE-EXAMPLES!!!!!`: Examples and mocks in raw text.
 - BLOCK 13: `!!!!!DOCUMENTATION!!!!!`: A comprehensive documentation block explaining code logic and including a short README.
 - BLOCK 14: `!!!!!TEST-CRITERIA!!!!!`: JSON array of at least 5 distinct boundary tests.
-- BLOCK 15: `!!!!!TURN-3-USER!!!!!` to `!!!!!TURN-6-ASSISTANT!!!!!`: Follow-up conversational turns.
+- BLOCK 15: `!!!!!TURN-3-USER!!!!!` to `!!!!!TURN-6-ASSISTANT!!!!!`: Follow-up conversational turns. All subsequent USER turns (!!!!!TURN-3-USER!!!!!, !!!!!TURN-5-USER!!!!!, etc.) MUST START WITH "[No Thinking] ".
 - NO BANNED WORDS: Avoid "the document says", "as per study", etc.
 - TRACEABILITY MANDATORY: Every formal requirement MUST be referenced in the code comments as `// [REQ-ID]` next to its implementation point.
 
@@ -235,7 +235,7 @@ CRITICAL DIRECTIVES:
     ```
 
     !!!!!TURN-1-USER!!!!!
-    (Immersive problem statement)
+    [Thinking] (Immersive problem statement)
 
     !!!!!REQUIREMENTS!!!!!
     ```json
@@ -289,13 +289,13 @@ CRITICAL DIRECTIVES:
     ```
 
     !!!!!TURN-3-USER!!!!!
-    (Follow up 1)
+    [No Thinking] (Follow up 1)
 
     !!!!!TURN-4-ASSISTANT!!!!!
     (Answer 1)
 
     !!!!!TURN-5-USER!!!!!
-    (Follow up 2)
+    [No Thinking] (Follow up 2)
 
     !!!!!TURN-6-ASSISTANT!!!!!
     (Answer 2)
@@ -578,8 +578,8 @@ def process_task(pdf_path, doc_short, doc_name, turn, task_idx,
     return False
 
 
-def process_pdf(pdf_path, progress, start_turn=1, start_task=1, end_turn=8, skip_dashboard=False, test_setup=False):
-    """Process all tasks for a single PDF up to end_turn."""
+def process_pdf(pdf_path, progress, start_turn=1, start_task=1, end_turn=8, skip_dashboard=False, test_setup=False, limit_tasks=0):
+    """Process all tasks for a single PDF up to end_turn or limit_tasks."""
     pdf_name = os.path.basename(pdf_path)
     doc_short = get_doc_short_name(pdf_name)
     doc_name = os.path.splitext(pdf_name)[0]
@@ -607,6 +607,7 @@ def process_pdf(pdf_path, progress, start_turn=1, start_task=1, end_turn=8, skip
     total_pass = 0
     total_fail = 0
     tasks_since_dashboard = 0
+    tasks_processed_this_run = 0
     pdf_start = time.time()
 
     for turn in range(start_turn, end_turn + 1):
@@ -626,11 +627,17 @@ def process_pdf(pdf_path, progress, start_turn=1, start_task=1, end_turn=8, skip
                 total_fail += 1
 
             tasks_since_dashboard += 1
+            tasks_processed_this_run += 1
 
             if test_setup:
                 print("\n  [TEST SETUP] Exiting after 1 task.")
                 break
-        if test_setup:
+
+            if limit_tasks > 0 and tasks_processed_this_run >= limit_tasks:
+                print(f"\n  [LIMIT REACHED] Exiting after {limit_tasks} tasks.")
+                break
+        
+        if (test_setup) or (limit_tasks > 0 and tasks_processed_this_run >= limit_tasks):
             break
 
             # Dashboard every 8 tasks
@@ -707,6 +714,7 @@ def main():
     parser.add_argument("--end-turn", type=int, default=8, help="End at turn N (inclusive). Useful for test runs.")
     parser.add_argument("--task", type=int, default=1, help="Start from task K within the turn")
     parser.add_argument("--validate-only", action="store_true", help="Only validate existing outputs")
+    parser.add_argument("--limit-tasks", type=int, default=0, help="Stop after N tasks (regardless of turns)")
     parser.add_argument("--no-dashboard", action="store_true", help="Skip dashboard generation")
     parser.add_argument("--test-setup", action="store_true", help="One turn (turn 2), one task (task 1), one attempt (test mode)")
     args = parser.parse_args()
@@ -760,7 +768,7 @@ def main():
         process_pdf(pdf_path, progress,
                    start_turn=args.turn, start_task=args.task,
                    end_turn=args.end_turn, skip_dashboard=args.no_dashboard,
-                   test_setup=args.test_setup)
+                   test_setup=args.test_setup, limit_tasks=args.limit_tasks)
         # Reset start position after first PDF
         args.turn = 1
         args.task = 1

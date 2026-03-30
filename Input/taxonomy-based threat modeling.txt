@@ -1,0 +1,1007 @@
+Cybersecurity Requirements
+Taxonomy-based Threat Modeling
+
+
+
+
+
+
+
+  Charles Wilson                                  version 6
+  Technical Fellow, Cybersecurity Engineering    2024-04-11
+
+
+
+  This work was created by Motional and is licensed under the Creative Commons Attribution-Share Alike (CC BY-SA-4.0) License.
+                                                                         https://creativecommons.org/licenses/by/4.0/legalcode
+
+Introduction
+
+    Terminology *
+
+        eS     Se?oof attack vectors visualizes multiple attack tree
+        launches    ps?
+    5 co!
+    threat       feasible for    attack
+        a,reg        ’e.Sts        of
+
+
+              S
+
+          interacts      &
+    5EX   interacts witlwith  .&    achieves    represents
+
+
+  2,  attack surface          results in
+   %
+              &
+
+      possesses        && negatively affects  4,
+
+                              CJ
+
+      vulnerability
+      security            business
+         ly
+          isa
+
+                          involves
+
+
+
+business
+ assets
+
+
+ * based on threat modeling glossary diagram by Steven and Migues (link in references)
+
+Assets
+
+  Asset Classes
+
+
+        Asset State Description
+      Executables binary data which may be run on the system
+Configuration Data data used to establish the personality of the system
+        Databases at rest data in a structured format typically managed by specialized engines
+ Unstructured Data data not handled as a database
+       Credentials data intended to establish and manage the identity of an entity
+        Logs data used to record system events
+        PII in motion data containing Personally Identifiable Information
+        Packets data in transit generally (for example: messages)
+        Memory in use data actively available within executing systems
+
+Cybersecurity Properties
+
+   Cybersecurity Properties Timeline *
+
+
+
+
+
+
+  3&
+  <
+  o>N  OF N  NG) ©  oOS>
+  Oo
+  »2  QL©  Oe
+  AAA
+  ©  Q<  Nat  SE  8%
+
+  ?  SS$F  NPE
+   >  >  &  N  Q &
+   &  ©  &  O°  @  So LOK  S
+  FN  i  NES  SKE   PI  ©
+
+
+
+
+    1960s    1970s    1980s          1990s    2000s    2010s
+    +—r—11 years
+
+
+
+1 The Protection of Information in Computer Systems The Security Development Lifecycle
+
+2 On the implementation of security measures in information systems 10 Our Excessively Simplistic Information Security Model and How to Fix It
+
+3 Security and Privacy in Computer Systems 1 Specifying Reusable Security Requirements
+
+4 On Distributed Communication: IX. Security, Secrecy, and Tamper-free considerations 12 Secure Systems Development with UML
+
+5 Department of Defense Trusted Computer System Evaluation Criteria 13 Security Quality Requirements Engineering (SQUARE) Methodology
+
+6 Information technology - Open Systems Interconnect - Basic Reference Model - Part 2: Security Architecture 14 A Taxonomy of Security Requirements
+
+7 NIST SP 800-33 - Underlying Technical Models for Information Technology Security 15 Distributed Immutable Ephemeral - New Paradigms for the Next Era of Security
+
+844 U.S.C section 2542. Definitions
+
+
+
+
+
+
+ * Understanding the Extended CIA Working Model (AVCDL elaboration document)
+
+   Cybersecurity Properties *
+
+
+    Property Description
+Confidentiality  disclosure of information generally
+      Integrity  data accuracy and completeness generally
+   Availability  on-demand access to resources generally
+Non-repudiation  denial of action taken or failure to acknowledge request
+   Authenticity  entity identity
+ Accountability  system state history (for example: for audit)
+  Authorization  entity privilege
+
+
+
+
+
+ * NIST SP 800-33, Underlying Technical Models for Information Technology Security (link in references)
+
+  Resource Access Working Model
+
+
+
+
+
+
+
+response  request
+   A  :
+
+  [eee  =
+
+  '  [
+  ll
+
+  Resource  1
+  '  Owner  '
+  1
+  1
+  '
+  —_—  vy
+  data  =  data
+  (optional)  (optional)
+
+  1
+   1  1
+  !  1
+   ll  []  See  1
+  1  1
+  ll  ‘  --  v v
+  read (value out) ~~  Resource  "7 =~ write (value in)
+
+Resource Access Working Model
+
+
+
+
+
+
+
+response  request
+A
+or  om
+
+Nas
+|  Resource
+'  Owner  '
+'  '
+Ll
+'
+
+availability
+data  data
+(optional)  ya  (optional)
+ree,
+ll  1  end  ,
+[  1  1
+fl  1  ~-  nn fl  1
+1  1
+['  a  v
+
+~~  Resource  =~ -write (value in) confidentiality
+read (value out)
+
+  Resource Access Working Model
+
+
+
+
+
+
+
+response
+   A  non-repudiation    request
+    re:
+
+
+    l=] |
+
+    [    i                 5,
+
+        authenticity   :   integrity
+    |    Resource
+    '     Owner        '
+    '                  '
+    '                  '
+    '                  '
+
+
+        accountability    availability
+       data      ani      =                  data
+    (optional)        A                   (optional)
+                 ==      authorization  ==
+
+        en,     -     _                   |   !    -
+    [   1                                 1
+    fl  1        ~-        nn             fl  1
+        1                                     1
+        '                                     nn    *,
+
+        ~~    Resource        =~ -write (value in)  confidentiality
+    read (value out)
+
+  Combining Asset and Property
+       &     2
+       & & &
+       XO     &> &
+                             2
+       SF                          &
+                          & re  & & &
+       Asset
+
+Confidentiality
+
+      Integrity
+
+   Availability
+Non-repudiation    &
+   Authenticity        Ngᴼᵒ     ©
+ Accountability
+
+  Authorization
+
+
+
+   Property
+
+Simple System
+
+What is a Threat Model?
+
+• representation of a system's data flows, data stores and interactors
+• collection of views of a system
+• engineering design document
+
+Simple System – Block View
+
+                                             1
+|    core service        |                   |
+          data                               |
+|    configuration               |
+|        core        web         |  web
+         service        server      browser  |
+
+     core service
+      application
+|         data                               |
+
+
+
+        console
+       interface
+      application
+|         data                                 |
+   console              terminal
+   interface
+
+|       console     | |        administrator   |
+       interface
+|    configuration
+          data      1                          |
+
+  Simple System – DFD
+
+
+
+
+
+
+
+ core service
+configuration
+     data 0 ©,onKA    a
+
+        "to org,Son    110
+
+
+
+
+
+             core service lo core data  "Web servpr tb               core service   “web browsgr to web sefy
+
+                 core                                                                                           web
+ core service        service                                             server         ’                   browser
+     data 8  gore data to core service  °38  3H2°2  17core4 Core to  web server     web ’  to web brows     g₃ᴬ2   g35
+
+
+
+
+
+
+
+
+                                                    °     Fy³    senice                                  i    z
+                 a Bounda                                                  Machine                       3    28
+                                                       2  H              ’ Boundary                      5    H
+
+                                                          3              4 ’                             22   4H
+
+    — 3                                                   28             ’                                    8₂
+
+    console  console interface to interface datay   oe 1  terminal to console       administrator
+    interfac,
+      @rface
+      data   8|         data to console interface             == finda     Dm   terminal to administrator
+
+
+
+
+
+
+    —        &°
+
+   console
+  interface
+configuration
+      data 0M
+
+Layers
+
+  Simple System – DFD (Level 2)
+
+
+
+
+
+
+
+
+
+
+    core service     re  )   Boundary
+    configuration |          os
+    data 0                   Pog ,    pd
+
+
+                             h
+
+
+    — ‘database manager to core data  [oe bo IN;  core ElL]ᵘ  web =ᴵ B ‘manager  5 A    1
+
+
+
+    service
+    core 5 core data to database manager  managerp core service  17 manageto core sevice    oior ‘network manag to web server  L  I  web
+
+
+
+
+                             1   A       .        web sever o   manager  revert nyo
+                                 ER          os    os \    os            1
+
+    1                            £   2   Bounday  BEET     ,             i
+
+    I                                        \          Boundary
+                                 5.7%
+
+                             [EE    5        ~      3        0
+
+
+                                 J  HEH₈
+
+
+              11                    g    1                                |   gFH
+
+              0
+    Database  1                                                           H
+                                                                         |:
+                                         + Machine                            i
+
+              [l                   Tg    K+ Boundary                      ]   i
+              i₅ FH                      ,
+
+                             ]  oe id    :
+
+
+                             4     FRg       os
+                                   |        N Boundary    ,’
+                                   |
+                                A       &
+                                   g    §        ’
+
+
+console      manager to  ca      ‘console to database  manager     console   ‘serial driverty console interface.    terminal to serial driver  ’ 7L  ‘administrator to
+
+  data   8   data to catabase manag  1vo               consol,bs   Interface J                   Aflflsera    ‘serial driverto terminalee 7    2 ,        administrator
+
+
+
+
+
+
+                 bY
+   console   to
+  interface    ee                AN
+configuration    os
+              Boundary
+     data
+
+  Simple System – DFD (Level 3)
+
+
+
+
+
+
+
+
+
+
+ core service
+configuration     |      to                                   0s
+     data            1°     flesyster              Boundary
+                                                            “ond                                                                 Ke           R
+                                                   [>     !                                                                                       \                                                                          \
+
+    tocore data.
+
+                                                                                                                                              otwork            10 server”   network                                      9
+    service                                                                                                                      ame          work          1     web            driverto network manager,  "web browser  a   network driver.
+    core             ares      |               database Core service toadatabage ’manager)5  wo ‘Gore service  manager  "wal     IPO manager
+    data    [w]      esystem to. ra7 manager   manager  manager7                 core servi  A  17     to    coe sonics  1PC  v  web server   web serverto  fi     manager   manager    | k manage  ork     network     D         wed browser
+
+
+
+
+
+                     i                         0      i   3\³   os  0s                                                                        +       0S                     1
+                                                          2     Boundary
+                     ll''                      li'[EE of5. £                                                                                  4 /4 Boundary
+
+
+
+  fl  H   H
+
+  H   H
+
+   os  1  Database  1  manager  £   H
+  PC  #  Machine  H
+Boundary  +  ‘Boundary  1  7  Boundary   i   i
+
+
+
+
+                                                          |
+                                s                         3
+                                                          i
+
+                           \                               os
+                     [     [    §
+
+                                H
+
+
+  manager  1  datapase  |  |  S  Terminal o arial driver  toterminal
+  interface  \marge   |  J  rag   J cris  9serial  PC  administrator
+  data,  asta to fiesystem  iver  10  .
+
+  T  serial diver terminal
+  7
+
+  0  o
+
+
+
+   console
+  interface          configuration to flesyste        ~
+configuration                                      0s  -
+                                               Boundary
+     data
+
+Layers
+
+
+
+
+
+  Layer Description
+  Physical     hardware interface
+  Network system-mediated transport
+  Protocol     custom data transport
+  Application  data handling within executables
+
+ Taxonomy Space
+
+     Layer
+
+     Physical        2 NF© &
+                  2
+     Network     Crd
+     Rid
+               Protocol
+                rotoe
+
+ Application  FC&FF  & & <°
+     EQ FE
+     Asset
+
+Confidentiality
+
+      Integrity
+
+   Availability
+
+Non-repudiation
+
+   Authenticity
+
+ Accountability
+
+  Authorization
+
+
+
+
+ Property
+
+Cybersecurity Requirements
+
+  Identifying Requirement Needs – Application Layer
+
+
+
+
+
+
+Confidentiality
+      Integrity
+   Availability
+Non-repudiation
+   Authenticity
+ Accountability
+  Authorization
+
+
+
+
+
+
+
+
+
+
+ Executables
+ Configuration Data
+ Unstructured Data
+ Databases
+ Credentials
+ Logs
+ PII
+ Packets
+ Memory
+
+Cybersecurity Global Requirements Catalog
+
+
+  ID Requirement    Property    Asset    Layer
+
+                       5  £3
+      3        ofl.      _     §
+
+
+
+                                                                                                                  £    $5                                             se   _
+                                                                                                                  §
+  CROO1  Persistent storage shall be encrypted.                                                                        X                       X        X    X    X   X     X
+         Update payloads shall be decrypted at time of use.                                                            X                       X                            X
+  CRO03  Update payloads shall be encrypted at build time.                                                             X                       X                            X
+  CRO04  Update payloads shall be stored encrypted.                                                                    X                       X                            X
+         Executable integrity shall be cryptographically verified.                                                     X                       X                            X
+  CRO06  Executables receiving commands requiring a response shall respond within a quantified period of time.                  X              X                            X
+  CRO07  Executables sending reply-dependent messages shall have a quantified retry limit.                                      X              X                            X
+  CRO08  Executable authenticity shall be cryptographically verified.                                                              X           X                            X
+  CRO09  Executables that are discrete message sources shall have unique identities.                                               X           X                            X
+  CRO10  Cryptographic keys utilized for secure boot shall be protected  by a hardware root of trust.                              X           X                            X
+  CRO11  The update process shall only be initiated by authenticated entities.                                                     Xx          X                            Xx
+  CRO12  Deviations from standard, normal, or expected conditions shall be detected.                                                   X       X                            X
+  CRO13  Deviations that are detected shall be logged.                                                                                 X       X                            X
+  CRO14  Processes receiving data crossing a trust boundary shall be sandboxed.                                                           X|   x                            X
+  CRO15  Processes shall be granted the smallest set of privileges.                                                                          X|X                            X
+  CRO16  Only authorized entities shall perform control operations on executables.                                                        X   |x                            X
+         Privileged access shall be permitted only for singular, specific, time-limited operations.                                       X|   x                            X
+  CRO18  The system shall contain only secure default privileged accounts if a privileged account is necessary.                           x  | x                            Xx
+         Processes shall have unique owners.                                                                                              X  [Xx                            X
+         The system shall entera safe state when a safety-critical data store is not available.                            X                        X    X   X              X
+  CRO21  Configuration data confidentiality shall be protected using access controls.                             X                                 X                       X
+             to use.                                                                                                   X                            X                       X
+  CRO22  Configuration data integrity shall be validated prior
+  CRO23  Configuration data shall only be accessed by authenticate entities.                                                       X                X                       X
+  CR024  Configuration data authenticity shall be assured.                                                                         X                X                       X
+  CRO25  Configuration data modification shall be recorded in the audit logs.                                                          X            X                       X
+  CRO26  Configuration data modification shall only be made by authorized entities.                                                       X         X                       X
+
+  Tailored Cybersecurity Requirements
+
+
+
+
+
+
+
+
+
+
+    Requirement
+
+
+
+
+
+    =i B
+    Tailored
+
+
+
+
+
+
+        AY
+    D\         Tailored  A            N
+Cybersecurity  - ion         D          —
+ Requirement                            co
+        J
+
+      .           .  ,            i     :
+
+      .           .  ,            :
+
+      .           .  ’            :     :
+
+        ’
+
+        Tailored J           D
+        -
+    Requirement
+                                      -
+
+Macro Cybersecurity Requirement
+
+
+
+
+
+
+  Technical [A
+  uirement    implements’ = Reg
+      Functional
+      =
+
+
+
+
+
+
+
+
+
+                  Tailored                        Macro       ts
+  Requirement  Cybersecurity                  Cybersecurity
+                Requirement IRS  PF1           Requirement
+                                 pa}
+                                 implements,                  ~
+      VC                         7                        is constrain
+                                 \jmplemenfs                         \
+
+  =               Tailored   Aₐ                   Macro       \ A
+
+  Rr           Cybersecurity     {implements  Cybersecurity
+                Requirement  \       +                    is constrained by
+                                                              4
+                                                              ¢
+
+                     .               MEY            -     is         J
+
+  .                  .           7 imfidments       .         constrained by
+
+                     .                              -         4
+                             ’
+      D\₋      Tailored     iy1                   Macro   ’ ’ 4
+               Cybersecurity
+                Requirement                    Requirement
+
+Macro Cybersecurity Requirement Example (SecOC *)
+
+
+
+
+
+
+
+
+
+
+  ID Requirement    Property    Asset    Layer
+
+
+  z 2 _ zl
+
+
+                                                                                                                                                              8         2  2
+
+                                                                                                                                             SCS      a    <<  85856537 & 35    za «
+ wes)           Credentials shall be encrypted when transmitted across trust boundaries.                                                     X                X               X  X
+       CRO51 PII shall be encrypted when transmitted across trust boundaries.                                                                X            X                   X  X
+       CRO52    Communication crossing trust boundaries that cannot be secured shall be isolated.                                            X                          X     X  X
+       CRO53    Communication crossing trust boundaries shall ensure data confidentiality.                                                   X                          X     X  X
+                    shall     ensure     data integrity.                                                                                         X                      X     X  X
+ w=)   |CRO54   Communication crossing trust boundaries
+       CRO55    Communication crossing trust boundaries shall ensure data availability.                                                          X                      X     X  X
+                    shall                                       be authenticated.                                                                     X                 X     X  X
+ w=)   |CROS56  Communication crossing trust boundaries
+       CRO57    Custom protocols that support a retry mechanism shall   implement    rate  limiting.                                             X                      X        X
+ w=)   |CROS8   Custom protocols shall use current best practices for authentication and key exchange (NIST SP 800-57, 63B, 131 and 133).             X                 X        X
+                Standard network protocols shall be secured using cybersecurity best practices.                                              X                          X     X
+
+
+
+
+
+
+
+
+
+
+* SecOC Security Profile 1 (link in references)
+
+Applying the Taxonomy
+
+Threat Model Element Attributes
+
+
+
+
+
+  \
+  —    \\1    — data flow
+
+
+
+        resource                                interactor                                  Boundary    |
+                                                                                                        !                data flow
+
+                                                                                                1
+                                                                                                4
+
+  -  has unique ID              - has unique ID        -   type (person, analog)  - type                        -  type (standard, custom)
+
+  -  is read-only               -  type                                             -       machine             -  requires acknowledgement
+
+  -  is structured                  -       driver                                  -       network             -  has sequence numbers
+
+  -  contains PII                   -       service                                 -       interprocess        -  has authenticated source
+
+  -  is encrypted                   -       process                                 -0s                         -  has authenticated destination
+
+  -  is integrity checked       -  class                                            -       resource            -  is safety critical
+
+  -  data type                      -0S                                             -     external interactor   -  has integrity check
+
+        -  analog                   -       third-party                                                               -  none
+
+        -  executable               -       self                                                                      -  simple (CRC)
+
+        -  configuration data   -  is authenticated                                                                   -  cryptographic
+
+        -  data log             -  is authorized                                                                -  uses encryption
+
+        -  audit log                                                                                                  -  none
+
+                                                                                                                      -  symmetric
+                                                                                                                         asymmetric
+
+Threat Modeling Tool Rules
+
+ Title
+ TT_4: Data transmitted over custom protocol data flow may be corrupted or modified
+ Script with CRT Attributes
+ source is [Generic Process] and target is [Generic Process] and (flow
+ crosses [Network Boundary] or flow crosses [Machine Boundary] or flow
+ crosses [Interprocess Boundary]) and (flow.[Custom Protocol] is 'Yes'
+ and flow.[Integrity Check(Dataflow)] is 'None')
+ Rule description
+ Data transmitted over custom protocol data flow '{flow.Name}', from source process
+ ‘{source.Name}’ to target process ‘{target.Name}’, may be corrupted or modified accidentally, and
+ it may lead to the loss of integrity on data being transmitted and target process '{target.Name}'
+ may receive incorrect data, because there is no proper integrity check mechanism being used with
+ the custom protocol data flow ‘{flow.Name}’.
+
+    Quality of Results
+
+    Default MSTMT Results
+          Category                 Title
+    i     Spoofing                 Spoofing the core service Process
+          Spoofing                 Spoofing the console interface Process
+          Tampering                Potential Lack of Input Validation for core service
+          Repudiation              Potential Data Repudiation by core service
+          Information Disclosure   Data Flow Sniffing
+          Denial Of Service        Data Flow console interface to core service Is Potentially Interrupted
+          Denial Of Service        Potential Process Crash or Stop for core service
+          Elevation Of Privilege   Elevation Using Impersonation
+          Elevation Of Privilege   Cross Site Request Forgery
+    i     Elevation Of Privilege   Elevation by Changing the Execution Flow in core service
+          Elevation Of Privilege   core service May be Subject to Elevation of Privilege Using Remote Code Execution
+
+
+Cybersecurity Requirements Taxonomy-based Results
+ Category Title
+ Confidentiality TT_1: Sensitive information transmitted over data flow may be disclosed to unauthorized access
+ Integrity TT_4: Data transmitted over custom protocol data flow may be corrupted or modified
+ Integrity TT_6: Data transmitted over custom protocol data flow may be susceptible to loss of message integrity
+ Authenticity TT_8: Data flow target process may receive malicious messages from source process.
+
+STRIDE vs CRT
+
+               STRIDE     CRT
+      Focus Attack        Property
+       Unique  No         Yes
+   Unambiguous No         Yes
+      Complete No         Yes
+      Grounded No         Yes
+     Scalable  No         Yes
+   Actionable  Sometimes  Yes
+
+Where to Go from Here
+
+AVCDL on YouTube    https://youtube.com/@AVCDL/playlists
+
+
+  3 YouTube    Searct    Q
+
+
+
+
+
+
+
+
+
+  @AVCDL- 58 subscribers - 10 videos
+
+  This channel contains material regarding the AVCDL (Autonomous Vehicle Cybersecurity D... >
+
+  github.com/nutonomy/AVCDL
+
+
+
+
+
+
+
+  Home Videos Playlists Community
+
+
+
+
+  Created playlists
+
+
+
+
+
+
+  Autonomous Vehicle       AvCDL
+  Cybersecurity Development
+  Lifecycle (AVCDL)        Supply Chain Overview
+
+      =»                       =» 6 videos
+
+
+  AVCDL                AVCDL supply chain
+
+  View full playlist   View full playlist
+
+AVCDL on GitHub    https://github.com/nutonomy/AVCDL
+
+
+
+  = 9 nutonomy / AVCDL    Q Type search    >  One HJ
+
+
+  <> Code (© Issues 11 Pullrequests (© Actions Wiki © |~ Insights 2 Settings
+
+
+
+  ## AVCDL Pubic    £ EditPins +  13  Fork 17  Star
+
+
+
+
+
+  main ~ ¥ 1Branch © 265 Tags    Q Gotofile  t+ About    8
+
+
+                                                                                                                        This repository contains material related to
+  Motional-Charles-Wilson added generic process overlay to AVCDL framework diagra.. @B 3e3adff-1hourago   293 Commits   the Autonomous Vehicle Cybersecurity
+
+                                                                                                                        Development Lifecycle (AVCDL)
+  assessments             added discussion material to the assessments readme                             9 months ago
+
+                                                                                                                        autonomous-vehicles
+                          added PDF version of the lifecycle construction page/ linked...                 last week     ET)
+
+
+     Ma distribution      Updated Understanding Cybersecurity Risk Freshness in an...                     5 days ago    a) Css
+
+
+      source              added generic process overlay to AVCDL framework diagra...                      1  hour ago   0 Readme
+                                                                                                                        a View license
+      training            moved GitHub screenshot from AVCDL overview training to...   3 hours ago                      Ae Activity
+
+  [O  .gitignore          created gitignore                                            3 years ago                      E Custom properties
+
+                                                                                                                            72stars
+      LICENSE.md          moved license up a level                                     3 years ago
+                                                                                                                        ©
+
+  [)  READMEmd            restored non-Git user ZIP archive download section                                 last week        forks
+
+
+      document status.md    added AVCDL Phase Requirement Product ISO 24089 Work...                       2 weeks ago Re rt repositoryⁱᵗ
+
+
+  mentions.md              updated mentions page to include Brandon Barry's Block Ha...     7 months ago             Releases 254
+
+  3 supply chain.md        created a PDF version of the supply chain material overview ...  2 weeks ago              © 4156
+                                                                                                                        1 hour ago
+  3 supply chain.pdf       created a PDF version of the supply chain material overview ...  2 weeks ago
+                                                                                                                     +253 releases
+  3 zip_downloading.md     added instructions to download repository as a ZIP archive f...                2 years ago
+
+References (1 of 2)
+
+AVCDL (primary document)
+Security Requirements Taxonomy (AVCDL secondary document)
+Product-level Security Requirements (AVCDL secondary document)
+Element Cybersecurity Relevancy (AVCDL secondary document)
+Design Showing Security Considerations (AVCDL secondary document)
+cybersecurity requirements per taxonomy.xlsx (AVCDL workbook)
+Global Security Requirements (AVCDL secondary document)
+Understanding the Extended CIA Working Model (AVCDL elaboration document)
+
+References (2 of 2)
+
+INCOSE Requirements Working Group
+https://www.incose.org/2021-redesign/working-groups-v1/requirements
+
+Specification of Secure Onboard Communication Protocol
+https://www.autosar.org/fileadmin/standards/R20-11/FO/AUTOSAR_PRS_SecOcProtocol.pdf
+
+Threat Modeling Vocabulary (capture of 11 May 2011 blog post)
+https://web.archive.org/web/20161101093537/https://www.cigital.com/blog/threat-modeling-vocabulary/
+
+Threat Modeling Glossary Diagram (for above blog post capture)
+https://www.synopsys.com/blogs/software-security/wp-content/uploads/2015/08/threat-modeling-glossary-
+diagram.jpg
+
+Using and Customizing Microsoft Threat Modeling Tool 2016
+https://roberthurlbut.com/Resources/2017/BCC27/Robert-Hurlbut-BCC27-Using-Customize-MS-Threat-Modeling-
+Tool-2016.pdf
+
+Questions
+
