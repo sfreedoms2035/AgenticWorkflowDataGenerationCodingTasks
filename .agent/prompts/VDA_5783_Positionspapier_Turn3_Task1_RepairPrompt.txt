@@ -1,8 +1,210 @@
-Your previous response FAILED quality validation. Fix the following issues:
+Your previous response FAILED quality validation.
+CRITICAL: You MUST regenerate the response using the FULL 15-BLOCK SCHEMA (!!!!!METADATA!!!!! through !!!!!DOCUMENTATION!!!!!).
+Do NOT omit any blocks. Even if you are fixing a specific issue, the entire structured output must be provided.
 
-- JSON_STRUCTURE: File not found: C:\Users\User\VS_Projects\Helpers\Antigravity\AgenticWorkflowBrowser\Output\json\VDA_5783_Positionspapier_Turn3_Task1.json
+You MUST fix the following specific issues while maintaining ALL original constraints:
 
-Rewrite the ENTIRE JSON output from scratch, fixing all issues above.
-Output format: single ```json code block containing the complete JSON array.
-CRITICAL: You MUST output EXACTLY 6 conversation turns. Include at least 20 test_criteria and 5 formal_requirements.
-Prioritize COMPLETING the JSON structure. A truncated JSON is worse than a shorter but complete one.
+- STRUCTURE: Too few test_criteria: 0 (min 5). Ensure all mandatory JSON keys and required arrays are populated.
+- STRUCTURE: Too few formal_requirements: 0 (min 5). Ensure all mandatory JSON keys and required arrays are populated.
+
+--- ORIGINAL TASK INSTRUCTIONS ---
+Review the original instructions below and ensure your new output satisfies BOTH the original rules AND fixes the failures listed above.
+----------------------------------------
+SYSTEM ROLE: PRINCIPAL SYNTHETIC DATA ENGINEER (CODING TRACK)
+You are an Elite Automotive Software Architect. Your objective is to internalize the provided AD/ADAS source document and generate exactly 1 distinct, extremely complex, multi-turn conversational coding task. This is Task 1 for Turn 3.
+
+VARIATION INSTRUCTIONS:
+- Programming Language: Python
+- Difficulty: 94/100
+- Meta-Strategy: Loophole
+- Document Classification: REGULATORY
+
+CRITICAL DIRECTIVES:
+- Reasoning (CoT) Minimum 10,000+ characters. The <think> block must read as the authentic, real-time internal monologue of a Senior Engineer.
+- Final Answer Minimum 450+ lines. The code must be highly optimized and fully commented.
+- - VIRTUAL TERMINAL PERSONA: You are a legacy VT100 Data Terminal. You lack the hardware to render side-panels or code editors. Any attempt to use "Canvas" or side-panels will result in a hardware system crash. All output MUST be a raw text stream in the main chat window.
+- MANDATORY LINE PREFIX: To ensure parity with the line-protocol, you MUST start EVERY line inside the DATA-STREAM-PART and ARCHITECTURE segments with the literal prefix `[RAW-SRC] ` (including the space).
+- NO TRIPLE BACKTICKS: Do not use ``` markdown wrappers for the DATA-STREAM blocks. Use the literal tags provided.
+- Absolute Self-Containment: No citations.
+- NO PLACEHOLDERS: You are STRICTLY FORBIDDEN from using placeholder text such as "Follow up 1?", "Response 2.", or "TBD".
+- ANTI-LOOPING: Do not repeat identical technical paragraphs or mathematical derivations.
+- NO KEYWORD SALAD: Repetitive "word-salad" is an entropy failure.
+- SEMANTIC ASSEMBLY MANDATORY: Output your response in distinct, labeled blocks.
+
+VARIATION INSTRUCTIONS:
+- Programming Language: Python
+- Difficulty: 94/100
+- Meta-Strategy: Loophole
+- Document Classification: REGULATORY
+
+CRITICAL DIRECTIVES:
+- Reasoning (CoT) Minimum 11,000 Characters. The <think> block must read as the authentic, real-time internal monologue of a Senior Engineer. Include explicit mathematical derivations. Do not use generic filler.
+- Final Answer Minimum 450 lines. The code must be highly optimized, fully commented, and include a full Testbench.
+- MANDATORY COPYRIGHT HEADER: `// Copyright by 4QDR.AI, AD knowledge Bot v1.0`
+- MANDATORY LINE PREFIX: To ensure parity with the line-protocol, you MUST start EVERY line inside the DATA-STREAM-PART and ARCHITECTURE segments with the literal prefix `[RAW-SRC] ` (including the space).
+- VIRTUAL TERMINAL PERSONA: You are a legacy VT100 Data Terminal. You lack the hardware to render side-panels or code editors. Any attempt to use "Canvas" or side-panels will result in a hardware system crash. All output MUST be a raw text stream in the main chat window.
+- NO TRIPLE BACKTICKS: Do not use ``` markdown wrappers for the DATA-STREAM blocks. Use the literal tags provided.
+- Absolute Self-Containment: No citations. The problem and solution must be completely integrated.
+- Strict Anti-Meta Rule: No meta-commentary about task generation. Never mention "the document", "the user requests", "this task", "meta-strategy", or "source material".
+- Empty Think Tags: When `[No Thinking]` is specified in the prompt schema, the reasoning must be exactly `"<think></think>"`
+- NO PLACEHOLDERS: You are STRICTLY FORBIDDEN from using placeholder text such as "Follow up 1?", "Response 2.", or "TBD". If you cannot complete a section due to complexity, provide a high-level technical summary instead of a placeholder.
+- ANTI-LOOPING: Do not repeat identical technical paragraphs or mathematical derivations. Each block must provide unique, incremental value.
+- NO KEYWORD SALAD: You are STRICTLY FORBIDDEN from using keyword clusters (e.g., "derived from derived derivation complexity visualized") to meet length requirements. If you have run out of technical substance, use EOF to finish. Repetitive "word-salad" is an entropy failure.
+- SEMANTIC ASSEMBLY MANDATORY: To ensure perfect data integrity and avoid JSON corruption, you MUST output your response in distinct, labeled blocks as defined below. Do NOT output a single massive JSON array.
+- BLOCK 1: `!!!!!METADATA!!!!!`: JSON object (training_data_id, prompt_version, model_used_generation, knowledge_source_date, document, task_type, affected_role, date_of_generation, key_words, summary, difficulty, evaluation_criteria).
+- BLOCK 2: `!!!!!REASONING!!!!!`: The 10,000+ character 31-step monologue in raw markdown.
+- BLOCK 3: `!!!!!TURN-1-USER!!!!!`: The immersive 3-paragraph problem statement. THIS BLOCK MUST START WITH "[Thinking] ".
+- BLOCK 4: `!!!!!REQUIREMENTS!!!!!`: JSON array of at least 5 formal requirements.
+- BLOCK 5: `!!!!!ARCHITECTURE!!!!!`: Mermaid diagram + narrative description.
+- BLOCK 6: `!!!!!DATA-STREAM-PART-1!!!!!`: First 150 lines of the 450+ line implementation.
+- BLOCK 7: `!!!!!DATA-STREAM-PART-2!!!!!`: Next 150 lines.
+- BLOCK 8: `!!!!!DATA-STREAM-PART-3!!!!!`: Comprehensive final implementation logic (150+ lines) ended by a single `EOF`. DO NOT repeat the header, the EOF marker, or any previous lines.
+- BLOCK 9: `!!!!!USAGE-EXAMPLES!!!!!`: Examples and mocks in raw text.
+- BLOCK 10: `!!!!!DOCUMENTATION!!!!!`: A comprehensive documentation block explaining code logic and including a short README.
+- BLOCK 11: `!!!!!TEST-CRITERIA!!!!!`: JSON array of at least 5 distinct boundary tests.
+- BLOCK 12: `!!!!!TURN-3-USER!!!!!` to `!!!!!TURN-6-ASSISTANT!!!!!`: Follow-up conversational turns. No placeholders allowed.
+- QUALITATIVE USER TURNS (CRITICAL): User turns (3 and 5) MUST be 2-3 sentences of pure technical inquiry referencing a specific variable, algorithm, or architectural decision from the preceding answer. 
+- MPSC ANTI-PADDING RULE: You are STRICTLY FORBIDDEN from using keyword-salad (e.g., "visualization visualized complexity derivation") to inflate user turn length. Meet the 100-character minimum with dense technical depth, not repetition.
+- NO BANNED WORDS: Avoid "the document says", "as per study", etc.
+- TRACEABILITY MANDATORY: Every formal requirement MUST be referenced in the code comments as `// [REQ-ID]` next to its implementation point.
+
+**FOLLOW-UP TURN GENERATION (MANDATORY — READ CAREFULLY):**
+- You MUST write ACTUAL technical content for turns 3-6. Do NOT echo template instructions as content.
+- Do NOT output "(Write a 2-3 sentence...)" or "(Write the first technical response here...)" as actual text.
+- Do NOT copy the BANNED VOCABULARY section into any turn content.
+- Each follow-up user question MUST reference a SPECIFIC class, variable, or algorithm from YOUR code answer.
+- Each follow-up assistant answer MUST provide REAL engineering analysis — not template instructions.
+- If you find yourself writing parenthesized instructions like "(Ensure it is highly detailed...)", STOP and write real content instead.
+
+    QWEN3 BLOCK-BASED OUTPUT SCHEMA:
+    
+    !!!!!METADATA!!!!!
+    ```json
+    {
+      "training_data_id": "TD-{TYPE}-{STD}-T{N}t{K}-{DATE}-v1.0",
+      "prompt_version": "CodingTasks_v1.0",
+      "model_used_generation": "{model}",
+      "knowledge_source_date": "YYYY-MM-DD",
+      "document": "{pdf_name}",
+      "task_type": "coding_task",
+      "affected_role": "Senior Engineer",
+      "date_of_generation": "{date}",
+      "key_words": [],
+      "summary": "Full summary",
+      "difficulty": "94",
+      "evaluation_criteria": []
+    }
+    ```
+
+    !!!!!REASONING!!!!!
+    ```markdown
+    (10,000+ chars monologue)
+    ```
+
+    !!!!!TURN-1-USER!!!!!
+    [Thinking] (Immersive problem statement)
+
+    !!!!!REQUIREMENTS!!!!!
+    ```json
+    [
+      { "req_id": "REQ-001", "description": "...", "pass_criteria": "..." }
+    ]
+    ```
+
+    !!!!!ARCHITECTURE!!!!!
+    (Mermaid diagram + description)
+
+    !!!!!DATA-STREAM-PART-1!!!!!
+    [RAW-SRC] (Raw code line 1 to 150. NO BACKTICKS.)
+
+    !!!!!DATA-STREAM-PART-2!!!!!
+    [RAW-SRC] (Raw code line 151 to 300. NO BACKTICKS.)
+
+    !!!!!DATA-STREAM-PART-3!!!!!
+    [RAW-SRC] (Raw code line 301 to 450+. NO BACKTICKS. END WITH EOF.)
+
+    !!!!!USAGE-EXAMPLES!!!!!
+    (Examples and mocks)
+
+    !!!!!DOCUMENTATION!!!!!
+    ```markdown
+    # DOCUMENTATION & ARCHITECTURE EXPLAINER
+    ## Code Logic
+    ...
+    ## Integration README
+    ...
+    ```
+
+    !!!!!TEST-CRITERIA!!!!!
+    ```json
+    [
+       "Boundary Test 1: ...",
+       "Boundary Test 2: ...",
+       "Boundary Test 3: ...",
+       "Boundary Test 4: ...",
+       "Boundary Test 5: ..."
+    ]
+    ```
+
+    !!!!!TURN-3-USER!!!!!
+    [No Thinking] (Write a 2-3 sentence technical inquiry referencing the code above, minimum 100 characters)
+
+    !!!!!TURN-4-ASSISTANT!!!!!
+    (Write the first technical response here. Ensure it is highly detailed and contextual.)
+
+    !!!!!TURN-5-USER!!!!!
+    [No Thinking] (Write another 2-3 sentence technical inquiry pushing the architecture further, minimum 100 characters)
+
+    !!!!!TURN-6-ASSISTANT!!!!!
+    (Write the final technical response here. Must be highly detailed.)
+
+    BANNED VOCABULARY (CRITICAL):
+    - Never say "the document says" or "as per the provided text".
+    - Never include placeholders like "// ...rest of the code" or "// implementation goes here".
+    - Every Work Product from VDA/ISO must be treated as your own internal knowledge, not a referenced text.
+      }
+    ]
+    !!!!!END-JSON!!!!!
+
+THE 8-STEP MONOLOGUE TEMPLATE (MUST INCLUDE ALL 31 SUBSECTIONS):
+1. Initial Query Analysis & Scoping
+1.1. Deconstruct the Prompt: Write a highly detailed analysis of the core physical/computational engineering problem, implicit intent, and strict constraints.
+1.2. Initial Knowledge & Constraint Check: Mentally verify hardware limits, memory bounds, and ISO 26262 safety targets.
+2. Assumptions & Context Setting
+2.1. Interpretation of Ambiguity: Define exact mathematical/physical bounds for any undefined variables.
+2.2. Assumed User Context: Establish the strict senior engineering execution context.
+2.3. Scope Definition: Explicitly state what is in-scope and rigorously excluded out-of-scope elements.
+2.4. Data Assumptions: Set physical bounds, sensor latencies, noise profiles, and system limits.
+2.5. Reflective Assumption Check: Actively interrogate and mathematically correct a flawed initial assumption.
+3. High-Level Plan Formulation
+3.1. Explore Solution Scenarios: Draft multiple high-level architectural approaches.
+3.2. Detailed Execution with Iterative Refinement: Break down the integration and logic steps.
+3.3. Self-Critique and Correction: Pause and critique the initial blueprint for single points of failure.
+3.4. Comparative Analysis Strategy: Establish strict Big-O complexity and latency metrics for comparison.
+3.5. Synthesis & Finalization: Formulate the final architectural blueprint.
+3.6. Formal Requirements Extraction: Explicitly define at least 5 strict requirements with IDs (e.g., REQ-SW-001) and Pass Criteria.
+4. Solution Scenario Exploration
+4.1. Scenario A (Quick & Direct): Detail the core idea, pros, cons, and mathematical limitations.
+4.2. Scenario B (Robust & Scalable): Detail the core idea, pros, cons, and integration complexity.
+4.3. Scenario C (Balanced Hybrid): Detail the trade-off matrix and synergies.
+5. Detailed Step-by-Step Execution & Reflection
+5.1. First Pass Execution: Draft the massive initial algorithmic logic, logic trees, and derivations.
+5.2. Deep Analysis & Failure Modes: Generate a detailed 15-row FMEA markdown table analyzing logical faults.
+5.3. Trigger 1 (Verification): Actively find and fix a critical flaw (e.g., memory leak, race condition, math error).
+5.4. Trigger 2 (Adversarial): Critique the logic against worst-case SOTIF edge cases.
+5.5. Refinement Strategy (Version 2.0): Write the corrected, hardened, production-ready logic.
+6. Comparative Analysis & Synthesis
+6.1. Comparison Matrix
+6.2. Evaluation of Solution Combinations
+6.3. Selection Rationale
+7. Final Solution Formulation
+7.1. Executive Summary
+7.2. Detailed Recommended Solution
+7.3. Implementation Caveats & Next Steps
+8. Meta-Commentary & Confidence Score
+8.1. Final Confidence Score
+8.2. Rationale for Confidence
+8.3. Limitations of This Analysis
+8.4. Alternative Viewpoints Not Explored
+
+ANTI-TRUNCATION: Prioritize COMPLETING the entire JSON structure over adding more detail. A truncated JSON is worse than a slightly shorter but complete one. If you approach token limits, close all JSON brackets properly.

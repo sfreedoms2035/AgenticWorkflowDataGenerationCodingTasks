@@ -35,6 +35,43 @@ def log(msg):
     print(f"  [{elapsed:6.1f}s] {msg}", file=sys.stderr)
 
 
+def clean_repetitive_text(text):
+    """Remove verbatim repetitive paragraphs and line-level EOF loops (common in Gemini)."""
+    if not text: return text
+    
+    # 1. Line-level deduplication for common "End of response" triggers
+    lines = text.split('\n')
+    cleaned_lines = []
+    last_line = None
+    rep_count = 0
+    for l in lines:
+        l_strip = l.strip()
+        if l_strip == last_line and l_strip in ["[RAW-SRC] EOF", "EOF", "[RAW-SRC]"]:
+            rep_count += 1
+            if rep_count > 1: continue
+        else:
+            rep_count = 0
+        last_line = l_strip
+        cleaned_lines.append(l)
+    text = '\n'.join(cleaned_lines)
+
+    # 2. Paragraph-level deduplication
+    paragraphs = text.split('\n\n')
+    seen = set()
+    cleaned = []
+    for p in paragraphs:
+        p_strip = p.strip()
+        if not p_strip: continue
+        # Hash long paragraphs to detect loops; use first 200 chars as a fuzzy signature
+        p_sig = re.sub(r'\s+', '', p_strip[:200].lower())
+        if p_sig in seen and len(p_strip) > 150:
+            log(f"  [De-Loop] Skipping repetitive paragraph ({len(p_strip)} chars)")
+            continue
+        seen.add(p_sig)
+        cleaned.append(p)
+    return '\n\n'.join(cleaned)
+
+
 def extract_semantic_blocks(text):
     """Extract delimited blocks from the LLM response, handling potential backslash escaping (e.g. \!\!)."""
     blocks = {}
@@ -54,27 +91,111 @@ def extract_semantic_blocks(text):
 
 
 def clean_semantic_block(content):
-    """Remove markdown code boxes and common LLM artifacts from any block content."""
+    """Remove markdown code boxes and [RAW-SRC] prefixes from any block content."""
     if not content: return ""
     
-    # 1. Strip backslashes from common escaped characters in JSON/Markdown/Keys
-    # (e.g. \_, \", \*)
+    # 1. Strip backslashes from common escaped characters
     content = re.sub(r'\\([_*"\'\-`~])', r'\1', content)
     
     # 2. Remove markdown code block wrappers
     content = re.sub(r'^```[a-z]*\s*', '', content, flags=re.MULTILINE | re.IGNORECASE)
     content = re.sub(r'```\s*$', '', content, flags=re.MULTILINE)
     
+    # 3. Strip [RAW-SRC] prefix from each line if present
+    content = re.sub(r'^\[RAW-SRC\]\s?', '', content, flags=re.MULTILINE)
+    
     return content.strip()
+
+
+def clean_repetitive_text(text):
+    """Remove verbatim repetitive paragraphs (common in Gemini loops)."""
+    if not text: return text
+    # Split by double newline to identify paragraphs
+    paragraphs = text.split('\n\n')
+    seen = set()
+    cleaned = []
+    for p in paragraphs:
+        p_strip = p.strip()
+        if not p_strip: continue
+        # Hash long paragraphs to detect loops; use first 200 chars as a fuzzy signature
+        p_sig = re.sub(r'\s+', '', p_strip[:200].lower())
+        if p_sig in seen and len(p_strip) > 150:
+            log(f"  [De-Loop] Skipping repetitive paragraph ({len(p_strip)} chars)")
+            continue
+        seen.add(p_sig)
+        cleaned.append(p)
+    return '\n\n'.join(cleaned)
+
+
+def heuristic_extract_blocks(text):
+    """Fallback extraction using keywords if !!!!! tags are missing or broken."""
+    blocks = {}
+    
+    # Heuristic Mapping for section identification
+    mappings = {
+        'METADATA': [r'METADATA', r'Task Metadata', r'Task Info'],
+        'REQUIREMENTS': [r'REQUIREMENTS', r'Formal Requirements', r'REQ-'],
+        'ARCHITECTURE': [r'ARCHITECTURE', r'Architecture Block', r'Design Block'],
+        'DATA-STREAM': [r'DATA-STREAM', r'Code Block', r'Executable Code', r'DATA-BLOCK', r'CODE'],
+        'DOCUMENTATION': [r'DOCUMENTATION', r'Docs Block', r'Doc Block'],
+        'USAGE-EXAMPLES': [r'USAGE', r'Usage Examples', r'Usage Block'],
+        'TEST-CRITERIA': [r'TESTBENCH', r'Test-Bench', r'Mock Block', r'Test Criteria'],
+    }
+
+    # Attempt to extract turns by narrative markers if blocks are missing
+    for i in range(1, 7):
+        role = "USER" if i % 2 != 0 else "ASSISTANT"
+        p_marker = rf'Turn {i} \({role}|Prompt|Response\)'
+        # Look for these specifically in the raw text
+        m = re.search(rf'{p_marker}.*?\n(.*?)(?=Turn {i+1}|!!!!!|\s*$)', text, re.DOTALL | re.IGNORECASE)
+        if m:
+            block_name = f"TURN-{i}-USER" if i % 2 != 0 else f"TURN-{i}-ASSISTANT"
+            blocks[block_name] = m.group(1).strip()
+            log(f"  [Heuristic] Recovered {block_name}")
+
+    # Section keyword scanner
+    chunks = text.split('\n\n')
+    current_block = None
+    for chunk in chunks:
+        found_header = False
+        for block_key, patterns in mappings.items():
+            for p in patterns:
+                if re.search(rf'^[#\s\*]*{p}', chunk, re.IGNORECASE):
+                    current_block = block_key
+                    found_header = True
+                    # Strip the header portion
+                    content = re.sub(rf'^[#\s\*]*{p}[#\s\*:]*', '', chunk, flags=re.IGNORECASE).strip()
+                    blocks[block_key] = (blocks.get(block_key, "") + "\n" + content).strip()
+                    break
+            if found_header: break
+        
+        if not found_header and current_block:
+            blocks[current_block] = (blocks.get(current_block, "") + "\n" + chunk).strip()
+
+    return blocks
 
 
 def validate_and_save_json(llm_response, out_json_path, thinking_text=None):
     """Assemble the granular semantic blocks into a valid 6-turn conversational JSON."""
     try:
         import json_repair
+        
+        # 0. Clean repetition loops first
+        llm_response = clean_repetitive_text(llm_response)
+        
+        # 1. Primary Regex Extraction
         blocks = extract_semantic_blocks(llm_response)
+        
+        # 2. Heuristic Fallback if primary extraction failed
+        if not blocks or len(blocks) < 5:
+            log("⚠️ Insufficient semantic blocks found. Invoking heuristic recovery...")
+            h_blocks = heuristic_extract_blocks(llm_response)
+            for k, v in h_blocks.items():
+                if k not in blocks or len(blocks[k]) < 50:
+                    blocks[k] = v
+        
         if not blocks:
-            log("⚠️ No semantic blocks found. Falling back to heuristic extraction...")
+            log("❌ FATAL: No semantic blocks recovered even with heuristics.")
             return False
 
         # 1. Extraction: Metadata
@@ -83,6 +204,10 @@ def validate_and_save_json(llm_response, out_json_path, thinking_text=None):
             # metadata_raw might have underscores escaped as \_
             metadata = json_repair.loads(metadata_raw)
         except:
+            metadata = {}
+        
+        # Ensure metadata is a dict (fix for AttributeErrors)
+        if not isinstance(metadata, dict):
             metadata = {}
 
         # 2. Extraction: Reasoning
@@ -111,9 +236,9 @@ def validate_and_save_json(llm_response, out_json_path, thinking_text=None):
         except:
             test_crit = []
 
-        # Handle fragmented code parts
+        # Handle fragmented code parts (Supports both DATA-STREAM-PART and legacy CODE-PART)
         all_code_parts = []
-        code_keys = sorted([k for k in blocks.keys() if k.startswith("CODE-PART-")], 
+        code_keys = sorted([k for k in blocks.keys() if k.startswith("DATA-STREAM-PART-") or k.startswith("CODE-PART-")], 
                            key=lambda x: int(re.search(r'\d+', x).group()) if re.search(r'\d+', x) else 0)
         for k in code_keys:
             all_code_parts.append(clean_semantic_block(blocks[k]))
@@ -185,15 +310,6 @@ def validate_and_save_json(llm_response, out_json_path, thinking_text=None):
         log(traceback.format_exc())
         return False
 
-
-        return True
-    except Exception as e:
-        log(f"json_repair fatal logic error: {e}")
-        # Save raw text anyway for manual inspection/repair
-        with open(out_json_path, 'w', encoding='utf-8') as f:
-            f.write(json_text)
-        log(f"Raw text saved for manual repair: {out_json_path}")
-        return False
 
 
 def run_gemini(pdf_path, prompt_file):
@@ -422,24 +538,82 @@ CRITICAL AVOIDANCE: DO NOT use "Canvas" mode, "Gems", or any interactive coding 
 
         # --- WAIT FOR GENERATION TO FINISH ---
         def wait_for_completion():
-            """Wait for Gemini to finish generating. Optimized with combined selector."""
-            log("Waiting for generation to complete...")
+            """Wait for Gemini to finish generating with active loop detection."""
+            log("Waiting for generation to complete (with loop detection)...")
             finished_selectors = [
                 'button[aria-label*="Good response"]',
                 'button[aria-label*="Gute Antwort"]',
-                'button[mattooltip*="Good response"]',
-                'button[mattooltip*="Gute Antwort"]',
                 'button[aria-label*="Copy answer"]',
                 'button[aria-label*="Antwort kopieren"]'
             ]
-            selector_query = ", ".join(finished_selectors)
-            try:
-                page.wait_for_selector(selector_query, state='attached', timeout=300000)
-                log("Generation complete (UI signal detected)")
-                page.wait_for_timeout(1500)  # Final settle
-            except Exception as e:
-                log(f"UI signal timeout ({e}). Using 30s fallback.")
-                page.wait_for_timeout(30000)
+            stop_selectors = [
+                'button[aria-label*="Stop generating"]',
+                'button[aria-label*="Generierung stoppen"]',
+                'button:has(svg.stop-icon)',
+                'button:has(mat-icon:has-text("stop"))'
+            ]
+            
+            # Polling loop instead of static wait
+            max_wait = 420  # 7 minutes
+            start_wait = time.time()
+            rep_check_interval = 5
+            
+            while time.time() - start_wait < max_wait:
+                # 1. Check for UI completion signal
+                try:
+                    for sel in finished_selectors:
+                        if page.locator(sel).count() > 0:
+                            log("  ✅ Generation complete (UI signal detected)")
+                            return
+                except Exception: pass
+
+                # 2. Check for infinite loops / word salad in DOM
+                try:
+                    current_text = page.evaluate("""() => {
+                        const msgs = document.querySelectorAll('message-content');
+                        if (msgs.length === 0) return "";
+                        return msgs[msgs.length-1].innerText;
+                    }""")
+                    
+                    if current_text:
+                        # Split by whitespace to get tokens
+                        words = [w.lower() for w in re.split(r'\s+', current_text) if len(w) > 2]
+                        if len(words) > 100:
+                            # Sample the last 100 words
+                            recent_words = words[-100:]
+                            unique_ratio = len(set(recent_words)) / 100
+                            
+                            # Log diversity for debugging (to stderr)
+                            # log(f"  [Monitor] Diversity: {unique_ratio:.2f}")
+
+                            if unique_ratio < 0.28:
+                                log(f"  ⚠️ WORD SALAD DETECTED (Diversity: {unique_ratio:.2f}). Force-stopping.")
+                                
+                                # Try to click "Stop generating" button
+                                for ssel in stop_selectors:
+                                    stop_btn = page.locator(ssel)
+                                    if stop_btn.count() > 0 and stop_btn.first.is_visible():
+                                        stop_btn.first.click()
+                                        log("  ✅ Clicked 'Stop generating' button.")
+                                        break
+                                
+                                page.wait_for_timeout(1000)
+                                return
+                        
+                        # Existing exact-line repetition check as fallback
+                        latest_lines = current_text.split('\n')[-20:]
+                        if len(latest_lines) >= 15:
+                            from collections import Counter
+                            counts = Counter([l.strip() for l in latest_lines if l.strip()])
+                            most_common, freq = counts.most_common(1)[0] if counts else ("", 0)
+                            if freq >= 12 and (most_common in ["[RAW-SRC] EOF", "EOF"] or len(most_common) > 10):
+                                log(f"  ⚠️ LOOP DETECTED on line: '{most_common}' ({freq}/20). Force-stopping.")
+                                return
+                except Exception: pass
+
+                page.wait_for_timeout(rep_check_interval * 1000)
+                
+            log("  ⚠️ UI signal timeout. Proceeding to extraction.")
 
         wait_for_completion()
 

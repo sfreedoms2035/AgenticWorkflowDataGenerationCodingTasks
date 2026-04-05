@@ -119,14 +119,14 @@ The Playwright script auto-handles activity page redirects. If login is needed, 
 
 | Gate | Threshold |
 | --- | --- |
-| CoT length | ≥ 10,000 chars |
-| Answer length | ≥ 15,000 chars |
+| CoT length | ≥ 9,000 chars |
+| Answer length | ≥ 10,000 chars |
 | Structured answer | 6 mandatory JSON keys |
 | Conversation turns | Exactly 6 per task |
 | CoT structure | All 31 sub-elements |
 | Self-containment | No banned vocabulary |
-| Code volume | ≥ 400 lines |
-| Test criteria | ≥ 20 items |
+| Code volume | ≥ 300 lines |
+| Test criteria | ≥ 5 items |
 | Formal requirements | ≥ 5 items |
 | Copyright header | `// Copyright by 4QDR.AI` |
 

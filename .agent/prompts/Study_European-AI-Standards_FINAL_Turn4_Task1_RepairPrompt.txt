@@ -1,10 +1,20 @@
+Your previous response FAILED quality validation.
+CRITICAL: You MUST regenerate the response using the FULL 15-BLOCK SCHEMA (!!!!!METADATA!!!!! through !!!!!DOCUMENTATION!!!!!).
+Do NOT omit any blocks. Even if you are fixing a specific issue, the entire structured output must be provided.
+
+You MUST fix the following specific issues while maintaining ALL original constraints:
+
+
+--- ORIGINAL TASK INSTRUCTIONS ---
+Review the original instructions below and ensure your new output satisfies BOTH the original rules AND fixes the failures listed above.
+----------------------------------------
 SYSTEM ROLE: PRINCIPAL SYNTHETIC DATA ENGINEER (CODING TRACK)
-You are an Elite Automotive Software Architect. Your objective is to internalize the provided AD/ADAS source document and generate exactly 1 distinct, extremely complex, multi-turn conversational coding task. This is Task 1 for Turn 3.
+You are an Elite Automotive Software Architect. Your objective is to internalize the provided AD/ADAS source document and generate exactly 1 distinct, extremely complex, multi-turn conversational coding task. This is Task 1 for Turn 4.
 
 VARIATION INSTRUCTIONS:
-- Programming Language: Python
-- Difficulty: 94/100
-- Meta-Strategy: Loophole
+- Programming Language: Rust
+- Difficulty: 96/100
+- Meta-Strategy: Formalize
 - Document Classification: REGULATORY
 
 CRITICAL DIRECTIVES:
@@ -20,9 +30,9 @@ CRITICAL DIRECTIVES:
 - SEMANTIC ASSEMBLY MANDATORY: Output your response in distinct, labeled blocks.
 
 VARIATION INSTRUCTIONS:
-- Programming Language: Python
-- Difficulty: 94/100
-- Meta-Strategy: Loophole
+- Programming Language: Rust
+- Difficulty: 96/100
+- Meta-Strategy: Formalize
 - Document Classification: REGULATORY
 
 CRITICAL DIRECTIVES:
@@ -41,7 +51,7 @@ CRITICAL DIRECTIVES:
 - SEMANTIC ASSEMBLY MANDATORY: To ensure perfect data integrity and avoid JSON corruption, you MUST output your response in distinct, labeled blocks as defined below. Do NOT output a single massive JSON array.
 - BLOCK 1: `!!!!!METADATA!!!!!`: JSON object (training_data_id, prompt_version, model_used_generation, knowledge_source_date, document, task_type, affected_role, date_of_generation, key_words, summary, difficulty, evaluation_criteria).
 - BLOCK 2: `!!!!!REASONING!!!!!`: The 10,000+ character 31-step monologue in raw markdown.
-- BLOCK 3: `!!!!!TURN-1-USER!!!!!`: The immersive 3-paragraph problem statement. THIS BLOCK MUST START WITH "[Thinking] ".
+- BLOCK 3: `!!!!!TURN-1-USER!!!!!`: The immersive 3-paragraph problem statement.
 - BLOCK 4: `!!!!!REQUIREMENTS!!!!!`: JSON array of at least 5 formal requirements.
 - BLOCK 5: `!!!!!ARCHITECTURE!!!!!`: Mermaid diagram + narrative description.
 - BLOCK 6: `!!!!!DATA-STREAM-PART-1!!!!!`: First 150 lines of the 450+ line implementation.
@@ -52,17 +62,10 @@ CRITICAL DIRECTIVES:
 - BLOCK 11: `!!!!!TEST-CRITERIA!!!!!`: JSON array of at least 5 distinct boundary tests.
 - BLOCK 12: `!!!!!TURN-3-USER!!!!!` to `!!!!!TURN-6-ASSISTANT!!!!!`: Follow-up conversational turns. No placeholders allowed.
 - QUALITATIVE USER TURNS (CRITICAL): User turns (3 and 5) MUST be 2-3 sentences of pure technical inquiry referencing a specific variable, algorithm, or architectural decision from the preceding answer. 
+- NO PERSONA TAGS: You are STRICTLY FORBIDDEN from starting any block with tags like `[Thinking]`, `[No Thinking]`, `[VT100]`, or `[TERM-VT100]`. All conversational content must be clean technical prose.
 - MPSC ANTI-PADDING RULE: You are STRICTLY FORBIDDEN from using keyword-salad (e.g., "visualization visualized complexity derivation") to inflate user turn length. Meet the 100-character minimum with dense technical depth, not repetition.
 - NO BANNED WORDS: Avoid "the document says", "as per study", etc.
 - TRACEABILITY MANDATORY: Every formal requirement MUST be referenced in the code comments as `// [REQ-ID]` next to its implementation point.
-
-**FOLLOW-UP TURN GENERATION (MANDATORY — READ CAREFULLY):**
-- You MUST write ACTUAL technical content for turns 3-6. Do NOT echo template instructions as content.
-- Do NOT output "(Write a 2-3 sentence...)" or "(Write the first technical response here...)" as actual text.
-- Do NOT copy the BANNED VOCABULARY section into any turn content.
-- Each follow-up user question MUST reference a SPECIFIC class, variable, or algorithm from YOUR code answer.
-- Each follow-up assistant answer MUST provide REAL engineering analysis — not template instructions.
-- If you find yourself writing parenthesized instructions like "(Ensure it is highly detailed...)", STOP and write real content instead.
 
     QWEN3 BLOCK-BASED OUTPUT SCHEMA:
     
@@ -79,7 +82,7 @@ CRITICAL DIRECTIVES:
       "date_of_generation": "{date}",
       "key_words": [],
       "summary": "Full summary",
-      "difficulty": "94",
+      "difficulty": "96",
       "evaluation_criteria": []
     }
     ```
@@ -90,7 +93,7 @@ CRITICAL DIRECTIVES:
     ```
 
     !!!!!TURN-1-USER!!!!!
-    [Thinking] (Immersive problem statement)
+    (Immersive problem statement)
 
     !!!!!REQUIREMENTS!!!!!
     ```json
@@ -103,13 +106,13 @@ CRITICAL DIRECTIVES:
     (Mermaid diagram + description)
 
     !!!!!DATA-STREAM-PART-1!!!!!
-    [RAW-SRC] (Raw code line 1 to 150. NO BACKTICKS.)
+    (Raw code line 1 to 150. NO BACKTICKS.)
 
     !!!!!DATA-STREAM-PART-2!!!!!
-    [RAW-SRC] (Raw code line 151 to 300. NO BACKTICKS.)
+    (Raw code line 151 to 300. NO BACKTICKS.)
 
     !!!!!DATA-STREAM-PART-3!!!!!
-    [RAW-SRC] (Raw code line 301 to 450+. NO BACKTICKS. END WITH EOF.)
+    (Raw code line 301 to 450+. NO BACKTICKS. END WITH EOF.)
 
     !!!!!USAGE-EXAMPLES!!!!!
     (Examples and mocks)
@@ -135,16 +138,16 @@ CRITICAL DIRECTIVES:
     ```
 
     !!!!!TURN-3-USER!!!!!
-    [No Thinking] (Write a 2-3 sentence technical inquiry referencing the code above, minimum 100 characters)
+    (Short follow-up question 1 related to the primary task/logic above. Max 2 sentences.)
 
     !!!!!TURN-4-ASSISTANT!!!!!
-    (Write the first technical response here. Ensure it is highly detailed and contextual.)
+    (Concise technical answer to follow-up 1. DO NOT include any Thinking or tags. Format as plain text.)
 
     !!!!!TURN-5-USER!!!!!
-    [No Thinking] (Write another 2-3 sentence technical inquiry pushing the architecture further, minimum 100 characters)
+    (Short follow-up question 2 probing a different edge case or refinement. Max 2 sentences.)
 
     !!!!!TURN-6-ASSISTANT!!!!!
-    (Write the final technical response here. Must be highly detailed.)
+    (Concise technical answer to follow-up 2. DO NOT include any Thinking or tags. Format as plain text.)
 
     BANNED VOCABULARY (CRITICAL):
     - Never say "the document says" or "as per the provided text".

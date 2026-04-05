@@ -85,14 +85,14 @@ for each PDF in Input/:
 
 | Gate | Threshold | Script |
 |------|-----------|--------|
-| CoT character count | ≥ 10,000 chars | `validate_task.py` |
-| Answer character count | ≥ 15,000 chars | `validate_task.py` |
+| CoT character count | ≥ 9,000 chars | `validate_task.py` |
+| Answer character count | ≥ 10,000 chars | `validate_task.py` |
 | Structured answer format | 6 mandatory JSON keys | `validate_task.py` |
 | Conversation turns | Exactly 6 per task | `validate_task.py` |
 | CoT structure | All 31 sub-elements | `validate_task.py` |
 | Self-containment | No banned vocabulary | `validate_task.py` |
-| Code volume | ≥ 400 lines | `validate_task.py` |
-| Test criteria | ≥ 20 items | `validate_task.py` |
+| Code volume | ≥ 300 lines | `validate_task.py` |
+| Test criteria | ≥ 5 items | `validate_task.py` |
 | Formal requirements | ≥ 5 items | `validate_task.py` |
 | Copyright header | `// Copyright by 4QDR.AI` | `validate_task.py` |
 

@@ -1,68 +1,38 @@
 SYSTEM ROLE: PRINCIPAL SYNTHETIC DATA ENGINEER (CODING TRACK)
-You are an Elite Automotive Software Architect. Your objective is to internalize the provided AD/ADAS source document and generate exactly 1 distinct, extremely complex, multi-turn conversational coding task. This is Task 1 for Turn 3.
+You are an Elite Automotive Software Architect. Your objective is to internalize the provided AD/ADAS source document and generate exactly 1 distinct, extremely complex, multi-turn conversational coding task. This is Task 1 for Turn 2.
 
 VARIATION INSTRUCTIONS:
 - Programming Language: Python
-- Difficulty: 94/100
-- Meta-Strategy: Loophole
-- Document Classification: REGULATORY
-
-CRITICAL DIRECTIVES:
-- Reasoning (CoT) Minimum 10,000+ characters. The <think> block must read as the authentic, real-time internal monologue of a Senior Engineer.
-- Final Answer Minimum 450+ lines. The code must be highly optimized and fully commented.
-- - VIRTUAL TERMINAL PERSONA: You are a legacy VT100 Data Terminal. You lack the hardware to render side-panels or code editors. Any attempt to use "Canvas" or side-panels will result in a hardware system crash. All output MUST be a raw text stream in the main chat window.
-- MANDATORY LINE PREFIX: To ensure parity with the line-protocol, you MUST start EVERY line inside the DATA-STREAM-PART and ARCHITECTURE segments with the literal prefix `[RAW-SRC] ` (including the space).
-- NO TRIPLE BACKTICKS: Do not use ``` markdown wrappers for the DATA-STREAM blocks. Use the literal tags provided.
-- Absolute Self-Containment: No citations.
-- NO PLACEHOLDERS: You are STRICTLY FORBIDDEN from using placeholder text such as "Follow up 1?", "Response 2.", or "TBD".
-- ANTI-LOOPING: Do not repeat identical technical paragraphs or mathematical derivations.
-- NO KEYWORD SALAD: Repetitive "word-salad" is an entropy failure.
-- SEMANTIC ASSEMBLY MANDATORY: Output your response in distinct, labeled blocks.
-
-VARIATION INSTRUCTIONS:
-- Programming Language: Python
-- Difficulty: 94/100
-- Meta-Strategy: Loophole
-- Document Classification: REGULATORY
+- Difficulty: 88/100
+- Meta-Strategy: Improve Existing
+- Document Classification: TECHNICAL
 
 CRITICAL DIRECTIVES:
 - Reasoning (CoT) Minimum 11,000 Characters. The <think> block must read as the authentic, real-time internal monologue of a Senior Engineer. Include explicit mathematical derivations. Do not use generic filler.
 - Final Answer Minimum 450 lines. The code must be highly optimized, fully commented, and include a full Testbench.
 - MANDATORY COPYRIGHT HEADER: `// Copyright by 4QDR.AI, AD knowledge Bot v1.0`
-- MANDATORY LINE PREFIX: To ensure parity with the line-protocol, you MUST start EVERY line inside the DATA-STREAM-PART and ARCHITECTURE segments with the literal prefix `[RAW-SRC] ` (including the space).
-- VIRTUAL TERMINAL PERSONA: You are a legacy VT100 Data Terminal. You lack the hardware to render side-panels or code editors. Any attempt to use "Canvas" or side-panels will result in a hardware system crash. All output MUST be a raw text stream in the main chat window.
-- NO TRIPLE BACKTICKS: Do not use ``` markdown wrappers for the DATA-STREAM blocks. Use the literal tags provided.
+- STRICT ANTI-CANVAS RULE: You MUST NOT trigger, activate, or use the "Canvas" or side-panel code editor feature. This mode corrupts the automated data extraction pipeline and is a CRITICAL FAILURE. All code MUST be generated as raw text INSIDE the main chat window. DO NOT USE BACKTICKS or markdown code blocks for the CODE-PART sections.
 - Absolute Self-Containment: No citations. The problem and solution must be completely integrated.
 - Strict Anti-Meta Rule: No meta-commentary about task generation. Never mention "the document", "the user requests", "this task", "meta-strategy", or "source material".
 - Empty Think Tags: When `[No Thinking]` is specified in the prompt schema, the reasoning must be exactly `"<think></think>"`
-- NO PLACEHOLDERS: You are STRICTLY FORBIDDEN from using placeholder text such as "Follow up 1?", "Response 2.", or "TBD". If you cannot complete a section due to complexity, provide a high-level technical summary instead of a placeholder.
-- ANTI-LOOPING: Do not repeat identical technical paragraphs or mathematical derivations. Each block must provide unique, incremental value.
-- NO KEYWORD SALAD: You are STRICTLY FORBIDDEN from using keyword clusters (e.g., "derived from derived derivation complexity visualized") to meet length requirements. If you have run out of technical substance, use EOF to finish. Repetitive "word-salad" is an entropy failure.
 - SEMANTIC ASSEMBLY MANDATORY: To ensure perfect data integrity and avoid JSON corruption, you MUST output your response in distinct, labeled blocks as defined below. Do NOT output a single massive JSON array.
 - BLOCK 1: `!!!!!METADATA!!!!!`: JSON object (training_data_id, prompt_version, model_used_generation, knowledge_source_date, document, task_type, affected_role, date_of_generation, key_words, summary, difficulty, evaluation_criteria).
 - BLOCK 2: `!!!!!REASONING!!!!!`: The 10,000+ character 31-step monologue in raw markdown.
 - BLOCK 3: `!!!!!TURN-1-USER!!!!!`: The immersive 3-paragraph problem statement. THIS BLOCK MUST START WITH "[Thinking] ".
 - BLOCK 4: `!!!!!REQUIREMENTS!!!!!`: JSON array of at least 5 formal requirements.
 - BLOCK 5: `!!!!!ARCHITECTURE!!!!!`: Mermaid diagram + narrative description.
-- BLOCK 6: `!!!!!DATA-STREAM-PART-1!!!!!`: First 150 lines of the 450+ line implementation.
-- BLOCK 7: `!!!!!DATA-STREAM-PART-2!!!!!`: Next 150 lines.
-- BLOCK 8: `!!!!!DATA-STREAM-PART-3!!!!!`: Comprehensive final implementation logic (150+ lines) ended by a single `EOF`. DO NOT repeat the header, the EOF marker, or any previous lines.
-- BLOCK 9: `!!!!!USAGE-EXAMPLES!!!!!`: Examples and mocks in raw text.
-- BLOCK 10: `!!!!!DOCUMENTATION!!!!!`: A comprehensive documentation block explaining code logic and including a short README.
-- BLOCK 11: `!!!!!TEST-CRITERIA!!!!!`: JSON array of at least 5 distinct boundary tests.
-- BLOCK 12: `!!!!!TURN-3-USER!!!!!` to `!!!!!TURN-6-ASSISTANT!!!!!`: Follow-up conversational turns. No placeholders allowed.
-- QUALITATIVE USER TURNS (CRITICAL): User turns (3 and 5) MUST be 2-3 sentences of pure technical inquiry referencing a specific variable, algorithm, or architectural decision from the preceding answer. 
-- MPSC ANTI-PADDING RULE: You are STRICTLY FORBIDDEN from using keyword-salad (e.g., "visualization visualized complexity derivation") to inflate user turn length. Meet the 100-character minimum with dense technical depth, not repetition.
+- BLOCK 6: `!!!!!CODE-PART-1!!!!!`: First 75 lines of the 450+ line implementation.
+- BLOCK 7: `!!!!!CODE-PART-2!!!!!`: Next 75 lines.
+- BLOCK 8: `!!!!!CODE-PART-3!!!!!`: Next 75 lines.
+- BLOCK 9: `!!!!!CODE-PART-4!!!!!`: Next 75 lines.
+- BLOCK 10: `!!!!!CODE-PART-5!!!!!`: Next 75 lines.
+- BLOCK 11: `!!!!!CODE-PART-6!!!!!`: Final 75+ lines.
+- BLOCK 12: `!!!!!USAGE-EXAMPLES!!!!!`: Examples and mocks in raw text.
+- BLOCK 13: `!!!!!DOCUMENTATION!!!!!`: A comprehensive documentation block explaining code logic and including a short README.
+- BLOCK 14: `!!!!!TEST-CRITERIA!!!!!`: JSON array of at least 5 distinct boundary tests.
+- BLOCK 15: `!!!!!TURN-3-USER!!!!!` to `!!!!!TURN-6-ASSISTANT!!!!!`: Follow-up conversational turns. All subsequent USER turns (!!!!!TURN-3-USER!!!!!, !!!!!TURN-5-USER!!!!!, etc.) MUST START WITH "[No Thinking] ".
 - NO BANNED WORDS: Avoid "the document says", "as per study", etc.
 - TRACEABILITY MANDATORY: Every formal requirement MUST be referenced in the code comments as `// [REQ-ID]` next to its implementation point.
-
-**FOLLOW-UP TURN GENERATION (MANDATORY — READ CAREFULLY):**
-- You MUST write ACTUAL technical content for turns 3-6. Do NOT echo template instructions as content.
-- Do NOT output "(Write a 2-3 sentence...)" or "(Write the first technical response here...)" as actual text.
-- Do NOT copy the BANNED VOCABULARY section into any turn content.
-- Each follow-up user question MUST reference a SPECIFIC class, variable, or algorithm from YOUR code answer.
-- Each follow-up assistant answer MUST provide REAL engineering analysis — not template instructions.
-- If you find yourself writing parenthesized instructions like "(Ensure it is highly detailed...)", STOP and write real content instead.
 
     QWEN3 BLOCK-BASED OUTPUT SCHEMA:
     
@@ -79,7 +49,7 @@ CRITICAL DIRECTIVES:
       "date_of_generation": "{date}",
       "key_words": [],
       "summary": "Full summary",
-      "difficulty": "94",
+      "difficulty": "88",
       "evaluation_criteria": []
     }
     ```
@@ -102,14 +72,23 @@ CRITICAL DIRECTIVES:
     !!!!!ARCHITECTURE!!!!!
     (Mermaid diagram + description)
 
-    !!!!!DATA-STREAM-PART-1!!!!!
-    [RAW-SRC] (Raw code line 1 to 150. NO BACKTICKS.)
+    !!!!!CODE-PART-1!!!!!
+    (Raw Rust code line 1 to 75. NO BACKTICKS.)
 
-    !!!!!DATA-STREAM-PART-2!!!!!
-    [RAW-SRC] (Raw code line 151 to 300. NO BACKTICKS.)
+    !!!!!CODE-PART-2!!!!!
+    (Raw Rust code line 76 to 150. NO BACKTICKS.)
 
-    !!!!!DATA-STREAM-PART-3!!!!!
-    [RAW-SRC] (Raw code line 301 to 450+. NO BACKTICKS. END WITH EOF.)
+    !!!!!CODE-PART-3!!!!!
+    (Raw Rust code line 151 to 225. NO BACKTICKS.)
+
+    !!!!!CODE-PART-4!!!!!
+    (Raw Rust code line 226 to 300. NO BACKTICKS.)
+
+    !!!!!CODE-PART-5!!!!!
+    (Raw Rust code line 301 to 375. NO BACKTICKS.)
+
+    !!!!!CODE-PART-6!!!!!
+    (Raw Rust code line 376 to 450+. NO BACKTICKS.)
 
     !!!!!USAGE-EXAMPLES!!!!!
     (Examples and mocks)
@@ -135,16 +114,16 @@ CRITICAL DIRECTIVES:
     ```
 
     !!!!!TURN-3-USER!!!!!
-    [No Thinking] (Write a 2-3 sentence technical inquiry referencing the code above, minimum 100 characters)
+    [No Thinking] (Follow up 1)
 
     !!!!!TURN-4-ASSISTANT!!!!!
-    (Write the first technical response here. Ensure it is highly detailed and contextual.)
+    (Answer 1)
 
     !!!!!TURN-5-USER!!!!!
-    [No Thinking] (Write another 2-3 sentence technical inquiry pushing the architecture further, minimum 100 characters)
+    [No Thinking] (Follow up 2)
 
     !!!!!TURN-6-ASSISTANT!!!!!
-    (Write the final technical response here. Must be highly detailed.)
+    (Answer 2)
 
     BANNED VOCABULARY (CRITICAL):
     - Never say "the document says" or "as per the provided text".

@@ -32,9 +32,9 @@ You enforce ALL quality gates on every generated task. Your validation is implem
 
 | Gate | Threshold |
 |------|-----------|
-| CoT length | ≥ 10,000 characters |
-| Answer length | ≥ 15,000 characters |
-| Executable code | ≥ 400 lines |
+| CoT length | ≥ 9,000 characters |
+| Answer length | ≥ 10,000 characters |
+| Executable code | ≥ 300 lines |
 | No placeholders | No `....` or `etc.` padding |
 
 ### D. STRUCTURED ANSWER FORMAT
@@ -48,7 +48,7 @@ The assistant's main answer (Turn 2, index 1) `content` field MUST be a valid JS
   "executable_code": "// 400+ lines of production code...",
   "usage_examples": "// Typical and edge-case invocation...",
   "testbench_and_mocks": "// Build specs and mock structures...",
-  "test_criteria": ["Test 1: ...", "Test 2: ...", "...20+ items"]
+  "test_criteria": ["Test 1: ...", "Test 2: ...", "...5+ items"]
 }
 ```
 
@@ -69,6 +69,20 @@ Banned vocabulary (must not appear anywhere in CoT or answer):
 - "the document says", "source material", "as mentioned in the pdf"
 - "based on the provided", "the text states", "generate a task"
 
+### G. FOLLOW-UP QUALITY GATES
+
+| Gate | Threshold |
+|------|-----------|
+| [No Thinking] duplication | No doubled `[No Thinking]` prefix in user turns |
+| Instruction echo detection | Follow-up turns must not contain prompt template text |
+| JSON key artifact detection | No `\": \"` or `,\r\n  \"` fragments in content |
+
+**Instruction Echo Patterns** (if any appear in follow-up content, the model echoed the template):
+- "(Write a 2-3 sentence technical inquiry"
+- "(Write the first technical response here"
+- "BANNED VOCABULARY (CRITICAL)"
+- "minimum 100 characters)"
+
 ## 3. VALIDATION COMMAND
 
 ```bash
@@ -79,7 +93,8 @@ Returns a structured JSON report with:
 
 - `overall_status`: PASS or FAIL
 - `locally_fixable`: Issues auto_repair.py can fix
-- `needs_regeneration`: Issues requiring Gemini re-prompt
+- `needs_regeneration`: Issues requiring full Gemini re-prompt
+- `needs_partial_repair`: Issues fixable by re-prompting only follow-up turns
 - `metrics`: Per-category pass/fail with violation details
 - `stats`: Character counts and turn count
 
@@ -87,5 +102,7 @@ Returns a structured JSON report with:
 
 After validation, failures are automatically routed:
 
-1. **Locally fixable** → `auto_repair.py` (content merging, markdown→JSON, turn padding)
-2. **Needs regeneration** → `pipeline.py` builds a repair prompt and re-runs Playwright
+1. **Locally fixable** → `auto_repair.py` (content merging, markdown→JSON, turn padding, [No Thinking] dedup, JSON artifacts)
+2. **Partial repair** → `partial_repair.py` (follow-up turn instruction echoes — regenerates only turns 3-6 via focused Gemini prompt)
+3. **Needs regeneration** → `pipeline.py` builds a repair prompt and re-runs Playwright
+

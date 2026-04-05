@@ -1,0 +1,50 @@
+TARGETED FOLLOW-UP GENERATION TASK
+
+You previously generated an excellent coding task. The main answer (code, architecture, requirements) was validated and passed quality checks. However, the follow-up conversation turns were NOT generated correctly � they contained template instructions instead of actual technical content.
+
+Your job: Generate ONLY the 4 follow-up conversation turns (2 user questions + 2 assistant answers) based on the code context below.
+
+--- CONTEXT: THE USER'S ORIGINAL QUESTION ---
+[Thinking] Elite Automotive Software Architect seeking to establish validation data for the risk management engine (High-Risk AI system) in a Level 4 Autonomous Driving platform. I require a robust C++ stress testing harness that ingests high-throughput simulated sensor data (Camera, Lidar, Radar fusion tracks) via concurrent, zero-allocation pipelines and validates the Risk Index calculation logic under extreme load and specific SOTIF noise profiles (e.g., Radar correlated noise causing ghost o...
+
+--- CONTEXT: YOUR CODE ANSWER (key sections) ---
+Formal Requirements:
+  - REQ-SW-001: Real-time Latency: The stress harness must confirm that aggregate blended frame 
+  - REQ-SW-002: Robustness Spec (SOTIF Validation): The harness must determine floating-point st
+  - REQ-SW-003: System Throughput (Stress): The concurrent data ingestion pipeline must maintain
+  - REQ-SW-004: Automotive Memory Stability (ASIL): Zero dynamic memory allocations/deallocation
+  - REQ-SW-005: EU AI Act Auditability (Art. 15 Conformity): All metrics (latency distribution, 
+
+Architecture Summary:
+[Thinking] VT100 legacy terminal interface engaged. All output streaming via main chat window only. No side panels. No Triple Backticks. Absolute strict compliance on data integrity and VT100 line-protocol.
+
+
+
+The Architecture uses a multi-threaded data blending path with lock-free SPSC queues to ma...
+
+Key Classes/Functions: SOTIFNoiseInjector, LockFreeSPSC, RiskCalculator
+
+--- YOUR TASK: GENERATE EXACTLY 4 TURNS ---
+
+Format your output using these exact block delimiters:
+
+!!!!!TURN-3-USER!!!!!
+[No Thinking] <Your 2-3 sentence technical inquiry here. MUST reference a specific class, variable, or algorithm from the code above. Minimum 100 characters of dense technical depth. Do NOT echo instructions � write actual technical questions.>
+
+!!!!!TURN-4-ASSISTANT!!!!!
+<Your detailed technical response here. 500+ characters. Address the specific question with engineering substance. Reference concrete implementation details from the code.>
+
+!!!!!TURN-5-USER!!!!!
+[No Thinking] <Another 2-3 sentence technical inquiry pushing the architecture further. MUST reference a different class or algorithm than Turn 3. Minimum 100 characters.>
+
+!!!!!TURN-6-ASSISTANT!!!!!
+<Your final detailed technical response. 500+ characters. Provide concrete engineering analysis with specific code-level details.>
+
+CRITICAL RULES:
+1. Reference SPECIFIC class names, functions, or variables from the code: SOTIFNoiseInjector, LockFreeSPSC, RiskCalculator
+2. NO placeholders, NO prompt echoing, NO meta-commentary
+3. Do NOT repeat these instructions � generate ACTUAL content
+4. Each user question MUST be at least 100 characters of pure technical depth
+5. Each assistant answer MUST be at least 500 characters of engineering substance
+6. BANNED: "the document says", "as per the provided text", "source material", "this task"
+7. Do NOT output backticks, Canvas, or side panels � raw text only

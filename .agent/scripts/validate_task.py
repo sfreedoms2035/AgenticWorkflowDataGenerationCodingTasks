@@ -41,6 +41,9 @@ STRUCTURED_ANSWER_KEYS = [
     "documentation", "usage_examples", "testbench_and_mocks", "test_criteria"
 ]
 
+# Parent step headers that MUST also appear in the CoT
+COT_PARENT_HEADERS = ["1.", "2.", "3.", "4.", "5.", "6.", "7.", "8."]
+
 COT_SUB_ELEMENTS = [
     "1.1", "1.2",
     "2.1", "2.2", "2.3", "2.4", "2.5",
@@ -55,7 +58,46 @@ COT_SUB_ELEMENTS = [
 BANNED_VOCABULARY = [
     "the user requests",
     "the document says", "source material", "as mentioned in the pdf",
-    "based on the provided", "the text states", "generate a task"
+    "based on the provided", "the text states", "generate a task",
+    "cite"
+]
+
+# Followup placeholder sentinels that indicate extraction failures
+FOLLOWUP_PLACEHOLDERS = [
+    "Follow up 1?", "Follow up 2?",
+    "Response 1.", "Response 2.",
+    "Follow up 1", "Follow up 2",
+]
+
+# Instruction-echo sentinels: if these appear in follow-up turn content,
+# the model echoed the prompt template instead of generating real content
+INSTRUCTION_ECHO_PATTERNS = [
+    "(Write a 2-3 sentence technical inquiry",
+    "(Write the first technical response here",
+    "(Write another 2-3 sentence",
+    "(Write the final technical response here",
+    "BANNED VOCABULARY (CRITICAL)",
+    "minimum 100 characters)",
+    "Ensure it is highly detailed and contextual.)",
+    "Must be highly detailed.)",
+    "Never say \"based on established practice\"",
+    "Never include placeholders like",
+    "Every Work Product from VDA/ISO must be treated",
+]
+
+# JSON key artifact patterns: fragments from LLM treating output as JSON key-value
+JSON_KEY_ARTIFACT_PATTERN = r'(?:^|\s)\\?"\s*:\s*\\?"'
+
+# Keywords often used for "Word Salad" padding to inflate character counts
+PADDING_KEYWORDS = [
+    "visualization", "visualized", "visualize", "visualizations", "visualizing",
+    "derivation", "derived", "deriving", "derivations",
+    "complexity", "complexities",
+    "difficulty", "difficulties",
+    "criteria", "criterion",
+    "conceptual", "conceptually",
+    "initialization", "initialized",
+    "virtualized", "virtualization",
 ]
 
 
@@ -66,7 +108,8 @@ def validate_task(filepath):
         "evaluated_file": os.path.basename(filepath),
         "overall_status": "PASS",
         "locally_fixable": [],       # Issues auto_repair.py can fix
-        "needs_regeneration": [],    # Issues requiring Gemini re-prompt
+        "needs_regeneration": [],    # Issues requiring full Gemini re-prompt
+        "needs_partial_repair": [],  # Issues fixable by re-prompting only follow-up turns
         "metrics": {
             "json_structure": {"status": "PASS", "violations": []},
             "conversation_completeness": {"status": "PASS", "violations": []},
@@ -74,17 +117,69 @@ def validate_task(filepath):
             "structured_answer_format": {"status": "PASS", "violations": []},
             "cot_structure": {"status": "PASS", "violations": []},
             "self_containment": {"status": "PASS", "violations": []},
+            "followup_quality": {"status": "PASS", "violations": []},
         }
     }
 
-    def fail(category, message, fixable_locally=False):
+    def fail(category, message, fixable_locally=False, partial_repair=False):
         report["overall_status"] = "FAIL"
         report["metrics"][category]["status"] = "FAIL"
         report["metrics"][category]["violations"].append(message)
         if fixable_locally:
             report["locally_fixable"].append({"category": category, "issue": message})
+        elif partial_repair:
+            report["needs_partial_repair"].append({"category": category, "issue": message})
         else:
             report["needs_regeneration"].append({"category": category, "issue": message})
+
+    def check_keyword_padding(text, turn_label):
+        """Check for excessive density of padding keywords (word-salad)."""
+        if not text:
+            return
+        words = re.findall(r'\b\w+\b', text.lower())
+        if not words:
+            return
+        
+        # 1. Check density of padding keywords
+        padding_count = sum(1 for w in words if w in PADDING_KEYWORDS)
+        density = padding_count / len(words)
+        if density > 0.15:  # Absolute density threshold
+            fail("richness_and_complexity",
+                 f"{turn_label} contains keyword-salad padding "
+                 f"({padding_count}/{len(words)} padding words, {density:.1%})",
+                 fixable_locally=False)
+            return
+
+        # 2. Check for "dense clusters" (3+ keywords in a window of 5)
+        for i in range(len(words) - 4):
+            window = words[i:i+5]
+            win_padding = sum(1 for w in window if w in PADDING_KEYWORDS)
+            if win_padding >= 4:
+                fail("richness_and_complexity",
+                     f"{turn_label} contains a dense cluster of padding keywords "
+                     f"(e.g., '{' '.join(window)}')",
+                     fixable_locally=False)
+                return
+
+    def check_internal_repetition(text, turn_label):
+        """Check for verbatim repeated paragraphs or large blocks (looping)."""
+        if not text or len(text) < 1000:
+            return
+        paragraphs = [p.strip() for p in text.split('\n\n') if len(p.strip()) > 100]
+        if not paragraphs:
+            return
+            
+        seen_sigs = {}
+        for i, p in enumerate(paragraphs):
+            # Signature: first 150 chars normalized
+            sig = re.sub(r'\s+', '', p[:150].lower())
+            if sig in seen_sigs:
+                fail("richness_and_complexity",
+                     f"{turn_label} contains a verbatim repetition loop. "
+                     f"Paragraph {i} matches paragraph {seen_sigs[sig]}.",
+                     fixable_locally=False)
+                return
+            seen_sigs[sig] = i
 
     # ── Gate 0: JSON Parsing ─────────────────────────────────────────────
     try:
@@ -109,7 +204,7 @@ def validate_task(filepath):
     # ── Gate 1: Top-Level Fields ─────────────────────────────────────────
     for field in REQUIRED_TOP_FIELDS:
         if field not in task:
-            fail("json_structure", f"Missing required field: '{field}'")
+            fail("json_structure", f"Missing required field: '{field}'", fixable_locally=True)
 
     # ── Gate 2: Conversation Structure ───────────────────────────────────
     convs = task.get("conversations", [])
@@ -139,9 +234,19 @@ def validate_task(filepath):
             continue
         content = conv.get("content", "")
         if not content or not content.strip():
-            fail("conversation_completeness",
-                 f"Turn {i}: empty content",
-                 fixable_locally=(conv.get("role") == "assistant" and i > 1))
+            # Followup assistant turns (3 and 5) with empty content need full regeneration
+            if conv.get("role") == "assistant" and i in [3, 5]:
+                fail("conversation_completeness",
+                     f"Turn {i}: empty assistant content (last followup response is blank) — requires regeneration",
+                     fixable_locally=False)
+            elif conv.get("role") == "assistant" and i > 1:
+                fail("conversation_completeness",
+                     f"Turn {i}: empty content",
+                     fixable_locally=True)
+            else:
+                fail("conversation_completeness",
+                     f"Turn {i}: empty content",
+                     fixable_locally=False)
 
     # Check <think></think> format for No-Thinking assistant turns (indices 3, 5)
     for i in [3, 5]:
@@ -162,6 +267,27 @@ def validate_task(filepath):
     main_assistant = convs[1]
     reasoning = main_assistant.get("reasoning", "")
     content = main_assistant.get("content", "")
+
+    # ── Gate 3a: Empty or Placeholder Thinking Check ──────────────────────
+    # Detect [NO_THINKING_SECTION] placeholder or a completely empty reasoning field.
+    # Both indicate the LLM failed to produce a real CoT monologue.
+    EMPTY_THINKING_SENTINELS = [
+        "[NO_THINKING_SECTION]",
+        "[no_thinking_section]",
+        "<think></think>",   # Empty self-closed tags
+    ]
+    reasoning_stripped = reasoning.strip()
+    if not reasoning_stripped:
+        fail("richness_and_complexity",
+             "Main assistant turn (index 1): reasoning field is completely empty — requires regeneration",
+             fixable_locally=False)
+    else:
+        for sentinel in EMPTY_THINKING_SENTINELS:
+            if reasoning_stripped == sentinel or reasoning_stripped.startswith("[NO_THINKING_SECTION]"):
+                fail("richness_and_complexity",
+                     f"Main assistant turn (index 1): reasoning contains placeholder '{sentinel}' instead of real CoT — requires regeneration",
+                     fixable_locally=False)
+                break
 
     # Check for merged content-in-reasoning anomaly
     if len(content.strip()) < 100 and "</think>" in reasoning:
@@ -247,6 +373,20 @@ def validate_task(filepath):
     # Normalize: convert escaped \\n sequences to actual newlines for regex matching
     think_normalized = think_content.replace("\\n", "\n").replace("\\\\n", "\n")
 
+    # ── Gate 5a: Check parent step headers (1. through 8.) ───────────────
+    missing_parents = []
+    for parent in COT_PARENT_HEADERS:
+        # Match e.g. "1." or "**1.**" or "### 1." at start of line
+        pattern = rf'(?:^|[\n\r])[\s#\-\*]*{re.escape(parent)}[\s]'
+        if not re.search(pattern, think_normalized):
+            missing_parents.append(parent)
+
+    if missing_parents:
+        fail("cot_structure",
+             f"Missing CoT parent headers: {', '.join(missing_parents)}",
+             fixable_locally=False)
+
+    # ── Gate 5b: Check sub-elements (1.1 through 8.4) ────────────────────
     missing_elements = []
     for elem in COT_SUB_ELEMENTS:
         # Flexible pattern to match headers like: "1.1.", "**1.1.**", "### 1.1", "- 1.1:"
@@ -255,25 +395,159 @@ def validate_task(filepath):
             missing_elements.append(elem)
 
     if missing_elements:
+        # User Optimization: If the CoT is very long (>15k), allow up to 5 missing sub-elements as fixable
+        is_fixable = (cot_len > 15_000 and len(missing_elements) <= 5)
+        
         if len(missing_elements) <= 5:
             fail("cot_structure",
-                 f"Missing CoT sub-elements: {', '.join(missing_elements)}")
+                 f"Missing CoT sub-elements: {', '.join(missing_elements)}",
+                 fixable_locally=is_fixable)
         else:
             fail("cot_structure",
                  f"Missing {len(missing_elements)} CoT sub-elements: "
-                 f"{', '.join(missing_elements[:5])}...")
+                 f"{', '.join(missing_elements[:5])}...",
+                 fixable_locally=False)
+
+    # ── Gate 5c: Duplicate <think> tag detection ─────────────────────────
+    # Detect patterns like <think>\n<think> or <think>\n\<think\>
+    dup_think = re.search(r'<think>\s*(?:\\?<think\\?>|<think>)', reasoning)
+    if dup_think:
+        fail("cot_structure",
+             "Duplicate <think> tag detected inside reasoning",
+             fixable_locally=True)
 
     # ── Gate 6: Self-Containment (Immersion) ─────────────────────────────
     full_text = (reasoning + " " + content).lower()
     for banned in BANNED_VOCABULARY:
         if banned.lower() in full_text:
             fail("self_containment",
-                 f"Banned vocabulary detected: '{banned}'")
+                 f"Banned vocabulary detected: '{banned}'",
+                 fixable_locally=True)
 
-    # Add summary stats to report
+    # ── Gate 7: Followup Placeholder Detection ───────────────────────────
+    # Detect when extraction produced fallback placeholder text
+    for idx in [2, 3, 4, 5]:  # Follow-up turns
+        if idx < len(convs):
+            conv_content = convs[idx].get("content", "").strip()
+            for placeholder in FOLLOWUP_PLACEHOLDERS:
+                if conv_content == placeholder:
+                    fail("conversation_completeness",
+                         f"Turn {idx}: contains extraction placeholder '{placeholder}'",
+                         fixable_locally=False)
+
+    # ── Gate 8: Follow-up Specificity (User turns 2, 4) ──────────────────
+    for idx in [2, 4]:  # User follow-up turns
+        if idx < len(convs) and convs[idx].get("role") == "user":
+            fu_content = convs[idx].get("content", "")
+            if len(fu_content) < 100:
+                fail("conversation_completeness",
+                     f"Turn {idx}: follow-up user prompt too short ({len(fu_content)} chars, min 100)",
+                     fixable_locally=False)
+
+    # ── Gate 9: [Thinking]/[No Thinking] Prefix Check ────────────────────
+    # Turn 0 (user) must start with [Thinking]
+    if len(convs) > 0 and convs[0].get("role") == "user":
+        t0_content = convs[0].get("content", "")
+        if not t0_content.startswith("[Thinking]"):
+            fail("conversation_completeness",
+                 "Turn 0: user prompt must start with '[Thinking]'",
+                 fixable_locally=True)
+    # Turns 2, 4 (user) must start with [No Thinking]
+    for idx in [2, 4]:
+        if idx < len(convs) and convs[idx].get("role") == "user":
+            tu_content = convs[idx].get("content", "")
+            if not tu_content.startswith("[No Thinking]"):
+                fail("conversation_completeness",
+                     f"Turn {idx}: user prompt must start with '[No Thinking]'",
+                     fixable_locally=True)
+
+    # ── Gate 10: Anti-Repetition for formal_requirements ──────────────────
+    try:
+        parsed_for_rep = json.loads(content)
+        if isinstance(parsed_for_rep, dict):
+            reqs = parsed_for_rep.get("formal_requirements", [])
+            if isinstance(reqs, list) and len(reqs) > 1:
+                descriptions = [r.get("description", "") for r in reqs if isinstance(r, dict)]
+                if len(descriptions) != len(set(descriptions)):
+                    fail("structured_answer_format",
+                         "Duplicate descriptions in formal_requirements",
+                         fixable_locally=False)
+    except (json.JSONDecodeError, TypeError):
+        pass  # Already caught in Gate 4
+
+    # ── Gate 11: Keyword-Salad Padding and Internal Repetition ────────────
+    # Check main reasoning and follow-up user turns
+    check_keyword_padding(reasoning, "Reasoning (CoT)")
+    check_internal_repetition(reasoning, "Reasoning (CoT)")
+    
+    for i, conv in enumerate(convs):
+        if conv.get("role") == "user":
+            check_keyword_padding(conv.get("content", ""), f"Turn {i} (user)")
+
+    # ── Gate 12: [No Thinking] Tag Duplication ────────────────────────────
+    # Detect doubled [No Thinking] prefix with JSON key artifacts between them
+    for idx in [2, 4]:  # User follow-up turns
+        if idx < len(convs) and convs[idx].get("role") == "user":
+            fu_content = convs[idx].get("content", "")
+            # Pattern: [No Thinking] ... [No Thinking] (doubled prefix)
+            nt_count = fu_content.count("[No Thinking]")
+            if nt_count > 1:
+                fail("followup_quality",
+                     f"Turn {idx}: duplicated [No Thinking] prefix ({nt_count} occurrences)",
+                     fixable_locally=True)
+
+    # ── Gate 13: Instruction Echo Detection (Follow-Up Turns) ─────────────
+    # Detect when model echoed the prompt template instead of generating real content
+    for idx in [2, 3, 4, 5]:  # All follow-up turns
+        if idx < len(convs):
+            fu_content = convs[idx].get("content", "")
+            for echo_pattern in INSTRUCTION_ECHO_PATTERNS:
+                if echo_pattern in fu_content:
+                    fail("followup_quality",
+                         f"Turn {idx}: instruction echo detected — model echoed prompt template "
+                         f"instead of generating content (matched: '{echo_pattern[:50]}...')",
+                         partial_repair=True)
+                    break  # One match per turn is enough
+
+    # ── Gate 14: JSON Key Artifact Detection ──────────────────────────────
+    # Detect \":\" or ",\r\n  \"" fragments in content that indicate LLM treated output as JSON key-value
+    for idx in [0, 2, 3, 4, 5]:  # Skip index 1 (main assistant JSON)
+        if idx >= len(convs):
+            continue
+        conv_content = convs[idx].get("content", "")
+        # Only flag if the fragment appears at suspicious positions (start of content, or around [No Thinking])
+        if re.search(r'\\?"\s*:\s*\\?"\[', conv_content):
+            fail("followup_quality",
+                 f"Turn {idx}: JSON key artifact detected in content (LLM output formatting corruption)",
+                 fixable_locally=True)
+        # Also check for the specific pattern: content starts with \": \"
+        if conv_content.strip().startswith('\\"') or conv_content.strip().startswith('": "'):
+            fail("followup_quality",
+                 f"Turn {idx}: content starts with JSON key artifact",
+                 fixable_locally=True)
+
+    # Add enriched summary stats to report
+    code_lines_stat = 0
+    test_criteria_stat = 0
+    formal_req_stat = 0
+    try:
+        parsed_stats = json.loads(content)
+        if isinstance(parsed_stats, dict):
+            code_stat = parsed_stats.get("executable_code", "")
+            code_lines_stat = code_stat.count("\\n") + code_stat.count("\n") + 1
+            tc = parsed_stats.get("test_criteria", [])
+            test_criteria_stat = len(tc) if isinstance(tc, list) else 0
+            fr = parsed_stats.get("formal_requirements", [])
+            formal_req_stat = len(fr) if isinstance(fr, list) else 0
+    except (json.JSONDecodeError, TypeError):
+        pass
+
     report["stats"] = {
         "cot_chars": cot_len,
         "answer_chars": content_len,
+        "code_lines": code_lines_stat,
+        "test_criteria_count": test_criteria_stat,
+        "formal_req_count": formal_req_stat,
         "turns": len(convs),
     }
 

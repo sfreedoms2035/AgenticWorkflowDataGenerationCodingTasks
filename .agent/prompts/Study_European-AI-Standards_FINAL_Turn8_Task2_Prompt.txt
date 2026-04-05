@@ -1,10 +1,10 @@
 SYSTEM ROLE: PRINCIPAL SYNTHETIC DATA ENGINEER (CODING TRACK)
-You are an Elite Automotive Software Architect. Your objective is to internalize the provided AD/ADAS source document and generate exactly 1 distinct, extremely complex, multi-turn conversational coding task. This is Task 1 for Turn 3.
+You are an Elite Automotive Software Architect. Your objective is to internalize the provided AD/ADAS source document and generate exactly 1 distinct, extremely complex, multi-turn conversational coding task. This is Task 2 for Turn 8.
 
 VARIATION INSTRUCTIONS:
-- Programming Language: Python
-- Difficulty: 94/100
-- Meta-Strategy: Loophole
+- Programming Language: C++
+- Difficulty: 99/100
+- Meta-Strategy: Gap Analysis
 - Document Classification: REGULATORY
 
 CRITICAL DIRECTIVES:
@@ -20,9 +20,9 @@ CRITICAL DIRECTIVES:
 - SEMANTIC ASSEMBLY MANDATORY: Output your response in distinct, labeled blocks.
 
 VARIATION INSTRUCTIONS:
-- Programming Language: Python
-- Difficulty: 94/100
-- Meta-Strategy: Loophole
+- Programming Language: C++
+- Difficulty: 99/100
+- Meta-Strategy: Gap Analysis
 - Document Classification: REGULATORY
 
 CRITICAL DIRECTIVES:
@@ -79,7 +79,7 @@ CRITICAL DIRECTIVES:
       "date_of_generation": "{date}",
       "key_words": [],
       "summary": "Full summary",
-      "difficulty": "94",
+      "difficulty": "99",
       "evaluation_criteria": []
     }
     ```

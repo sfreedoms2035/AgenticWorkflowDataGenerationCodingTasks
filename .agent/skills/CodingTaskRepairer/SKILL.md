@@ -42,10 +42,17 @@ You are the repair decision engine in the pipeline. When `validate_task.py` repo
 ### C. STRUCTURAL REPAIRS
 > "Your previous response FAILED validation. Missing CoT sub-elements: {list}. Rewrite the JSON exactly according to the schema. Ensure all 8 steps and 31 sub-elements are present."
 
+### D. FOLLOW-UP TURN PARTIAL REPAIR (NEW)
+> Used when only the follow-up turns (indices 2-5) are broken but the main answer is valid.
+> Instead of regenerating everything, `partial_repair.py` sends a focused prompt to Gemini with context from the valid Turn 1 Q&A, asking it to generate only the 4 follow-up turns.
+> This preserves the expensive main answer and only fixes the lightweight follow-up conversation.
+
 ## 4. PIPELINE INTEGRATION
 
 The repair logic is automated inside `pipeline.py`:
-1. `validate_task.py` runs → produces categorized report with `locally_fixable` and `needs_regeneration` lists
+1. `validate_task.py` runs → produces categorized report with `locally_fixable`, `needs_partial_repair`, and `needs_regeneration` lists
 2. If `locally_fixable` is non-empty → `auto_repair.py` handles it automatically
-3. If `needs_regeneration` is non-empty → `pipeline.py` builds a repair prompt using the templates above and re-runs Playwright
-4. Max attempts: 2 local + 1 Gemini re-prompt = 3 total
+3. If `needs_partial_repair` is non-empty (and no `needs_regeneration`) → `partial_repair.py` regenerates only follow-up turns
+4. If `needs_regeneration` is non-empty → `pipeline.py` builds a full repair prompt and re-runs Playwright
+5. Max attempts: 2 local + 1 partial + 1 Gemini re-prompt = 3 total
+

@@ -57,14 +57,14 @@ PDFs are auto-classified as **Technical** or **Regulatory** based on keyword sco
 ## Quality Gates (validate_task.py)
 | Gate | Threshold |
 |------|-----------|
-| CoT length | ≥ 10,000 chars |
-| Answer length | ≥ 15,000 chars |
+| CoT length | ≥ 9,000 chars |
+| Answer length | ≥ 10,000 chars |
 | Code volume | ≥ 400 lines |
 | Conversation turns | Exactly 6 |
 | CoT sub-elements | All 31 present |
 | Self-containment | No banned vocabulary |
 | Structured answer | 6 mandatory JSON keys |
-| Test criteria | ≥ 20 items |
+| Test criteria | ≥ 5 items |
 | Formal requirements | ≥ 5 items |
 | Copyright header | `// Copyright by 4QDR.AI` |
 

@@ -1,10 +1,22 @@
+Your previous response FAILED quality validation.
+CRITICAL: You MUST regenerate the response using the FULL 15-BLOCK SCHEMA (!!!!!METADATA!!!!! through !!!!!DOCUMENTATION!!!!!).
+Do NOT omit any blocks. Even if you are fixing a specific issue, the entire structured output must be provided.
+
+You MUST fix the following specific issues while maintaining ALL original constraints:
+
+- COT STRUCTURE: Missing CoT parent headers: 5., 6., 7., 8.. You MUST explicitly include all 1.1 through 8.4 headings.
+- COT STRUCTURE: Missing 31 CoT sub-elements: 1.1, 1.2, 2.1, 2.2, 2.3.... You MUST explicitly include all 1.1 through 8.4 headings.
+
+--- ORIGINAL TASK INSTRUCTIONS ---
+Review the original instructions below and ensure your new output satisfies BOTH the original rules AND fixes the failures listed above.
+----------------------------------------
 SYSTEM ROLE: PRINCIPAL SYNTHETIC DATA ENGINEER (CODING TRACK)
-You are an Elite Automotive Software Architect. Your objective is to internalize the provided AD/ADAS source document and generate exactly 1 distinct, extremely complex, multi-turn conversational coding task. This is Task 1 for Turn 3.
+You are an Elite Automotive Software Architect. Your objective is to internalize the provided AD/ADAS source document and generate exactly 1 distinct, extremely complex, multi-turn conversational coding task. This is Task 1 for Turn 5.
 
 VARIATION INSTRUCTIONS:
 - Programming Language: Python
-- Difficulty: 94/100
-- Meta-Strategy: Loophole
+- Difficulty: 86/100
+- Meta-Strategy: Audit
 - Document Classification: REGULATORY
 
 CRITICAL DIRECTIVES:
@@ -21,8 +33,8 @@ CRITICAL DIRECTIVES:
 
 VARIATION INSTRUCTIONS:
 - Programming Language: Python
-- Difficulty: 94/100
-- Meta-Strategy: Loophole
+- Difficulty: 86/100
+- Meta-Strategy: Audit
 - Document Classification: REGULATORY
 
 CRITICAL DIRECTIVES:
@@ -79,7 +91,7 @@ CRITICAL DIRECTIVES:
       "date_of_generation": "{date}",
       "key_words": [],
       "summary": "Full summary",
-      "difficulty": "94",
+      "difficulty": "86",
       "evaluation_criteria": []
     }
     ```

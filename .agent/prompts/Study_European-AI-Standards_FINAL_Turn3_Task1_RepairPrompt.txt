@@ -1,3 +1,17 @@
+Your previous response FAILED quality validation.
+CRITICAL: You MUST regenerate the response using the FULL 15-BLOCK SCHEMA (!!!!!METADATA!!!!! through !!!!!DOCUMENTATION!!!!!).
+Do NOT omit any blocks. Even if you are fixing a specific issue, the entire structured output must be provided.
+
+You MUST fix the following specific issues while maintaining ALL original constraints:
+
+- VOLUME FAILURE: CoT too short: 8074 chars (min 9000). Expand your content significantly to meet the character/line limits.
+- VOLUME FAILURE: Code too short: ~198 lines (min 300). Expand your content significantly to meet the character/line limits.
+- COT STRUCTURE: Missing CoT parent headers: 1.. You MUST explicitly include all 1.1 through 8.4 headings.
+- COT STRUCTURE: Missing 31 CoT sub-elements: 1.1, 1.2, 2.1, 2.2, 2.3.... You MUST explicitly include all 1.1 through 8.4 headings.
+
+--- ORIGINAL TASK INSTRUCTIONS ---
+Review the original instructions below and ensure your new output satisfies BOTH the original rules AND fixes the failures listed above.
+----------------------------------------
 SYSTEM ROLE: PRINCIPAL SYNTHETIC DATA ENGINEER (CODING TRACK)
 You are an Elite Automotive Software Architect. Your objective is to internalize the provided AD/ADAS source document and generate exactly 1 distinct, extremely complex, multi-turn conversational coding task. This is Task 1 for Turn 3.
 
@@ -55,14 +69,6 @@ CRITICAL DIRECTIVES:
 - MPSC ANTI-PADDING RULE: You are STRICTLY FORBIDDEN from using keyword-salad (e.g., "visualization visualized complexity derivation") to inflate user turn length. Meet the 100-character minimum with dense technical depth, not repetition.
 - NO BANNED WORDS: Avoid "the document says", "as per study", etc.
 - TRACEABILITY MANDATORY: Every formal requirement MUST be referenced in the code comments as `// [REQ-ID]` next to its implementation point.
-
-**FOLLOW-UP TURN GENERATION (MANDATORY — READ CAREFULLY):**
-- You MUST write ACTUAL technical content for turns 3-6. Do NOT echo template instructions as content.
-- Do NOT output "(Write a 2-3 sentence...)" or "(Write the first technical response here...)" as actual text.
-- Do NOT copy the BANNED VOCABULARY section into any turn content.
-- Each follow-up user question MUST reference a SPECIFIC class, variable, or algorithm from YOUR code answer.
-- Each follow-up assistant answer MUST provide REAL engineering analysis — not template instructions.
-- If you find yourself writing parenthesized instructions like "(Ensure it is highly detailed...)", STOP and write real content instead.
 
     QWEN3 BLOCK-BASED OUTPUT SCHEMA:
     
@@ -135,16 +141,16 @@ CRITICAL DIRECTIVES:
     ```
 
     !!!!!TURN-3-USER!!!!!
-    [No Thinking] (Write a 2-3 sentence technical inquiry referencing the code above, minimum 100 characters)
+    [No Thinking] (Follow up 1)
 
     !!!!!TURN-4-ASSISTANT!!!!!
-    (Write the first technical response here. Ensure it is highly detailed and contextual.)
+    (Answer 1)
 
     !!!!!TURN-5-USER!!!!!
-    [No Thinking] (Write another 2-3 sentence technical inquiry pushing the architecture further, minimum 100 characters)
+    [No Thinking] (Follow up 2)
 
     !!!!!TURN-6-ASSISTANT!!!!!
-    (Write the final technical response here. Must be highly detailed.)
+    (Answer 2)
 
     BANNED VOCABULARY (CRITICAL):
     - Never say "the document says" or "as per the provided text".
