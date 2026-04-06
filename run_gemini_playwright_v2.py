@@ -635,55 +635,42 @@ CRITICAL AVOIDANCE: DO NOT use "Canvas" mode, "Gems", or any interactive coding 
             is_search_page = ("/search" in current_url)
             
             if is_existing_chat or is_search_page:
-                log(f"  ⚠️ Landed on {current_url[:60]} — forcing New Chat button click")
+                log(f"  ⚠️ Landed on {current_url[:60]} — forcing New Chat via JavaScript")
                 
-                # Dismiss any open menus first
-                try:
-                    page.keyboard.press("Escape")
-                    page.wait_for_timeout(300)
-                except Exception:
-                    pass
+                # Execute native JS click to completely bypass Playwright's mouse hovering
+                # which was accidentally opening 3-dot context menus on chat history items.
+                page.evaluate("""() => {
+                    // Try to find the button/link by its exact text
+                    const nodes = Array.from(document.querySelectorAll('a, button, span, div'));
+                    for (const node of nodes) {
+                        const txt = (node.textContent || '').trim();
+                        if ((txt === 'Neuer Chat' || txt === 'New chat') && node.offsetParent !== null) {
+                            // Found visible node with exact text. Click it!
+                            node.click();
+                            // If it's a span/div, click its parent just in case
+                            if (node.parentElement) node.parentElement.click();
+                            return true;
+                        }
+                    }
+                    
+                    // Fallback: look for generic new chat link (href="/app")
+                    const links = Array.from(document.querySelectorAll('a'));
+                    for (const a of links) {
+                        if (a.getAttribute('href') === '/app') {
+                            a.click();
+                            return true;
+                        }
+                    }
+                    return false;
+                }""")
+                page.wait_for_timeout(3000)
                 
-                clicked = False
-                
-                # Strategy 1: Exact text match (prevents matching chat history names with 3-dot buttons)
-                for btn_text in ["Neuer Chat", "New chat"]:
-                    try:
-                        el = page.get_by_text(btn_text, exact=True)
-                        if el.count() > 0 and el.first.is_visible():
-                            el.first.click(timeout=3000)
-                            page.wait_for_timeout(2000)
-                            log(f"  ✅ Clicked via exact text match: {btn_text}")
-                            clicked = True
-                            break
-                    except Exception:
-                        pass
-                
-                # Strategy 2: Data-test-id or specific element matches
-                if not clicked:
-                    new_chat_selectors = [
-                        'a[data-test-id="new-chat-button"]',
-                        'div.new-chat-header button',
-                        'a[href="/app"]', 
-                    ]
-                    for sel in new_chat_selectors:
-                        try:
-                            btn = page.locator(sel)
-                            if btn.count() > 0 and btn.first.is_visible():
-                                btn.first.click(timeout=3000)
-                                page.wait_for_timeout(2000)
-                                log(f"  ✅ Clicked 'New Chat' via fallback: {sel}")
-                                clicked = True
-                                break
-                        except Exception:
-                            pass
-                
-                # Verify we actually moved to a clean /app — if not, force navigate via JS
+                # Verify we actually moved to a clean /app
                 new_url = page.url
                 if _re.search(r'/app/[a-f0-9]{8,}', new_url) or "/search" in new_url:
-                    log(f"  ⚠️ Still not on clean /app after click. Force-navigating via JS...")
+                    log(f"  ⚠️ Still not on clean /app. Force-navigating via window.location...")
                     try:
-                        page.evaluate("window.location.href = 'https://gemini.google.com/app'")
+                        page.evaluate("window.location.assign('https://gemini.google.com/app')")
                     except Exception:
                         page.goto("https://gemini.google.com/app", wait_until="domcontentloaded")
                     page.wait_for_timeout(3000)
