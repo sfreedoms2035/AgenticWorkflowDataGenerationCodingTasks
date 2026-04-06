@@ -628,43 +628,66 @@ CRITICAL AVOIDANCE: DO NOT use "Canvas" mode, "Gems", or any interactive coding 
         # --- FORCE NEW CHAT TO PREVENT STATE BLEED ---
         log("Forcing 'New Chat' to guarantee clean state...")
         try:
-            # Check if we're on an existing chat (URL contains /app/ followed by a chat ID)
+            # Check if we're on an existing chat OR the search page
             current_url = page.url
             import re as _re
             is_existing_chat = bool(_re.search(r'/app/[a-f0-9]{8,}', current_url))
+            is_search_page = ("/search" in current_url)
             
-            if is_existing_chat:
-                log(f"  ⚠️ Landed on existing chat: {current_url[:80]}")
+            if is_existing_chat or is_search_page:
+                log(f"  ⚠️ Landed on {current_url[:60]} — forcing New Chat button click")
                 
-                # Try clicking 'New Chat' / 'Neuer Chat' — it's an <a> link, not a <button>
-                new_chat_selectors = [
-                    'a[data-test-id="new-chat-button"]',
-                    'a:has-text("Neuer Chat")',
-                    'a:has-text("New chat")',
-                    'a[href="/app"]',
-                    'button:has-text("Neuer Chat")',
-                    'button:has-text("New chat")',
-                ]
+                # Dismiss any open menus first
+                try:
+                    page.keyboard.press("Escape")
+                    page.wait_for_timeout(300)
+                except Exception:
+                    pass
+                
                 clicked = False
-                for sel in new_chat_selectors:
-                    btn = page.locator(sel)
-                    if btn.count() > 0:
-                        try:
-                            btn.first.click(timeout=3000)
+                
+                # Strategy 1: Exact text match (prevents matching chat history names with 3-dot buttons)
+                for btn_text in ["Neuer Chat", "New chat"]:
+                    try:
+                        el = page.get_by_text(btn_text, exact=True)
+                        if el.count() > 0 and el.first.is_visible():
+                            el.first.click(timeout=3000)
                             page.wait_for_timeout(2000)
-                            log(f"  ✅ Clicked 'New Chat' via: {sel}")
+                            log(f"  ✅ Clicked via exact text match: {btn_text}")
                             clicked = True
                             break
-                        except Exception:
-                            continue
+                    except Exception:
+                        pass
                 
-                # Verify we actually moved to a clean /app — if not, force navigate
+                # Strategy 2: Data-test-id or specific element matches
+                if not clicked:
+                    new_chat_selectors = [
+                        'a[data-test-id="new-chat-button"]',
+                        'div.new-chat-header button',
+                        'a[href="/app"]', 
+                    ]
+                    for sel in new_chat_selectors:
+                        try:
+                            btn = page.locator(sel)
+                            if btn.count() > 0 and btn.first.is_visible():
+                                btn.first.click(timeout=3000)
+                                page.wait_for_timeout(2000)
+                                log(f"  ✅ Clicked 'New Chat' via fallback: {sel}")
+                                clicked = True
+                                break
+                        except Exception:
+                            pass
+                
+                # Verify we actually moved to a clean /app — if not, force navigate via JS
                 new_url = page.url
-                if _re.search(r'/app/[a-f0-9]{8,}', new_url):
-                    log(f"  ⚠️ Still on old chat after click. Force-navigating to /app...")
-                    page.goto("https://gemini.google.com/app", wait_until="domcontentloaded")
+                if _re.search(r'/app/[a-f0-9]{8,}', new_url) or "/search" in new_url:
+                    log(f"  ⚠️ Still not on clean /app after click. Force-navigating via JS...")
+                    try:
+                        page.evaluate("window.location.href = 'https://gemini.google.com/app'")
+                    except Exception:
+                        page.goto("https://gemini.google.com/app", wait_until="domcontentloaded")
                     page.wait_for_timeout(3000)
-                    log(f"  ✅ Navigated to clean /app")
+                    log(f"  ✅ Navigated to clean /app via fallback")
             else:
                 log(f"  ✅ Already on clean chat: {current_url[:80]}")
         except Exception as e:
