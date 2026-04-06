@@ -72,6 +72,63 @@ def clean_repetitive_text(text):
     return '\n\n'.join(cleaned)
 
 
+# Known CoT parent section titles (without the number prefix).
+# Gemini's UI renders "1. Title" as HTML <ol><li>Title</li></ol>,
+# and both clipboard copy and innerText extraction strip the number prefix.
+# This map lets us re-inject them.
+COT_SECTION_TITLES = {
+    "Initial Query Analysis & Scoping": "1.",
+    "Initial Query Analysis and Scoping": "1.",
+    "Assumptions & Context Setting": "2.",
+    "Assumptions and Context Setting": "2.",
+    "High-Level Plan Formulation": "3.",
+    "High Level Plan Formulation": "3.",
+    "Solution Scenario Exploration": "4.",
+    "Detailed Step-by-Step Execution & Reflection": "5.",
+    "Detailed Step-by-Step Execution and Reflection": "5.",
+    "Detailed Step by Step Execution & Reflection": "5.",
+    "Comparative Analysis & Synthesis": "6.",
+    "Comparative Analysis and Synthesis": "6.",
+    "Final Solution Formulation": "7.",
+    "Meta-Commentary & Confidence Score": "8.",
+    "Meta Commentary & Confidence Score": "8.",
+    "Meta-Commentary and Confidence Score": "8.",
+}
+
+
+def restore_ol_numbering(text):
+    """Re-inject CoT parent header numbers stripped by browser's <ol> rendering.
+    
+    The Gemini UI renders numbered lists (e.g. '1. Title') as HTML ordered lists,
+    and both clipboard copy and innerText extraction lose the number prefix.
+    This function scans the extracted text for known section titles at line-start
+    and re-injects the correct number prefix.
+    """
+    if not text:
+        return text
+    
+    lines = text.split('\n')
+    restored_count = 0
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        # Skip lines that already have a number prefix
+        if re.match(r'^\d+\.', stripped):
+            continue
+        # Check against known section titles
+        for title, number in COT_SECTION_TITLES.items():
+            if stripped == title or stripped.startswith(title):
+                # Preserve leading whitespace
+                leading = line[:len(line) - len(line.lstrip())]
+                lines[i] = f"{leading}{number} {stripped}"
+                restored_count += 1
+                break
+    
+    if restored_count > 0:
+        log(f"  [OL-Fix] Restored {restored_count} stripped parent header numbers")
+    
+    return '\n'.join(lines)
+
+
 def extract_semantic_blocks(text):
     """
     Extract semantic blocks using strict delimiter matching.
@@ -1280,6 +1337,8 @@ CRITICAL AVOIDANCE: DO NOT use "Canvas" mode, "Gems", or any interactive coding 
 
         # In the new semantic strategy, we pass the entire response (full_text) 
         # to the validator which will extract the blocks and assemble the 6-turn JSON.
+        # First, restore any numbered list prefixes stripped by the browser's <ol> rendering.
+        full_text = restore_ol_numbering(full_text)
         success = validate_and_save_json(full_text, out_json, gemini_thinking)
 
         if success:
