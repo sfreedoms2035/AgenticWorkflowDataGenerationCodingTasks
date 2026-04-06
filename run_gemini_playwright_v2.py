@@ -73,20 +73,25 @@ def clean_repetitive_text(text):
 
 
 def extract_semantic_blocks(text):
-    """Extract delimited blocks from the LLM response, handling potential backslash escaping (e.g. \!\!)."""
+    """
+    Extract semantic blocks using strict delimiter matching.
+    Looks for blocks bounded by: !!!!!BLOCKNAME!!!!!
+    Now more tolerant to spaces and optional colons inside the delimiters.
+    Returns: dict mapping block name to its body.
+    """
     blocks = {}
-    # Extremely aggressive pattern: Match any sequence of 3+ (!) or (\!) as delimiters.
-    # Group 1 is the block name.
-    # We allow backslashes in the delimiter but NOT in the captured block name.
-    pattern = r'[\\!]{3,}([A-Z0-9\-_]+)[\\!]{3,}\s*(.*?)(?=[\\!]{3,}[A-Z0-9\-_]+[\\!]{3,}|\s*$)'
-    matches = re.finditer(pattern, text, re.DOTALL | re.IGNORECASE)
+    if not text:
+        return blocks
+        
+    pattern = r'[\\!]{3,}\s*([A-Z0-9\-_]+)\s*:?\s*[\\!]{3,}\s*(.*?)(?=[\\!]{3,}\s*[A-Z0-9\-_]+\s*:?\s*[\\!]{3,}|\s*$)'
+    matches = re.finditer(pattern, text, re.DOTALL)
+    
     for match in matches:
-        name = match.group(1).upper()
-        content = match.group(2).strip()
-        # Remove any trailing block delimiters if caught by DOTALL
-        content = re.sub(r'[\\!]{3,}.*$', '', content, flags=re.MULTILINE).strip()
-        blocks[name] = content
-        log(f"Extracted block: {name} ({len(content)} chars)")
+        block_name = match.group(1).strip()
+        # Clean specific trailing artifacts (like extra backslashes before quotes)
+        block_content = re.sub(r'\\+$', '', match.group(2).strip())
+        blocks[block_name] = block_content
+        log(f"Extracted block: {block_name} ({len(block_content)} chars)")
     return blocks
 
 
@@ -110,6 +115,10 @@ def clean_semantic_block(content):
 def clean_repetitive_text(text):
     """Remove verbatim repetitive paragraphs (common in Gemini loops)."""
     if not text: return text
+    
+    # Ensure delimiters form their own boundaries so we don't accidentally delete follow-up turns
+    text = re.sub(r'([\\!]{3,})', r'\n\n\1', text)
+    
     # Split by double newline to identify paragraphs
     paragraphs = text.split('\n\n')
     seen = set()
@@ -123,7 +132,7 @@ def clean_repetitive_text(text):
             log(f"  [De-Loop] Skipping repetitive paragraph ({len(p_strip)} chars)")
             continue
         seen.add(p_sig)
-        cleaned.append(p)
+        cleaned.append(p_strip)
     return '\n\n'.join(cleaned)
 
 
@@ -734,15 +743,19 @@ CRITICAL AVOIDANCE: DO NOT use "Canvas" mode, "Gems", or any interactive coding 
         # --- INJECT MEGA-PROMPT ---
         log("Injecting mega-prompt...")
         try:
-            # 1. Inject massive text via DOM to bypass Gemini's ~40k char paste limit
-            js_prompt = mega_prompt.replace('\\', '\\\\').replace('`', '\\`').replace('$', '\\$')
-            page.evaluate(f"""() => {{ 
-                const box = document.querySelector('rich-textarea p') || document.querySelector('rich-textarea div[contenteditable="true"]'); 
-                if (box) box.innerText = `{js_prompt}`; 
-            }}""")
-            page.wait_for_timeout(500)
+            # 1. Primary injection: Use Playwright's evaluate to safely pass the string and trigger React
+            log("  Injecting Mega-Prompt via JS...")
+            page.evaluate("""(text) => {
+                const box = document.querySelector('rich-textarea p') || document.querySelector('rich-textarea div[contenteditable="true"]');
+                if (box) {
+                    box.innerHTML = '';  // Clear existing content
+                    box.innerText = text;
+                    box.dispatchEvent(new Event('input', {bubbles: true}));
+                }
+            }""", mega_prompt)
+            page.wait_for_timeout(1000)
             
-            # 2. Focus the box and type a space to natively wake up the React/Lit event listeners
+            # 2. Focus the box and type a space to natively wake up the React/Lit event listeners (fallback if dispatchEvent wasn't enough)
             prompt_box = page.locator('rich-textarea, div[contenteditable="true"], textarea').first
             prompt_box.click(timeout=5000)
             page.keyboard.press("Space")
@@ -750,9 +763,9 @@ CRITICAL AVOIDANCE: DO NOT use "Canvas" mode, "Gems", or any interactive coding 
             page.keyboard.press("Backspace")
             page.wait_for_timeout(500)
             
-            # 3. Send the prompt via Send button click (more reliable than Enter)
+            # 3. Send the prompt via Send button click
             prompt_sent = False
-            send_btn = page.locator('button[aria-label*="Send message"], button[aria-label*="Nachricht senden"], button.send-button')
+            send_btn = page.locator('button[aria-label*="Send message"], button[aria-label*="Nachricht senden"], button.send-button, [data-test-id="send-button"]')
             if send_btn.count() > 0 and send_btn.first.is_visible() and send_btn.first.is_enabled():
                 try:
                     send_btn.first.click(timeout=3000)
@@ -787,19 +800,27 @@ CRITICAL AVOIDANCE: DO NOT use "Canvas" mode, "Gems", or any interactive coding 
                     return box ? box.innerText.trim().length : 0;
                 }""")
                 if textarea_content > 100:
-                    log(f"  ⚠️ Textarea still has {textarea_content} chars — prompt may not have sent. Retrying...")
-                    page.keyboard.press("Enter")
+                    log(f"  ⚠️ Textarea still has {textarea_content} chars — prompt may not have sent. Retrying Send button...")
+                    if send_btn.count() > 0 and send_btn.first.is_visible():
+                        send_btn.first.click(timeout=2000)
+                    else:
+                        page.keyboard.press("Enter")
                     page.wait_for_timeout(2000)
                 else:
                     log("  ✅ Textarea cleared — prompt was sent successfully.")
                 
         except Exception as e:
-            log(f"Primary injection failed: {e}. Trying fallback...")
+            log(f"Primary injection failed: {e}. Trying fallback native clear+fill...")
             try:
-                # If JS injection totally fails, try Playwright's native insertion
                 prompt_box = page.locator('rich-textarea, div[contenteditable="true"], textarea').first
                 prompt_box.click(timeout=5000)
-                page.keyboard.insert_text(mega_prompt)
+                page.keyboard.press("Control+A")
+                page.keyboard.press("Backspace")
+                page.wait_for_timeout(300)
+                # Instead of insert_text which can be slow and buggy for 40k chars, use evaluate again
+                page.evaluate("(text) => navigator.clipboard.writeText(text)", mega_prompt)
+                prompt_box.click()
+                page.keyboard.press("Control+V")
                 page.wait_for_timeout(1000)
                 page.keyboard.press("Enter")
             except Exception as e2:
