@@ -540,15 +540,25 @@ CRITICAL AVOIDANCE: DO NOT use "Canvas" mode, "Gems", or any interactive coding 
             permissions=["clipboard-read", "clipboard-write"]
         )
 
-        # Close any stale pages/tabs from previous tasks in this persistent context
-        for stale_page in browser.pages:
-            try:
-                stale_page.close()
-            except Exception:
-                pass
+        # Reuse/clean up tabs from persistent context to prevent stale state bleed.
+        # IMPORTANT: Cannot close ALL tabs — that kills Chrome and breaks new_page().
+        # Strategy: Keep the first tab, close extras, then navigate the survivor to /app.
+        existing_pages = browser.pages
+        if len(existing_pages) > 0:
+            page = existing_pages[0]  # Reuse the first tab
+            # Close any extra tabs
+            for extra in existing_pages[1:]:
+                try:
+                    extra.close()
+                except Exception:
+                    pass
+            # Navigate the surviving tab to a clean /app
+            page.goto("https://gemini.google.com/app", wait_until="domcontentloaded")
+        else:
+            # No existing tabs (fresh launch) — create one
+            page = browser.new_page()
+            page.goto("https://gemini.google.com/app", wait_until="domcontentloaded")
         
-        page = browser.new_page()
-        page.goto("https://gemini.google.com/app", wait_until="domcontentloaded")
         page.wait_for_timeout(2000)
         
         # If we got redirected to /search or elsewhere, force back to /app
