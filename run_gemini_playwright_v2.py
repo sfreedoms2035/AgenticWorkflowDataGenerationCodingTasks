@@ -533,6 +533,23 @@ CRITICAL AVOIDANCE: DO NOT use "Canvas" mode, "Gems", or any interactive coding 
 
     with sync_playwright() as p:
         user_data_dir = os.path.join(os.getcwd(), ".playwright_profile")
+        
+        # Delete Chrome's session restore files to prevent /search redirect.
+        # Without this, Chrome restores the last page (usually /search) and
+        # Gemini's SPA router overrides our page.goto("/app") navigation.
+        import glob as _glob
+        for session_pattern in [
+            os.path.join(user_data_dir, "Default", "Sessions", "*"),
+            os.path.join(user_data_dir, "Default", "Session Storage", "*.log"),
+            os.path.join(user_data_dir, "Default", "Session Storage", "*.ldb"),
+        ]:
+            for f in _glob.glob(session_pattern):
+                try:
+                    os.remove(f)
+                except Exception:
+                    pass
+        log("Cleared session restore files")
+        
         browser = p.chromium.launch_persistent_context(
             user_data_dir=user_data_dir,
             headless=False,
@@ -547,6 +564,13 @@ CRITICAL AVOIDANCE: DO NOT use "Canvas" mode, "Gems", or any interactive coding 
 
         page = browser.new_page()
         page.goto("https://gemini.google.com/app", wait_until="domcontentloaded")
+        page.wait_for_timeout(3000)
+        
+        # If Gemini's SPA redirected us to /search, force navigate again
+        if "/search" in page.url or "/app" not in page.url:
+            log(f"  ⚠️ SPA redirected to {page.url[:60]} — retrying navigation")
+            page.goto("https://gemini.google.com/app", wait_until="domcontentloaded") 
+            page.wait_for_timeout(3000)
 
         # --- AUTO-DISMISS: Activity/Consent Pages ---
         def ensure_on_gemini():
