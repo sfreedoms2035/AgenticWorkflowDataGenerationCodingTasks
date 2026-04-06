@@ -294,7 +294,8 @@ def validate_and_save_json(llm_response, out_json_path, thinking_text=None):
         # 2. Extraction: Reasoning
         # Use REASONING block first, then fallback to passed thinking_text
         reasoning_main = clean_semantic_block(blocks.get("REASONING", thinking_text or "(Missing thinking monologue)"))
-        reasoning_main = re.sub(r'</?think>', '', reasoning_main, flags=re.IGNORECASE).strip()
+        # Strip both normal and escaped think tags to prevent doubling
+        reasoning_main = re.sub(r'\\?</?think\\?>', '', reasoning_main, flags=re.IGNORECASE).strip()
 
         # 3. Extraction: Assistant Content (Monolithic or Granular)
         # Try Monolithic first
@@ -345,12 +346,17 @@ def validate_and_save_json(llm_response, out_json_path, thinking_text=None):
             "test_criteria": test_crit if test_crit else mono_obj.get("test_criteria", [])
         }
         
-        # 4. Clean Other Turns
+        # 4. Clean Other Turns (also strip escaped think tags from content)
+        def _strip_escaped_think(text):
+            """Remove normal and escaped think tags from content."""
+            text = re.sub(r'\\?</?think\\?>', '', text, flags=re.IGNORECASE).strip()
+            return text
+        
         turn1 = clean_semantic_block(blocks.get("TURN-1-USER", "Problem statement missing."))
         turn3 = clean_semantic_block(blocks.get("TURN-3-USER", "How does this handle edge cases?"))
-        turn4 = clean_semantic_block(blocks.get("TURN-4-ASSISTANT", "Logic verified."))
+        turn4 = _strip_escaped_think(clean_semantic_block(blocks.get("TURN-4-ASSISTANT", "Logic verified.")))
         turn5 = clean_semantic_block(blocks.get("TURN-5-USER", "Follow up 2?"))
-        turn6 = clean_semantic_block(blocks.get("TURN-6-ASSISTANT", "Response 2."))
+        turn6 = _strip_escaped_think(clean_semantic_block(blocks.get("TURN-6-ASSISTANT", "Response 2.")))
         
         # Build 6-Turn Conversations Array
         conversations = [
