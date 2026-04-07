@@ -1,0 +1,513 @@
+THE UNIVERSITY OF WARWICK
+
+
+
+
+Manuscript version: Author’s Accepted Manuscript
+The version presented in WRAP is the author’s accepted manuscript and may differ from the
+published version or Version of Record.
+
+Persistent WRAP URL:
+http://wrap.warwick.ac.uk/159733
+
+How to cite:
+Please refer to published version for the most recent bibliographic citation information.
+If a published version is known of, the repository item page linked to above, will contain
+details on accessing it.
+
+Copyright and reuse:
+The Warwick Research Archive Portal (WRAP) makes this work by researchers of the
+University of Warwick available open access under the following conditions.
+
+Copyright © and all moral rights to the version of the paper presented here belong to the
+individual author(s) and/or other copyright owners. To the extent reasonable and
+practicable the material made available in WRAP has been checked for eligibility before
+being made available.
+
+Copies of full items can be used for personal research or study, educational, or not-for-profit
+purposes without prior permission or charge. Provided that the authors, title and full
+bibliographic details are credited, a hyperlink and/or URL is given for the original metadata
+page and the content is not changed in any way.
+
+Publisher’s statement:
+Please refer to the repository item page, publisher’s statement section, for further
+information.
+
+For more information, please contact the WRAP Team at: wrap@warwick.ac.uk.
+
+
+
+
+
+
+
+
+
+
+
+
+
+warwick.ac.uk/lib-publications
+
+    A Two-Level Abstraction ODD Definition Language: Part I*
+
+    Patrick Irvine, Xizhe Zhang, Siddartha Khastgir, Edward Schwalb, and Paul Jennings
+
+
+
+                      Abstract — The development of Automated Driving Systems
+               (ADSs) is driven by the many benefits they offer. However, the                                   ATwo Level Abstraction ODD Definition Language
+                complexities associated with ADSs and their interactions with                                                         —
+                the environment pose challenges for their safety assurance. A            papernatural.       Undying                 guy of
+    key aspect during its development process is     knowing              the     Structured                                          ©     paper
+                                                                                                                                            Formal
+    capabilities,  limitations, and being able to    convey         them in a                inspired               programmatic,
+                                                                                  syntax for regulators |                           | semantic framework
+    clear   manner     for various     types of      stakeholders.        The     and
+                    Operational Design Domain (ODD) concept was introduced to           system engineers        reuse  for                  ODD language
+                                                                                        (non coders).                                       concept
+                   define the operating boundaries where a system can operate                                   —
+            safely. It is therefore a key element for the safety assurance of
+                     ADSs. Efforts have been made to define the scope and the                                       Figure 1: Two level abstraction model.
+                  content an ODD for ADSs should cover, however there remains
+                  the need for a common, exchangeable, executable, and human-
+    readable format for    the description.  This paper     presents        a                            It is crucial for ADSs and ADASs to determine whether
+                language for the description of the ODD of ADSs, in a textual                         this safe operating boundary defined in the ODD is being
+              format that leans on natural language influence. Such format is                        violated or not, as it would mean triggering a transition
+                  intended to be both human and machine-readable and would be    demand or a minimal risk manoeuvre [7].                        Therefore, ODD
+              relevant to end users such as regulators and systems designers.                      plays an important role in the safety assurance of ADSs and
+    The two-level     abstraction approach   – a structured           natural    ADASs,  and    needs           to  be           considered     throughout the
+                 language representation and a formal representation (covered                     development cycle, from conceptual phase to verification and
+              across two papers) -- has been developed to have the ability to    validation phase.
+    describe   complex     ODD conditionalities  and utilize a          well-
+               defined domain ontology to achieve rich semantics. It is aimed                            This raises the requirement that an ODD specification
+                 to support ODD related activities throughout the development                   needs to be at the right abstraction level (and complete), and
+    cycle   of ADSs     (specification as well   as  verification         and                           it needs to accommodate an expanding scope which might
+    validation), while covering a diverse range of stakeholders.                                    occur during the development process. In addition, various
+                                                                                 stakeholders need           to access and     interact         with       ODD
+    Keywords—                      operational design domain, ODD description                       specifications, such as ADS developers, test engineers and
+             language, automated driving systems, verification and validation                    regulators. ADS developers, for instance, will benefit from a
+                           I.        INTRODUCTION                                                 common structure for ODD definition, providing possibilities
+        for integration into testing toolchains, along with
+    The advancement in automated driving technologies has ~~ comparability and transparency across systems and
+                   resulted in the increasing deployment of Automated Driving                  organisations. A test engineer, will appreciate this ability to
+                        Systems (ADSs) and Advanced Driver Assistance Systems                      easily develop toolchains through use of a common structure
+(ADASs). The move towards such autonomy offers benefits ~~ but will also benefit from the capability to add enough
+                 such as lowered emissions [1], increased on-road safety [2],                 specificity to the definition that is useful in a test platform.
+reduced traffic congestion [3], decrease driver’s workload ~~ Regulators and local authorities will appreciate the format
+                 [1], and improve traffic throughput [2]. However, due to the                         being human-readable and interpretable for non-technical
+                           complexity in the ADSs and ADASs, the industry and                      personnel, while maintaining a common format/structure that
+academia have been investigating different approaches for ~~ ensures consistency and comparability of definitions.
+their safety assurance [3]. It is suggested that for ADASs and ~~ Therefore, an ODD specification not only needs to have a
+               ADSs, it is important to establish “how a system fails”, i.e.,                     common format for exchange and sharing, but it also needs to
+the limitations of the systems [4]. However, it is not only ~~ be quantifiable for testing purposes, and be both
+                 important to establish the limitations, they also need to be    human/machine           readable.     Though     some          of       these
+                 conveyed to the users in order to build public trust in such                         requirements may appear to be competing with each other,
+    systems [5].                                                                             achieving a format that applies to all is essential in satisfying
+                                                                                 the needs of the industry and should be established.
+           *Research supported by the UK Research and Innovation, Innovate UK                         Several standards have been developed in order to form a
+    and the Centre for Connected & Autonomous Vehicles (CCAV).                                          common understanding and a common scope for the ODD of
+    withPatrick Irvine, Xizhe Zhang, Siddartha Khastgir and Paul Jennings are                      ~~ ADSs, such as SAE J3016 [7], BSI PAS 1883 [6], ISO 34503
+                  WMG, University of Warwick, Coventry, CV4 7AL, UK. (e-mail:                         [8], SAE AVSC lexicon [9]. SAE J3016 establishes a clear
+    {Patrick.Irvine,    Jason.Zhang,   S.Khastgir.1,           Paul.Jennings}                       definition of the term ODD and BSI PAS 1883 proposes a set
+    @warwick.ac.uk).                                                                                 of ODD attributes in the form of a taxonomy. ISO 34503 is
+    Edward Schwalb. (e-mail: schwalb.edward@gmail.com).                                               being developed further from the ODD taxonomy in BSI PAS
+
+    1883,   and     SAE  AVSC      lexicon     provides a    conceptual
+    framework and lexicon for describing the ODD. While the
+    definitions, the    attributes and     the   framework    for   ODD
+    specification are being developed, the industry still lacks a                          —
+    common and open description format              to enable exchange,                                                            description
+    sharing, execution and regulatory purposes.                                    Class
+        This paper             aims to build on top of the existing ODD            +   Auribute, metrics,  +   Default sate
+    concepts,  attributes,           and guidance to form a description                                    +   Extension mechanism
+    language that satisfies the above-mentioned requirements. It                                           2   Donato pale
+    reports the Part I of a two-level ODD description language                          Figure 2: ODD description process diagram
+    concept which covers a      structured      natural language format
+    with a focus on human readability.               The human readable                        As previously mentioned several standards have been
+    format is aimed at end users such as regulators and system             developed which tackle the scope that an ODD.                  SAE AVSC
+    designers  (non-coders).    The     Part II  [19]    of the concept               presents a guideline for a bottom-up approach to defining an
+documents a programmatic approach of ODD definition, =~ ODD [9], potential limitations of a location paired ODD
+    utilizing a      query semantic  format.     By introducing:   1) a                 approach are explored in [10]. PAS1883 presents a taxonomy
+    structured natural language format (readable to non-technical                           for the purpose of ODD definition using their required
+    end     users); 2) a     formal  representation       (programmatic    minimum set of ODD attributes [6].
+    approach   that is implementation ready);       3)    a  conversion                  Despite its importance, there still lacks a common format
+    between the two levels,              a coherent ODD can be achieved                   for ODD description. Two examples definition formats are
+    which can be applied throughout the development cycle of an                       presented in BSI PAS 1883, one being a textual and one being
+    ADS.                                                                          a tabular definition [6]. A textual representation given follows
+                          II.   RELATED WORK                                             a structured natural language format which makes for good
+                The definition of ODD given by SAE J3016 is as follows:                readability, however such description needs to be structure
+        with a formal syntax and semantics in order to capture an
+   “[The] Operating conditions under which a given driving ~~ ODD. A tabular format on the other hand, proposes ODD as
+automation system or feature thereof is specifically designed ~~ a checklist. Tabular/graphical representations can struggle to
+to function, including, but not limited to, environmental, ~~ provide the flexibility needed [14]. A report by Thorn et al.
+    geographical,    and     time-of-day    restrictions,   and/or  the    [15] is consistent              with the checklist  approach,   however
+    requisite presence or absence of certain traffic or roadway                       Gyllenhammar et al. [10] expressed conservative views on the
+    characteristics” [7].                                                  checklist approach              due to the  requirements of the details
+                The definition given by SAE aligns with that of BSI PAS    needed to represent the operating conditions in such format.
+    1883; which adds that ODD forms the foundation for the                                     On the other hand, domain specific languages (DSLs)
+    development     of   relevant   tests   that     manufacturers  and    offer a     structured          format while still  able to retains the
+    developers can apply consistently [6]. Through creating the            structured                natural language elements necessary for human
+    ODD, we define what operating conditions               that the ADS    readability. DSLs are now favoured in many areas,                   one
+    needs to handle [10].                                                              example is the scenario description language for ADSs [16],
+                 ODD is crucial in the safe deployment of ADS, ensuring               which utilises a structured natural language format within a
+    that technology has its capabilities and limitations clearly           structured DSL framework, this               satisfies the requirements
+    defined and readily communicated to the end user is essential          from a diverse range of            stakeholders.      Blumenthal et al.
+    for     achieving     “informed        safety”   [5][20].     Clear                 identify that ADS developers should collaborate with state
+    communication     of     an  ADSs’     ODD is   critical   for also                 and local leaders to bring their vehicles into communities
+    confining the scope of a safety case as well as for verification,                around the country [11]. This highlights the need for a human
+    by restricting the case where the ADS is valid [10].         If the    readable    format    in        ODD     description, in   areas   where
+    ADS is designed and verified against its ODD definition, it is                   collaboration between developers and regulators is necessary,
+    paramount that the ADS does not leave that ODD. Therefore              an              understandable  ODD description     will  contribute to
+    the ODD is positioned critically in the ADS design process             ensuring safety. Colwell et al.     [17]              note that the ODD
+    from    a    safety perspective by     establishing  objective  and            represents not only a picture of the restrictions of an ADS but
+    concrete operating boundaries          [10]. Blumenthal et al. [11]    also defines               the functional requirement for systems which
+    discussed   approaches     for    assessing   acceptable  safety in               monitor ODD; this outlines the necessity for a definition to
+    ADSs, acknowledged the need for agreement on approaches                          remain executable to some degree. The necessity for a firstly
+    to ADS safety is essential in building and sustaining consumer                     implementable, and secondarily verifiable ODD definition is
+    trust in ADSs, with ODD being positioned at the centre of this         also referenced by Gyllenhammer et al. [10].
+    communication.     Their     study     also   comments      on  the                A gap can be identified in current literature and research,
+    concomitant effort that will be required on behalf of           ADS                   for an ODD definition language format that satisfies the
+    developers   and    government   to     define    conceptually  and                  regulatory and consumer requirement for human readability
+    quantitatively the threshold for commercial safety through the                  to establish a clear consistent communication of capability in
+    use of ODDs [11]. The importance of ODD in ADS safety is                            the interest of safety. Furthermore, a language that could
+    well documented also in these literatures [12][13].                    facilitates the     above,      while remaining        machine readable
+                                                                                      through tool chain development, will satisfy the need of ADS
+
+    developers and validation engineers. This paper aims to
+    propose a solution for this gap, developing a language that has                                                        2=
+    heavy natural language influence (though structured) as to
+    remain easily understandable, particularly catering for the                                                        J
+    regulatory and consumer market.                                                                             seenery
+            III.   DEVELOPMENT OF THE ODD L                                                                                structures
+                                                    ANGUAGE                                   ODD Taxonomy                 temporary road
+                  One of the main use cases of an ODD specification is to                                                  sachs
+    check   that,  during   testing and     deployment    phases,     any              dynamic                                weather
+    situations    can  be   mapped   to   the   ODD boundary          and
+    determined whether it is inside or outside the ODD. This
+    requires that the ODD boundary to be binary and provides
+    clear separation, the rest of the language concept is developed                 Figure 4: ODD taxonomy primary and secondary attributes
+    based on this key common ground. The ODD specification
+    format  enables    users  to  define such boundary and          group    units. As shown in Figure 3, such characteristics will also be
+    together a set of ODD attributes with their relations that fall          used to provide part of semantics for the language concept.
+    within the operating boundary. This section will be split into
+    two parts: the domain model, and the language concepts. As                   1) Class hierarchy
+    shown in Figure 2, the domain model provides the attributes                  Figure 3 illustrates the high-level class       hierarchy from
+    and the basic hierarchical relations. The language concept               BSI PAS 1883, this forms the scope of the ODD domain
+    then  tackles   the   format    of  the    specification,    covering    model.   Three   main elements      are       presented, which are
+    semantic   and    syntactic   aspects   of  the language.        When    environmental conditions, dynamic           elements, and scenery.
+combining the domain model and the language concepts, ~~ Scenery contains the necessary elements to describe the
+    individual ODD descriptions can be generated, which can                  drivable area, junctions, the special structures (such as tunnel,
+    express     complex   relations   of  the   attributes,   extend   or    bridge), the fixed road structures (such as streetlamp, pole),
+    customise the domain model, and be used for testing and                  the temporary road structures (such as construction site
+    regulatory purposes.                                                     detour) and the zones (such as interference zone, school
+    A.  Domain model                                                         zone). The environmental conditions contain weather (such as
+                    Previous study has concluded that an ODD taxonomy can    wind, rainfall), particulates (such as mist/fog, sand and dust),
+    never be exhaustive [6] due to its complex nature. In order to           illumination  condition     (such   as  daylight,   low    ambient
+    provide a common set of attributes while satisfying various              lighting)   and      connectivity   (such   as      communication,
+    stakeholders, the appropriate abstraction level needs to be              positioning). In     addition  to   scenery      and environmental
+    determined for such domain model. The idea is to have a                  conditions,  the     ODD taxonomy      also     provides   dynamic
+    domain model that is abstract enough such that it can be used            elements that describe the macroscopic traffic characteristics
+    by various stakeholders as a foundation. To further tailor               and the designated speed for the subject vehicle. Please note
+    towards individual’s need, an extension mechanism will be                further details on vehicle behaviours are not part of the ODD
+    introduced in the language concept to further develop and                therefore they are not considered within the scope.
+    customise the domain model with traceability.                                2)   Attributes, metrics, data type and units
+                         The BSI PAS 1883 [6] and ISO 34503 [8] have been             Once the hierarchy of the attributes has been determined,
+    developed     to   provide   such   set of     recommended       base    the next step is to iterate through each of the       hierarchical
+    attributes. While the ISO 34503 is still under development,              branches and    identify the     leaf-node  attributes and   their
+    the BSI PAS 1883 is chosen to provide the domain classes                 metrics,       together with their data types and the units. Leaf-
+    used in this paper. Please note the language concept can be              node attributes are the attributes that can be expressed with
+    used  independently       from  any     specific  domain       model;    pre-defined metric, data type and unit from the domain model,
+    however, to facilitate the exchange and         the sharing of    the    hence they are required to be specified. An example of a leaf
+    ODD specifications,                   it is recommended that a common    node attribute is rainfall, which sits under the parent attribute
+    domain model is used. Based on the information provided in               of        weather. The             ODD             language allows
+    BSI PAS 1883, five different characteristics of the taxonomy             an operating boundary to be defined within the taxonomy
+    are  further      developed   and   identified,  they     are:  class    whereby each attribute is either included or excluded.
+    hierarchy,    leaf  node    attributes,    the    metrics for    each        However,    the     inclusion  and    exclusion  of attributes
+    attribute, the datatype of the metrics, and the corresponding            often needs to be linked to measurable values that relate to
+                                                                             the  real world,     metrics  is   introduced for   this  purpose.
+                                                                             The metrics will specify further the measuring properties
+                                                                             that each of the identified attributes shall be described by
+                                                                             default. One example metric for rainfall is rainfall rate. It is
+                                                                             important to highlight that by using an extension mechanism,
+                                                                             the user will have the capability to define customised metrics.
+                                                                             For example, if user A wishes to measure the rainfall in terms
+                                                                             of rain droplet size, such metric can be introduced. Table I
+        Figure 3: Main elements for defining the domain model
+
+illustrates some example metrics as referenced to the            BSI   attributes. Each ODD statement will tackle one parent class
+PAS 1883 with the corresponding ODD attributes.                        and will perform the classification of its leaf node attributes
+                                                                       into the three categories. Upon covering all the parent classes
+    TABLE I.            EXAMPLE METRICS AND THE POTENTIAL ODD          a complete ODD description can be produced. In the ODD
+                               ATTRIBUTES                              language, whether an attribute is described using Suitable or
+               Attribute Metrics  Potential ODD Attribute              Unsuitable is determined   by the efficiency of     writing the
+       Rate                              Rainfall…                     statement. For instance, the road type as defined in the BSI
+                                                                       PAS 1883 contains          motorways, radial roads, distributor
+       Speed                        Wind, Speed limit …                roads, minor roads, slip roads, parking and shared space. In
+       Visibility                  Fog, Snowfall, Smoke …              order to write     a statement for the road type such that only
+                                                                       motorways are suitable, one could state Suitable road type is
+       Angle                       Curved road, Upslope …              motorway. Alternatively, one could also state        Unsuitable
+       Radius                           Curved road                    road type are radial roads, distributor roads, minor roads,
+                                                                       etc. Both approaches are syntactically and grammatically
+                                                                       correct, however the first one is the more efficient approach.
+         Building on top of the metric, the data type and units also   In addition, both approaches can also be used to infer what
+need to be defined, an example data type for rainfall rate             sibling classes are excluded or included. Understanding of the
+could be double or double range (15.00 or 15.00-17.00), and            domain model hierarchical structure  is therefore        key in
+an example of unit could be mm/hr. Some of the typical data            writing an efficient ODD description.
+types are double, integer, string, Boolean,     etc.    Once all the    Often     the   inclusion or exclusion     of an attribute has
+characteristics are identified, the rainfall example can be            dependencies on other conditions. For example, if one wishes
+defined as such: rainfall rate for attribute rainfall is 15.00 to      to express that       motorway is only suitable to drive during
+17.00 mm/hr.                                                           sunny condition, in this case the inclusion or exclusion of
+B.  Language concepts                                                  motorway    is   dependent on the sunny         condition.  The
+              In this section, the key language concepts which cover   conditional     qualifier  is introduced    to    handle   such
+both syntax and semantic related topics will be illustrated.           dependencies.     It   is used to mark any attributes that have
+They contain: 1) how to handle the inclusion, exclusion, and           dependencies, and in a separate section of the ODD statement
+conditional      ODD statements,  2)     how   to    specify default   the exact dependencies are elaborated in detail, this will be
+language state, 3) how to structure an ODD description             –   illustrated later.
+including composition statement and conditional statement,                    A potential issue could occur when the underlying domain
+4)            the operators used in the language concepts, 5) how to   model is extended to contain additional leaf node attributes
+handle extension to the domain model, 6) how to reference              within the    existing    hierarchical branches.  For  example,
+and provide versioning for the domain model.                           considering a previously defined ODD states that Suitable
+    1)      Inclusion, exclusion, and conditional                      road type is motorway (which also mean all the other sibling
+          As described earlier, one of the goals of defining the ODD   classes under road type are unsuitable), if the user updates the
+specification is to have the ability to map any given situation        road type branch to contain a custom road type, then this
+to a situation that is in/out of the defined ODD boundary. This        newly added road type will be automatically excluded. The
+results in the requirement for a mechanism which             defines   opposite problem also exists if previously defined ODD uses
+inclusion and exclusion for each of the attributes. However,           Unsuitable, then the newly added classes will automatically
+the inclusion and exclusion of certain attributes           can have   become suitable. A solution to this issue is to include the
+dependencies on other attributes elsewhere in the taxonomy,            versioning information of the domain model within the ODD
+therefore the language should also have the capability of              specification, so that        the ODD statements and the domain
+handling          conditional statements. Three      keywords    are   model can be updated synchronously.
+introduced as qualifiers to serve this purpose,          as shown in    2)    Default state
+Table II, which are suitable, unsuitable, conditional, they are           Another issue one could encounter so far is that stating the
+intended to be used for each attribute that needs to be                inclusion/exclusion/conditionals for each ODD branch can be
+described.                                                             inefficient especially when majority of the attributes use the
+                                                                       same qualifier    (inclusion or exclusion).   For example, if a
+    TABLE II.         QUALIFIERS FOR INCLUSION, EXCLUSION AND          system is only limited by the illumination (e.g., unsuitable
+                               CONDITIONAL                             under low-ambient condition) but all other ODD attributes are
+                   Qualifiers            Meaning                       suitable, it would be more efficient to only state the unsuitable
+               Suitable           Included in the ODD                  attribute rather than providing the suitable/unsuitable for all
+                                                                       the attributes. However, only stating the unsuitable attribute
+               Unsuitable           Excluded from the                  would    leave   all the  other attributes  undefined    in the
+                                           ODD                         specification       and result in an incomplete ODD. To address
+               Conditional         Inclusion/exclusion                 this issue, the language provides a mechanism for the user to
+                                    have dependencies                  specify a default state of the ODD specification, which can be
+                                                                       permissive or restrictive. Please note that here the permissive
+         Inclusion of an attribute at any level of the hierarchy has   and restrictive are applied as a global condition, it is different
+implications       on     the inclusion/exclusion    of its  sibling   from the suitable and unsuitable illustrated earlier, which are
+
+    applied to individual statements. Using a permissive default                                                   for                              and
+    state the assumption is made that attributes which are not                 Qualifier     Current      attribute    is  [Attribute                 properties]
+    mentioned    are  included       in the ODD,    while        using  the    #                      Statement    for    conditional
+    restrictive base state the assumption is made that these                                                   pra
+    attributes are excluded from the ODD. This language feature                       Example 1
+    is  used   to improve     the    efficiency     of the written      ODD    Suitable⁴     Road     type  is                      [Motorway]
+    description, such that every attribute of the taxonomy need                #      Example 2
+    not be written about for the description to be considered                  Cond_1        Conditional    Road  type  is  [Motorway]
+    complete.                                                                                                  Figure 6: Composition statement syntax and examples
+                   In practice, when paired with the description statements
+    that   combine    permissive        and restrictive    language,      a                                  Within each individual composition statement, the syntax
+    permissive base state     has proven more efficient             [18] in   follows the form displayed in Figure 6.                 As illustrated,             the
+    describing ADS’ that are towards level 4 or higher of the SAE             syntax      can     be  divided   into      two variations,                   one   for
+    J3016 levels of   driving automation              [7], or roadways that   suitable/unsuitable         statements    and   one                    for  conditional
+    contain a high amount of attributes and conditions from BSI                                        statement. For the suitable/unsuitable statements, it contains
+    PAS 1883 [6]. On the other hand, a restrictive base state has             qualifier,  current attribute, and its                           associated properties.
+    proven more efficient when describing ADS’ that conform to                                             Qualifiers are introduced earlier which can be ‘Suitable’,
+    level 2 or 3 of the levels of driving automation [18].                                             ‘Unsuitable’ or ‘Conditional’. The current attribute refers to
+              Similar to the previous section, a potential issue associated                             the attribute that is being defined, when paired with a well-
+    with the permissive/restrictive arises when the underlying                                           defined domain model, all the parent and sibling classes can
+    domain model is extended. When the domain model is                                                     be inferred to provide additional semantics. The attribute
+    updated to contain additional class branches or parent classes                                 properties consist of the metrics, the data type and the unit that
+    for the leaf node attributes, such branch will be automatically           forms     the   individual                           constraints. The  syntax for   the
+    included     or excluded    under      the     global  assumption    of   conditional cases contains                           custom identifier, qualifier   and
+    permissive and restrictive. This issue can also be resolved by            influenced attribute,       and                        attribute properties. The custom
+    including the versioning information of the domain model.                                         identifiers are used to indicate the condition being described,
+                                                                                                            in the example it is ‘Cond1’ but it can be under any user
+        3) Composition and conditional statement                                                            defined names. Furthermore, the syntax of the conditional
+                      While a certain number of ODD attributes’ constraints                             statement also contains the influenced attribute, this is the
+    might be specified directly as suitable or unsuitable within a                                       attribute which has dependencies. Figure 5 also contains two
+    specification, the others will have conditions attached and                                           individual examples, example 1 illustrates that Motorway is
+    their dependencies will need to be further specified. To                  the only suitable                               Road type. In this case, Motorway is of
+clearly differentiate these two categories of attributes, the ~~ enumeration type without unit, and it is considered as the
+    composition and conditional statements are introduced as                  attribute property      for    Road type attribute.                    Example 2 states
+    parts of the language. Composition statements contain those                                           that Motorway under Road type has further dependencies that
+attributes without any dependencies associated, in addition it ~~ need to be defined, and such dependency is identified under
+    also   provides  indications        on  the     attributes   that  have   the name Cond_1.
+    dependencies. In the conditional statement, those previously                                                  Building on top of the structure of the composition
+    indicated attributes will be defined in detail. Figure 5 displays                                    statement, the syntax for the conditional statement contains
+    an example of the structure of an ODD specification. It can be                                         more complexity. As displayed in Figure 7, the conditional
+    seen that within the composition statement, each of the                   statement     contains      custom    identifier,       qualifier,              metric,
+    relevant attributes are           associated with qualifiers    such as   influencing attribute, influencing attribute properties                             and
+    suitable,  unsuitable      and   conditional.     In   addition,    the                           influenced attribute properties. The custom identifier uses the
+    conditional attribute will be marked by a custom identifier               same     identifier   names      as  indicated   in                   the   composition
+    ‘Cond1’, and its dependencies are then described within the                                         statement, its purpose is to reference back to the influenced
+    conditional statement section.                                                                  attributes. The qualifiers used in here will be either ‘suitable’
+                                                                                                         or ‘unsuitable’. The metric refers to the intended measuring
+                                                                              metric     for the  influencing      attribute,    for                 example    speed
+                      ‘Example ODD Specification                              (measuring     metric)      can  be   used    for   wind                   (influencing
+                     Cr                                                                            attribute). The influencing attribute refers to the attribute that
+                                                                              the     influenced  attribute    is     dependent   on.                   The attribute
+                                                                                                        properties could include attribute value and unit. An example
+
+                     [|                                                        Custom         identifier  Qualifier     Attribute                   Metric of
+                                                                               Influencing       attribute     for    [Influenced                   attribute
+                                                                               properties]       is     [Influencing    attribute                   properties]
+
+                      attribute C                                              Cond1          Unsuitable  Speed  of    Wind for   [Motorway]             is
+                                                                               [greater     than      30.0  m/s]
+             Figure 5: Example structure of an ODD specification                                               Figure 7: Conditional statement syntax and examples
+
+is shown in Figure                                        7, it describes that the suitability of             ss 1663:2020     cperationsi                    600
+Motorway is dependent on the                        wind speed,                       it would be          an automated
+unsuitable when wind speed is greater than 30.0 m/s. Greater                                        for                           eystem  (ADS) -  Specification   pe,
+                                                                                                    ase    state:   Permissive
+than in this context is an operator for the language, which will
+be covered in the next section.                                                                     #Composition  statements
+      4)   Operators                                                                                Unsuitable  Drivable   area   type is  [Minor  roads]
+                                                                                                    Suitable  Number   of  lanes  is [greater     than 2
+                                           An important element of the ODD language is operators,             Lene
+they are used to define constraints and also provide logical                                        Suitable  Direction    of  travel  is   [Left-hand drive]
+expression consists two or more constraints. For the ODD                                                                                                         on edge]
+language the operators are expressed using structured natural                                       Suitable  Drivable    area surface  type    is [Asphalt,  Concrete]
+language format, they can be divided into mathematical
+operators   and             logical                             operators. Mathematical operators
+consist: greater than, greater than or equal to, less than, less
+than or equal to, equal to. The logical operators include: AND,
+OR, NOT.                                                                                                   Figure 10: Case study example converted to ODD language format
+
+           TABLE III.                                OPERATORS USED IN THE ODD LANGUAGE             new attribute, it might not need the corresponding metrics,
+                      Mathematical operators                     Logical operators                  values and units, therefore the second                      statement within the
+            greater than (>)                                            AND                         syntax is optional. Example 1 demonstrates how user could
+            greater than or equal to            |                                                   add a new attribute called ‘my_rain’ under rainfall parent
+            (≥)                                                          OR                         class, furthermore my_rain is defined using rainfall rate with
+            less than (<)                                               NOT                         unit mm/hr and it is constrained using a double range between
+            less than or equal to (≤)           |     |                                             0.1 and 2.5. Example 2 illustrates how one could add a new
+            equal to (=)                                                                            road type called ‘my_test_track’ under the road type                      parent
+                                                                                                    class. In this case since         my_test_track                 does not require
+                                                                                                    defining    metrics,      values   or    data    type,   the rest  of        the
+      5)                 Extension mechanism                                                        information is therefore not needed for this extension. One
+                                                                                                    could consider that road type is an attribute with enumerated
+                                            The domain model used in the ODD language is intended                      ~~ data type, and example 2 shows how the enumerations can be
+to be extensible, similar extensibility             requirement                           is also   extended.
+highlighted in the BSI PAS 1883 [5], and the base domain
+model only serves as a starting point. In practice, different                                              6)         Domain model reference
+users might want to further add custom attributes on top of the                                                               While the extension mechanism provides traceability of
+base domain model. For example, one might want to add a                                             any modifications made to the domain model, the reference to
+private test track as a road type, and use          it                           to construct the   the domain model itself will also need to be clarified in the
+ODD specification of a system under development. To satisfy                                         first place. The traceability of any modification is only valid
+this      requirement,          the    ODD language     has           included                 an   when knowing the exact domain model. Therefore, it is
+extension mechanism, the idea is that user would take a                                             compulsory to provide domain model reference within the
+common      base          domain     model                          and use the         extension   ODD       description      under     the    current              ODD    language
+mechanism to modify the domain model within the ODD                                                 specification. This is an important factor due to the possible
+specification, such modifications will                                       then be traceable to   safety implications of applying a description to an incorrect
+other users of the same specification. The custom attributes                                        taxonomy. This language was developed with the use of BSI
+can be assigned                       metrics, types, values and units                      where   PAS 1883 and has been completed using the first version of
+necessary, and they can be seamlessly integrated with the base                                      this   standard.       Standards    by       nature  are  ever         changing,
+domain model. Within the ODD specification structure, such                                          updating and going through multiple iterations as the industry
+extension is placed before composing the ODD statements.                                            progresses.                      Figure 8 displays the syntax for specifying the
+                                                                                                    version of the domain model, the name of the standards, the
+                                       Figure 8 illustrates the syntax of the extension mechanism   date of release        and the relevant                   access information are
+together with two examples. It can be seen that it includes new                                     required to be specified. Such versioning information will be
+attribute, parent attribute, metric, data type                        and               attribute   stated at the beginning of an ODD specification.
+properties. Please note that depending on the data type of the                                                                 IV.     CASE STUDY
+                                                                                                                             In this case study, the example from BSI PAS 1883 Annex
+    Add    [Metric   with     datatype     [Attribute properties] to  New     attribute)            A is used for a comparison between tabular description and
+                                                                                                    the ODD language format. The domain model used in this
+-    Add  [Rainfall  rate]    with float    range    0.1 to 2.5 ma/hr]     to     my_rain           case study is consistent with BSI PAS 1883 ODD taxonomy,
++                         to   Road type                                                            and the tabular format is shown in Table IV. As can be seen,
+                                            Figure 8: Extension statement syntax and examples       apart from ‘yes’ and ‘no’ in the capability column, the table
+                                                                                                    also displays a dependency on the motorway attribute - that
+           access    info]                                               of release.                motorway is only suitable when there is no rainfall.                         The
+                                                 Figure 9: Domain model versioning syntax           capability of the rest of the attributes contain a mixture of 1)
+                                                                                                    ‘yes/no’, and 2) ‘yes’ under certain constraints. The format of
+
+the capability column description is similar to commentary, it
+is a rather informal way of documenting and is not directly                                   V.      C
+parsable or executable.                                                                               ONCLUSION
+    Figure 10     illustrates the same ODD specifcation after             This paper presents a   structured                    natural language based
+converting into the ODD language presented in this paper. In              textual format for the description of the ODD. The ODD can
+addition     to   the   information within the     table,   the ODD       be divided into two aspects: the underlying domain model,
+description also contains the reference to the domain model,              and the language concepts. The domain model used in this
+the      base     state and extension information. Utilising    the       paper has been aligned with ODD standards, it defines the
+permissive     defualt     state, the         main body of  the ODD       class hierarchy and attributes properties, and it is represented
+specification displays a much more compact form without                   in the form of a domain ontology. The language concepts
+sacrificing details. In addition, the dependecy of     motorway           section, on the other hand, considers both the semantic and
+attribute on weather has been captured within the conditional             syntactic aspects. They cover how to handle the inclusion,
+statement. Due to the consistency in the language grammar,                exclusion and conditional statement, how to enable extension
+this ODD description can be easily parsed and integrated                  and versioning of the domain model, how to define the
+with the testing workflow. On the other hand, benefiting                  default state. The syntax is intended to be both human and
+from using     a       structured natural language base, it is also       machine-readable.   The     dedicated,     machine                  readable
+human-readable and can be used by non-technical users.                    counterpart of this ODD language concept is covered in part
+                                                                          II [19]; by using query semantics to implement the concepts
+     TABLE IV.        TABULAR ODD EXAMPLE                                 covered in this paper,      an executable  formal language                is
+    Attribute        Sub-attribute  Sub-attribute        Capability       established.
+                       Motorways                   Yes, when no rainfall           I.            ACKNOWLEDGEMENT
+ Drivable area        Radial roads             -            Yes           The work presented in this paper has been carried under the
+ type              Distributor roads                        Yes           Innovated UK and Centre for Connected and Autonomous
+                      Minor roads                            No           Vehicles (CCAV) funded OmniCAV project (Grant No.
+                    Number of lanes                 Yes, minimum of two   104529). This work is also supported by UKRI Future
+                                               -           lanes          Leaders Fellowship (Grant MR/S035176/1). The authors
+                    Lane dimensions                     Minimum 3.7m      would like to thank the WMG center of HVM Catapult and
+                                            Bus lane         No           WMG, University     of  Warwick,     UK,       for     providing         the
+                                          Traffic lane      Yes           necessary infrastructure for conducting this study. WMG
+ Lane spec            Lane type            Cycle lane        No           hosts one of the seven centers that together comprise the
+                                           Tram lane         No           High Value Manufacturing Catapult in the UK.
+                                         Emergency lane      No
+                                                                                                      EFERENCES
+                                         Other special       No                                  R
+                                          purpose lane
+
+                                                                               Measurement of performance , workload and behaviour in a complex
+                  Direction of travel  Right-hand traffic    No           [1]  N. Balfe, S. Sharples, and J. R. Wilson, “Impact of automation :
+                                       Left-hand traffic    Yes                control environment,” Appl. Ergon., vol. 47, pp. 52–64, 2015, doi:
+                    Horizontal plane     Straight roads     Yes                10.1016/j.apergo.2014.08.002.
+                           -                 Curves  Yes – up to 1/500m   [2]  S. Le Vine, X. Liu, F. Zheng, and J. Polak, “Automated cars : Queue
+                                                                               discharge at signalized intersections with ‘ Assured-Clear-Distance-
+                                            Up-slope        Yes                Ahead ’ driving strategies,” Transp. Res. Part C Emerg. Technol., vol.
+                  Vertical plane           Down-slope       Yes                62, pp. 35–54, 2016, doi: 10.1016/j.trc.2015.11.005.
+ Drivable area                                                            [3]  S. Khastgir, S. Birrell, G. Dhadyalla, and P. Jennings, “Identifying a
+ geometry                                 Level plane       Yes                gap in existing validation methodologies for intelligent automotive
+                                       Divided/undivided  Divided              systems: Introducing the 3xD simulator,” in Proc. of the IEEE
+                                            Pavement        Yes                Intelligent Vehicles Symposium 2015, 2015, pp. 648–653.
+                     Cross-section    Barrier on the edge    No           [4]  S. Khastgir, S. Birrell, G. Dhadyalla, and P. Jennings, “The Science of
+                                         Types of lanes                        Testing: An Automotive Perspective,” 2018, doi: 10.4271/2018-01-
+                                            together    Traffic lane           1070.
+                        Asphalt                             Yes           [5]  S. Khastgir, S. Birrell, G. Dhadyalla, and P. Jennings, “Calibrating
+                        Concrete                            Yes                trust through knowledge: Introducing the concept of informed safety
+ Drivable area                                                                 for automation in vehicles,” Transp. Res. Part C Emerg. Technol., vol.
+ surface type         Cobblestone              -             No                96, pp. 290–303, 2018, doi: 10.1016/j.trc.2018.07.001.
+                         Gravel                              No           [6]  “Operational Design Domain ( ODD ) taxonomy for an automated
+                     Granite setts                           No                driving system ( ADS ) – Specification,” The British Standards
+                                           Regulatory       Yes           [7]  Institution, BSI PAS 1883. 2020.
+                                                                               SAE, “Surface Vehicle Recommended Practice: Taxonomy and
+                          Type              Warning         Yes                Definitions for Terms Related to Driving Automation Systems for On-
+                                          Information       Yes                Road Motor Vehicles (J3016),” 2018. doi: 10.4271/2012-01-0107.
+ Drivable area
+ signs             Time of operation       Part-time         No           [8]  International Organization for Standardization, “Road vehicles —
+                                           Full-time        Yes                Taxonomy for operational design domain for automated driving
+                                                                               SAE Industry Technologies Consortia, “AVSC Best Practice for
+                         State              Variable        Yes           [9]  systems ISO34504,” 2021.
+                                            Uniform         Yes                Describing an Operational Design Domain: Conceptual Framework
+                                                                               and Lexicon,” Avsc00002202004, p. 26, 2020.
+                                                                          [10] M. Gyllenhammar et al., “Towards an Operational Design Domain
+
+ That Supports the Safety Argumentation of an Automated Driving           [16] X. Zhang, S. Khastgir, and P. Jennings, “Scenario Description
+ System,” 10th Eur. Congr. Embed. Real Time Syst., pp. 1–10, 2020.         Language for Automated Driving Systems: A Two Level Abstraction
+[11] M. S. Blumenthal, L. Fraade-blanar, R. Best, and J. L. Irwin, Safe    Approach,” 2020.
+ Enough: Approaches to Assessing Acceptable Safety for Automated          [17] I. Colwell, B. Phan, S. Saleem, R. Salay, and K. Czarnecki, “An
+ Vehicles. .                                                               Automated Vehicle Safety Concept Based on Runtime Restriction of
+[12] P. Koopman, B. Osyk, and J. Weast, Autonomous vehicles meet the       the Operational Design Domain,” IEEE Intell. Veh. Symp. Proc., vol.
+ physical world: Rss, variability, uncertainty, and proving safety, vol.   2018-June, pp. 1910–1917, 2018, doi: 10.1109/IVS.2018.8500530.
+ 2. Springer International Publishing, 2019.                              [18] R. Myers, Design considerations for ODD ontology, Executive
+[13] H. Farah et al., “An Empirical Analysis to Assess the Operational     Summary, CPC,   2020.
+ Design Domain of Lane Keeping System Equipped Vehicles                   [19] E. Schwalb, P. Irvine, X. Zhang, S. Khastgir, P. Jennings, ”A Two
+ Combining Objective and Subjective Risk Measures,” IEEE Trans.            Level Abstraction ODD Definition Language: Part II”, IEEE SMC
+ Intell. Transp. Syst., vol. 22, no. 5, pp. 2589–2598, 2020, doi:          2021(Submitted).
+ 10.1109/TITS.2020.2969928.                                               [20] S.Khastgir, S. Brewerton, J.Thomas, and P.Jennings, 2021. Systems
+[14] H. Grönninger, H. Krahn, B. Rumpe, M. Schindler, and S. Völkel,       Approach to Creating Test Scenarios for Automated Driving Systems.
+ “Textbased Modeling,” Proc. 4th Int. Work. Softw. Lang. Eng. (ateM        Reliability Engineering System Safety, p.107610.
+ 2007), no. 4, 2007.
+[15] E. Thorn, S. Kimmel, and M. Chaka, “A Framework for
+ Automated Driving System Testable Cases and Scenarios - Report No.
+ DOT HS 812 623,” 2018.
+

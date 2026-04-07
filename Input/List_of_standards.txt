@@ -1,0 +1,14 @@
+o ANSI/UL 4600, the standard for safety for the evaluation of autonomous products
+o ISO 26262: Road vehicles – Functional safety
+o ISO 21448: Road vehicles – Safety of the intended functionality
+o ISO/SAE 21434: Automotive cybersecurity
+o ISO PAS 8800: Road vehicles – Safety and artificial intelligence
+o ISO 34502:2022: Road vehicles – Test scenario for automated driving systems –
+Scenario-based safety evaluation framework
+o BSI PAS 1883: Operational Design Domain (ODD) Taxonomy for ADS Specification
+o UNECE WP.29 VMAD Sub-Group1 (SG1): This group is working on creating a first set
+of scenarios for limited Operational Design Domains.
+o ASAM OpenSCENARIO: This standard provides a format for defining driving
+scenarios.
+o ISO 34503: An upcoming standard will specify requirements for defining Operational
+Design Domains using taxonomy and referencing the OpenODD format.

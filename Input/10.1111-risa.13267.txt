@@ -1,0 +1,1649 @@
+    Libraries |  pace@
+
+
+
+        MIT Open Access Articles
+
+ The Influence of Feelings While Driving Regular Cars
+on the Perception and Acceptance of Self-Driving Cars
+
+
+
+    The MIT Faculty has made this article openly available. Please share
+    how this access benefits you. Your story matters.
+
+
+    Citation: Raue, Martina, D'Ambrosio, Lisa A., Ward, Carley, Lee, Chaiwoo, Jacquillat, Claire et al.
+    2019. "The Influence of Feelings While Driving Regular Cars on the Perception and Acceptance of
+    Self-Driving Cars." Risk Analysis, 39 (2).
+
+    As Published: http://dx.doi.org/10.1111/risa.13267
+
+    Publisher: Wiley
+
+    Persistent URL: https://hdl.handle.net/1721.1/140475
+
+    Version: Author's final manuscript: final author's manuscript post peer review, without
+    publisher's formatting or copy editing
+
+    Terms of Use: Article is made available in accordance with the publisher's policy and may be
+    subject to US copyright law. Please refer to the publisher's site for terms of use.
+
+
+
+
+
+
+
+
+
+
+    l | | 1 Massachusetts Institute of Technology
+
+    AFFECTIVE DRIVING EXPERIENCE AND SELF-DRIVING CAR ACCEPTANCE    1
+
+
+The Influence of Feelings while Driving Regular Cars on the Perception and Acceptance of Self-
+                                         Driving Cars
+
+
+
+
+
+
+
+    1
+    Martina Raue1*, Lisa A. D’Ambrosio¹, Carley Ward , Chaiwoo Lee¹, Claire Jacquillat² & Joseph F.
+    Coughlin    1
+
+
+
+
+
+  1AgeLab, Massachusetts Institute of Technology
+
+77 Massachusetts Avenue, Cambridge, MA 02139, USA
+
+
+
+
+
+                    2Tepper School of Business, Carnegie Mellon University
+
+                           5000 Forbes Avenue, Pittsburgh, MA 15213
+
+
+
+
+
+
+
+
+
+
+    *Address correspondence to Martina Raue, AgeLab, Massachusetts Institute of Technology
+
+
+
+
+This is the author manuscript accepted for publication and has undergone full peer review but has not
+been through the copyediting, typesetting, pagination and proofreading process, which may lead to
+differences between this version and the Version of Record. Please cite this article as doi:
+10.1111/risa.13267.
+
+
+    This article is protected by copyright. All rights reserved.
+
+    77 Massachusetts Avenue, Cambridge, MA 02139, USA; maraue@mit.edu
+
+
+
+
+
+
+
+
+
+
+        Abstract
+
+Self-driving vehicles will affect the future of transportation, but factors that underlie perception and
+acceptance of self-driving cars are yet unclear. Research on feelings-as-information and the affect
+heuristic has suggested that feelings are an important source of information, especially in situations
+of complexity and uncertainty. In this study (N = 1,484), we investigated how feelings related to
+traditional driving affect risk perception, benefit perception and trust related to self-driving cars as
+well as people’s acceptance of the technology. Due to limited experiences with and knowledge of
+self-driving cars, we expected that feelings related to a similar experience, namely driving regular
+cars, would influence judgments of self-driving cars. Our results support this assumption. While
+positive feelings of enjoyment predicted higher benefit perception and trust, negative affect
+predicted higher risk and higher benefit perception of self-driving cars. Feelings of control were
+inversely related to risk and benefit perception, which is in line with research on the affect heuristic.
+Furthermore, negative affect was an important source of information for judgments of use and
+acceptance. Interest in using a self-driving car was also predicted by lower risk perception, higher
+benefit perception and higher levels of trust in the technology. Although people’s individual
+experiences with advanced vehicle technologies and knowledge were associated with perceptions
+and acceptance, many simply have never been exposed to the technology and know little about it. In
+the absence of this experience or knowledge, all that is left is the knowledge, experience and
+feelings they have related to regular driving.
+
+
+
+
+
+    KEY WORDS: Self-driving cars; affect heuristic; feelings as information
+
+
+
+
+1. INTRODUCTION
+
+Driving is the primary mode of transportation for the vast majority of adults in the United States,
+with 222 million licensed drivers (Federal Highway Administration, 2015) and 85.6% commuting by
+car (Bureau of Transportation Statistics, 2017). There are many reasons for these high numbers,
+
+
+    This article is protected by copyright. All rights reserved.
+
+ranging from the limited quality and coverage of public transit systems to individuals’ needs for
+schedule flexibility (Donorfio, D'Ambrosio, Coughlin, & Mohyde, 2009; Vanderbilt, 2008). Driving is
+also popular because many people report pure enjoyment around the experience of driving; they
+may feel happy about the sense of freedom or independence they may have while driving. Despite
+the joy driving may engender for many, it is not always a pleasurable experience. People also feel
+rage or anger at traffic conditions or the behaviors of other drivers, and driving in certain
+environments and contexts can lead to stress, such as when one is driving on unfamiliar roads, in
+poor weather, in heavy traffic, or running late (Vanderbilt, 2008). The negative emotions that driving
+may engender in some people have also been found to be connected to a greater likelihood of
+crashes (Abdu, Shinar, & Meiran, 2012; Berdoulat, Vavassori, & Sastre, 2013; Dingus et al., 2016).
+
+Self-driving cars have not yet entered consumer markets, but they have the potential to make
+driving safer and travel more efficient. The World Health Organization reported in 2016 that road
+traffic injuries were the leading cause of death among people aged 15 to 29 (World Health
+Organization, 2016). In the US alone, over 37,000 people died in car crashes in 2016 (National
+Highway Safety Traffic Administration., 2017). Removing human error from driving is one of the
+greatest potential benefits of self-driving cars, as driver error could be directly or indirectly
+responsible for as many as 94% of all traffic accidents (National Highway Safety Administration,
+2015). Beyond decreasing the risk of an accident, self-driving cars have the potential to decrease
+congestion, increase mobility, and yield more efficient use of commuting time. The rapidly growing
+population of older drivers may especially benefit from self-driving cars (Center for Disease Control,
+2016). Physical and cognitive declines associated with age often lead to a decrease in driving abilities
+and limitations in mobility (Anstey & Wood, 2011), which in turn may leave people at a greater risk
+for depression, social isolation, and other negative health outcomes (Chihuri et al., 2016; Marottoli
+et al., 1997). Self-driving cars have the potential to reduce or eliminate the negative outcomes
+associated with restricted mobility in an aging population.
+
+It remains unclear, however, when or if self-driving vehicles will move from novelty in the news to
+normal fixtures on the nation’s highways. Aside from the technical requirements inherent in such a
+complex system, there is a question of people’s reactions to the technology. Previous work has
+found that people’s risk and benefit perceptions as well as trust in the technology are related to its
+acceptance (Bearth & Siegrist, 2016; Fischhoff, Slovic, Lichtenstein, Read, & Combs, 1978; Frewer,
+Howard, & Shepherd, 1995; Siegrist, 2000), particularly for new innovations (Lee & See, 2004; Lee,
+2009; Luo, Li, Zhang, & Shim, 2010). Here we examine the proposition that people’s assessments of
+self-driving vehicles will be shaped by affect; it is always present when people make judgments
+(Zajonc, 1980), and previous research has demonstrated that risk and benefit perceptions of new
+technologies are often driven by feelings (Slovic & Peters, 2006; Slovic, Finucane, Peters, &
+MacGregor, 2004). In this research, we specifically examine how people’s feelings around driving
+traditional cars may affect their perceptions of risk and benefit of and trust in self-driving cars.
+Further, we investigate how these feelings, perceptions and trust in turn influence people’s
+acceptance of the technology.
+
+
+
+
+    This article is protected by copyright. All rights reserved.
+
+1.1. Public Perception of Risk
+Laypeople often evaluate the risks and benefits of new technologies differently than experts, and
+their perceptions of risk are also shaped by their perceptions of benefits the technology may offer.
+For laypeople, risk perception tends to decrease when benefit perception increases, and vice versa
+(Alhakami & Slovic, 1994). Past work has shown that laypeople’s perceptions of a new technology
+can be affected by the characteristics of the technology itself and individual-level variables (see
+Visschers & Siegrist, 2018 for an overview).
+
+        The characteristics of the technology itself can be captured by two orthogonal dimensions:
+dread risk and unknown risk. The more dreadful and unknown a new technology is thought to be,
+the greater the public’s risk perception of it (Slovic, 1987; 2015). Dread risks include people’s
+perceptions of the potential for lack of control, catastrophic outcomes and fatalities. Unknown risks
+include perceived newness, lack of scientific knowledge, unobservable consequences and delay of
+effects. These two dimensions of risk explain why some hazards are perceived as riskier than others
+by the public, despite contrary statistical information from experts. As a result, familiarity may breed
+contempt: common actions and activities are often not perceived as especially risky compared with
+the unfamiliar or the novel (Hengstler, Enkel, & Duelli, 2016). For example, objectively risky activities
+such as alcohol consumption or driving, which are perceived as non-dreadful and familiar, are also
+perceived as not very risky by the public (Fox-Glassman & Weber, 2016).
+
+        Individual-level factors that affect people’s perceptions of risk include knowledge and
+affective associations. People’s levels of knowledge about a technology should affect the extent to
+which they understand both its risks and benefits. Levels of subjective knowledge, or self-assessed
+knowledge, have been associated with lower risks and greater benefits assessments and a greater
+likelihood of acceptance of the technology. In contrast, objective measures of knowledge have
+mixed impacts on risk and benefit assessments (Cousin & Siegrist, 2010; Visschers & Siegrist, 2018).
+Further, people’s affective evaluations shape their risk assessments of new technologies, as affect
+can serve as a “mental shortcut *relative to developing the expertise to assess the risks and benefits
+of a technology scientifically] in which people rely on the positive or negative valence associated
+with a hazard to judge its benefits and risks” (Visschers & Siegrist, 2018, p.11). Affect is often more
+significant in judgments under uncertainty or in complex situations where people might lack the
+knowledge, experience and/or the capacity to make a judgment, because their affective responses
+serve as cues to simplify decisions (e.g., Lerner, Li, Valdesolo, & Kassam, 2015; Loewenstein &
+Lerner, 2003; Slovic et al., 2004).
+
+1.2. Feelings as Information
+      As noted above, affect, in the form of a subtle feeling of positivity or negativity, can serve as a
+decision heuristic that people use in situations of uncertainty and limited knowledge, known as the
+affect heuristic (Slovic & Peters, 2006; Slovic, Finucane, Peters, & MacGregor, 2003). People’s use of
+feelings as a general source of information was extensively discussed by Schwarz and Clore (Schwarz,
+2012; Schwarz & Clore, 1983; 2003), who termed it the “How do I feel about it heuristic.” The source
+of feelings that people use to make judgments is not necessarily directly related to the stimulus at
+
+
+
+    This article is protected by copyright. All rights reserved.
+
+hand. Integral affect is directly related to a stimulus, but incidental affect is independent of the
+stimulus, and may result in misattribution and biased judgments (Lerner et al., 2015; Loewenstein &
+Lerner, 2003).
+
+      Both integral and incidental affect serve several functions in the formation of judgments:
+information; common currency; spotlight; and motivator (Peters, Västfjäll, Gärling, & Slovic, 2006).
+When affect serves as information to judge a new technology, for example, decision makers simply
+consider how they feel about it (Schwarz, 1990; Schwarz & Clore, 2003). The basis of these feelings is
+often prior experiences or thoughts related to the decision at hand (integral affect), but it could also
+be a less relevant emotional state such as current mood (incidental affect; Peters et al., 2006). When
+affect serves as common currency, different pieces of complex information can be compared in
+terms of the affective responses they evoke in order to simplify the judgment process (Cabanac,
+1992). Affect as a common currency extends the affect-as-information approach and allows simple
+comparisons of positive and negative feelings rather than having to weight arguments (Tompkins,
+Bjälkebring, & Peters, 2018). Affect as spotlight leads people to focus on new information in the
+form of feelings (e.g., strong vs. weak, specific emotions), which in turn are used to guide judgment
+(Peters et al., 2006). Affect can also motivate information processing and lead to approach or
+avoidance behaviors (Chen & Bargh, 2016). Because people aim to maintain positive mood states,
+even incidental mood can motivate behavior (Isen, 2000). For example, Hirshleifer and Shumway
+(2003) reported that weather influenced stock market returns in 26 countries from 1982 to 1997;
+sunshine in the city that hosted the country’s major stock exchange increased the likelihood that the
+market went up. Presumably sunshine improved investors’ moods, which rendered them more
+optimistic about the future of the economy.
+
+      The nature or valence of the affect plays a role in how it is weighed in judgments. In particular,
+people tend to attend to or weight negative information or emotions more heavily than positive
+ones when making evaluations. People can report more negative emotion words than positive ones;
+they are more likely to recall events that are negatively emotionally charged compared with positive
+ones; and negative affect may prompt more cognitive processing than positive affect (Baumeister,
+Bratslavsky, Finkenauer, & Vohs, 2001; Forgas, 1995; Schwarz & Clore, 2003). Thus, while both
+positive and negative affect may have significant and independent effects on people’s evaluations,
+negative affect may be more heavily weighted or important to people’s judgments.
+
+The affect heuristic also serves as one explanation for the inverse relationship between risk and
+benefit assessments. If people’s emotional responses are more positive, they tend to judge risks to
+be lower and benefits to be higher; the more negative people’s affective reactions are, the more
+likely they are to judge risks to be higher and benefits to be lower (Alhakami & Slovic, 1994; Slovic et
+al., 2004). People may be particularly more likely to rely on their affective reactions as a common
+source to generate both their risk and benefit evaluations when they lack expertise within a given
+domain (Finucane, Alhakami, Slovic, & Johnson, 2000; Sokolowska & Sleboda, 2015).
+
+      In sum, affect is often used to inform more complex decision problems. This impact of affect
+tends to be more prominent under conditions characterized by higher levels of uncertainty (Faraji-
+
+
+    This article is protected by copyright. All rights reserved.
+
+Rad & Pham, 2017), less familiarity (e.g., Srull, 1984), and in more complex situations. Finally,
+negative affect may be more significant in shaping people’s judgments than positive affect
+(Baumeister et al., 2001).
+
+1.3. Technology Acceptance
+The affect heuristic suggests that affect shapes people’s willingness to adopt new technologies to
+the extent that the technology is novel, its performance is uncertain, and its impacts are unknown.
+In a recent review of the technology adoption literature, combined with user interviews, a number
+of different factors that contribute to people’s willingness to accept and use new technologies were
+identified, of which emotion is one: “Part of the attraction to any new product is its ability to link the
+user to something they feel” (Lee & Coughlin, 2015, p. 753). Two additional variables Lee and
+Coughlin (2015) consider in their review, usability and value, map on to ease of use and perceived
+usefulness, key constructs from the widely used Technology Acceptance Model (TAM; Davis, Bagozzi,
+& Warshaw, 1989). Perceived usefulness or the perceived potential benefits has been shown in
+some empirical work to be a more significant factor in explaining adoption than ease of use (Lee,
+Ward, Raue, D'Ambrosio, & Coughlin, 2017).
+
+Other factors that have been identified as significant for understanding technology adoption include
+the relevance of people’s previous experiences (including with the technology) and system reliability
+– the ability of the system “to work without failure” (Lee et al., 2017). The concept of system
+reliability, or the belief that the system will work as described, is a form of trust in the technology; it
+is in essence the belief that the technology will deliver on its promised performance. Other research
+has also suggested that trust in the technology may be a predictor of acceptance (Abraham et al.,
+2016; Balfe, Sharples, & Wilson, 2018; Choi & Ji, 2015; Lee & See, 2004; Zmud, Sener, & Wagner,
+2016).
+
+While other factors such as accessibility or market availability are more important for explaining
+technology acceptance for currently available technologies, emotion or affect should be particularly
+important in influencing new technology adoption when people have limited knowledge of and
+exposure to the technology and are uncertain about whether it will work, and when the wider
+effects of the technology are unclear. Further, individual characteristics such as age, gender,
+lifestyle, and comfort levels with different technologies may also affect people’s willingness to adopt
+new technologies (Lee et al., 2017; Venkatesh, Thong, & Xu, 2012).
+
+1.4. Current Research on Acceptance of Self-Driving Cars
+Although fully self-driving cars have yet to enter the consumer market, there is a growing body of
+research that attempts to understand the public’s attitudes toward and likely acceptance of these
+vehicles. Studies have found that people’s degree of acceptance varies by individual characteristics,
+with younger, male or more tech savvy people generally more interested in using self-driving cars
+than older, female or less tech savvy people (Hohenberger, Spörrle, & Welpe, 2016; König &
+Neumayr, 2017; Lee et al., 2017; Nielsen & Haustein, 2018).
+
+
+
+
+
+    This article is protected by copyright. All rights reserved.
+
+Several studies have found that while most people do not embrace the technology completely,
+neither are they completely opposed to it. In particular, people anticipate that the technology could
+deliver benefits such as: fewer crashes, reduced severity of crashes, lower vehicle emissions, better
+fuel economy, transportation solutions for older and disabled people, the possibility to engage in
+other activities while on the road, greater safety, and greater convenience (Howard & Dai, 2013;
+Hulse, Xie, & Galea, 2018; Nielsen & Haustein, 2018; Sanbonmatsu, Strayer, Yu, Biondi, & Cooper,
+2018; Schoettle & Sivak, 2014).
+
+Although the technology offers many promises, people typically harbor a number of reservations
+about it (König & Neumayr, 2017). Concerns people have include the overall safety and reliability of
+the technology, including the chances that the vehicles could be confused by unexpected situations;
+people fear the possibility of equipment failure (Bansal & Kockelman, 2016; Bansal, Kockelman, &
+Singh, 2016; Shabanpour, Golshani, Shamshiripour, & Mohammadian, 2018). Other risks people
+perceive around the technology are unresolved legal liability issues, hacking, and the potential
+disclosure of personal data or of tracking (Howard & Dai, 2013; König & Neumayr, 2017; Kyriakidis,
+Happee, & de Winter, 2015; Schoettle & Sivak, 2014; Shabanpour et al., 2018).
+
+People’s hesitations around the acceptance of automated vehicle technologies may also be tied to
+their feelings around driving itself, and many people report driving to be positive for them. For
+example, in a study that compared all levels of automation (from manual [fully human controlled] to
+fully automated), participants found manual driving the most enjoyable (Kyriakidis et al., 2015). In
+another study, most people were willing to accept automated features that assisted the driver while
+the driver remained in control, but fewer people were comfortable with full automation (Abraham
+et al., 2018). Consistent with these results, yielding control was a major barrier to adoption of self-
+driving cars among regular commuters (Howard & Dai, 2013). Because self-driving cars represent a
+fundamental change in the driving task, people’s current feelings about driving traditional vehicles
+may shape how they assess changes or alternatives to it.
+
+1.5. The Present Study
+The present study focuses on how feelings experienced while driving influence risk and benefit
+perceptions as well as trust in self-driving cars and how, in turn, these perceptions affect the
+acceptance of these vehicles. Based on the affect heuristic and the feelings-as-information approach,
+we assume that people will use their feelings about driving their current vehicles to judge self-
+driving cars because of their limited knowledge or experience with automated vehicle technology
+itself. We hypothesize that feelings related to their experience as drivers of regular cars may carry-
+over when judging self-driving cars (e.g., Lerner et al., 2015; Peters et al., 2006). Further, because
+self-driving cars represent a change to the driving status quo, how people feel about driving now
+should affect how they react to a potential change to it. In particular, we assume that people’s
+affective experiences with their own driving rather than a deliberate analysis of advantages and
+disadvantages will in part shape their judgments of self-driving cars. Because the affect measures are
+related to a different technology than the outcome, however, we approached this question in an
+exploratory manner and formulated the following research question: How do feelings related to
+
+
+
+    This article is protected by copyright. All rights reserved.
+
+human-operated driving influence risk and benefit perceptions of, as well as trust in, self-driving
+cars?
+
+    Based on other literature that has examined people’s risk and benefit perceptions and trust, we
+entered additional predictors related to gender, knowledge (about self-driving cars, but also
+whether participants knew of any accidents involving self-driving cars) and experience. We asked
+about driving experience, but also experience with vehicle automation features currently on the
+market (e.g., cruise control, lane keeping, collision avoidance systems). Education was included as an
+additional control variable (for an overview see Chauvin, 2018; Visschers & Siegrist, 2018).
+
+Further, we assumed that acceptance of self-driving cars would be predicted by people’s risk and
+benefit perceptions of and trust in the technology. Based on previous research, we expected that
+high benefit perceptions and high trust would increase acceptance of self-driving cars, while high risk
+perceptions would decrease acceptance (Davis et al., 1989; Lee & See, 2004; Siegrist, 1999). Drawing
+on models of technology acceptance (Lee & Coughlin, 2015; Venkatesh et al., 2012), people’s
+affective reactions to driving, knowledge, experience and gender were included in the model.
+Education was again added as a control variable.
+
+
+2. METHOD
+
+2.1. Participants
+We conducted a nationwide online survey in the United States in summer 2016 of 1,748 participants
+who were recruited through Qualtrics, an online market research company. The majority of
+participants had a valid driver’s license at the time of data collection (89.2%); those who did not
+were excluded from the analysis. We also excluded participants who gave nonsensical answers (e.g.,
+birthyear before 1900, random letters when asked to describe what a self-driving car was in their
+own words). The remaining 1,484 participants were between the ages of 18 and 89 (M = 49.87, SD =
+17.73, 45% female). Of those participants, 80% were white, 8% black, 5% Asian American, 3% Latinx,
+and 4% identified as other or multiracial. Most participants had a college degree (27%) or some
+college (25%), 17% had a post-graduate degree or had completed some post-graduate work, 12%
+had an associate’s degree, and 19% had a high school diploma. About one-third of participants were
+employed full-time (34%), 10% were employed part-time, 9% were not employed, 6% were self-
+employed, 29% were retired, 4% were students, and 8% homemakers. The majority of participants
+had annual household incomes below $74,999 (51% less than $50,000 and 21% below $25,000), 15%
+had incomes between $75,000 and $99,999, and 12% had incomes of $100,000 or more.
+
+2.2. Measures
+Knowledge of self-driving cars was measured by two variables: participants’ self-reported knowledge
+and an indicator for whether they had heard any media stories about accidents involving self-driving
+cars (see Table I for details on the items included in this analysis). Following the self-reported
+knowledge measure in the beginning of the questionnaire, respondents were then provided the
+following definition of a self-driving car: “For the purpose of this study, we define self-driving cars as
+
+
+    This article is protected by copyright. All rights reserved.
+
+those in which operation of the vehicle occurs without the driver controlling the steering,
+acceleration, and braking; the driver is not expected to constantly monitor the roadway.” Risk and
+benefit perceptions were captured by respondents indicating how risky and how beneficial they
+thought it was to use a self-driving car. We measured participants’ trust in a self-driving car to work
+reliably under certain conditions with three items that were scaled together. Willingness to adopt or
+accept self-driving cars was measured by self-reported interest in using them and, at a later point in
+the questionnaire, by asking people whether they would let a child (under 5 years, between 5 and 12
+years, and between 13 and 17 years of age) use a self-driving car alone. The latter use cases for self-
+driving cars correspond roughly to different developmental stages for children – preschool,
+childhood and adolescence, respectively.
+
+Participants indicated for how long they had been drivers and how many days a week they drove.
+Most of the participants self-reported as frequent drivers, with 67.4% driving at least five days per
+week and 34.2% driving every day. Years as a driver and age were strongly and positively correlated,
+r = .95, p < .001, so in the following analyses we included only years as a driver in the model. We
+further asked participants about their experience with advanced vehicle technologies currently on
+the market.
+
+Participants used the Positive and Negative Affect Schedule (PANAS) to report feelings they typically
+experienced while driving (PANAS; Watson, Clark, & Tellegen, 1988). The PANAS has been used
+before in other studies on public acceptance of new technologies (Lara, Pascual, Borondo, & Pino,
+2016; Pelegrín-Borondo, Reinares-Lara, & Olarte-Pascual, 2017; Turner, Love, & Howell, 2008) and
+has been well validated as a measure of affect. The questionnaire concluded with additional
+demographic items.
+
+Table I. Items used in the study
+Variable                Item Wording                                          Response Options      M (SD) or % yes
+
+Knowledge
+
+Knowledge about self-   How much do you know about self-driving cars?         From 1 (no            2.59 (1.03)
+driving cars                                                                  knowledge) to
+
+                                                                              5 (a great deal of
+                                                                              knowledge)
+
+Heard of self-driving   Have you heard any stories about self-driving cars    Yes, No, Do not       35.1%
+car accident            that have been involved in accidents or fatalities?   know
+
+Experience
+
+Experience with         Please indicate how much experience you have with     From 1 (very little   2.02 (1.03)
+advanced vehicle        each vehicle technology                               experience) to 5 (a
+technologies                                                                  great deal of
+                        -   Cruise control                                    experience)
+
+                        -   Adaptive cruise control
+
+                        -   Adaptive/smart headlights
+
+
+
+
+This article is protected by copyright. All rights reserved.
+
+                    -   Automatic emergency braking
+
+                    -   Autopilot
+
+                    -   Blind spot detection
+
+                    -   Forward collision warning
+
+                    -   Lane centering/lane keeping assist
+
+                    -   Lane departure warning
+
+                    -   Parking assist
+
+                    -   Pilot assist
+
+                    -   Traffic jam assist
+
+                    D = .95
+
+Years as a driver   For how many years have you been a driver?                Open answer (years)     31.19 (18.55)
+
+Driving frequency   On average, how many days a week do you drive?            Open answer from 0      5.15 (1.81)
+                                                                              to 7
+
+Feelings
+
+PANAS               For each of the following, please select how much         From 1 (very slightly   PA-Enjoyment:
+                    you feel like this when you are driving (items were       or not at all) to 5     3.06 (1.00)
+                    randomized):                                              (extremely)
+                                                                                                      PA-Control
+                                                                                                      (attentive, alert):
+                                                                                                      4.27 (0.79)
+                    Positive Affect (PA): Excited, Determined, Strong,
+                    Proud, Inspired, Active, Alert, Interested, Attentive,                            NA: 1.42 (0.64)
+                    Enthusiastic
+
+                    D = .89 (PA-Enjoyment D = .91, PA-Control D = .68)
+
+
+
+                        Negative Affect (NA): Afraid, Irritable, Guilty, Hostile,
+                        Ashamed, Nervous, Distressed, Jittery, Scared,
+                        Upset
+
+                        D = .93
+
+Perceptions & Trust
+
+Risk perception         How risky do you think it is to use a self-driving car?   From 1 (not at all)   3.24 (1.12)
+
+                                                                                  to 5 (very much)
+
+Benefit perception      How beneficial do you think it is to use a self-driving   From 1 (not at all)   3.07 (1.24)
+                        car?
+                                                                                  to 5 (very much)
+
+Trust in self-driving   How much would you trust self-driving cars to do the      From 1 (low trust)    2.69 (1.13)
+cars                    following?
+                                                                                  to 5 (high trust)
+                        -   Work reliably
+                        -   Work properly in poor weather conditions
+                        -   Work properly on old streets in need of repair
+
+
+
+
+This article is protected by copyright. All rights reserved.
+
+                                D = .92
+
+    Acceptance
+
+    Interest in using a self-   How interested are you in using a self-driving car?   From 1 (not at all)      2.58 (1.41)
+    driving car
+                                                                                      to 5 (very much)
+
+    Willingness to let a        Would you let a child use a self-driving car alone?   Yes, No, Do not
+    child use a self-driving                                                          know
+    car                         -   A child who is under 5 years old                                       -   1%
+                                -   A child who is between 5 and 12 years old
+                                -   A child who is between 13 and 17 years old                             -   3.2%
+
+                                                                                                           -   18.9%
+
+
+
+2.3. Feelings Related to Driving
+The driving experience can engender a number of different emotions spanning various intensities
+and dimensions of positivity and negativity. We conducted an exploratory factor analysis of the 20
+PANAS items with principal factor extraction and varimax rotation. The Keiser-Meyer-Olkin (KMO)
+indicated an adequate sample (KMO = .94), and Bartlett’s Test of Sphericity indicated strong
+collinearity, χ² (190) = 17229.47, p < .001. The extraction revealed three factors with Eigenvalues
+greater than 1, with 63.75% of the cumulative variance explained (32.81%, 24.51%, and 6.43% for
+each factor). The negative affect (NA) scale was identified as the first component, but the items that
+traditionally make up the positive affect (PA) scale were split into two factors which we labeled
+control (attentive, alert) and enjoyment (remaining positive items). Table II displays a correlation
+matrix of the key variables included in the analysis.
+
+
+    3. RESULTS
+
+
+
+    Table II. Correlations of all variables
+
+                            1       2       3     4 5 6 7                             8 9                  10
+
+    1   Self-reported
+        knowledge of self-
+        driving cars
+
+    2   Experience with     .42**
+        advanced vehicle
+        technologies
+
+    3   Years as a driver   -.31**  -.35**
+
+    4   Driving frequency   .15**   .21**   -.15**
+
+
+
+    This article is protected by copyright. All rights reserved.
+
+    5   Positive affect -   .26**   .46**   -.14**  .17**
+        enjoyment
+
+    6   Positive affect -   .01     -.03    .17**   -.03   .31**
+        control
+
+    7   Negative affect     .22**   .29**   -.38**  .03    .14**  -.20**
+
+    8   Risk perception     -.09**  -.10**  .07**   -.01   -.01   .07**  .02
+
+9 Benefit perception .37** .35** -.30** .09** .25** -.06* .22** -.46**
+
+10 Trust in self-driving .38** .43** -.28** .13** .27** -.05 .21** -.49** .64**
+   cars
+
+11 Interest in using a .45** .43** -.39** .11** .28** -.08** .28** -.44** .80** .69**
+   self-driving car
+
+
+    *p < .05, **p < .01.
+
+    N = 1484
+
+
+3.1. Perceptions of Self-Driving Cars
+To examine the influence of feelings related to driving on risk perception, benefit perception and
+trust in self-driving cars, we conducted linear regression analyses. The results of these analyses are
+shown in Table III. Higher risk perception was predicted by less experience with advanced vehicle
+technologies, higher levels of positive affect (control), higher levels of negative affect experienced
+while driving, and being female. Higher benefit perception was related to having fewer years as a
+driver, greater self-reported knowledge of self-driving cars, more experience with advanced vehicle
+technologies, lower levels of positive affect (control), higher levels of positive affect (enjoyment),
+higher levels of negative affect, and being male. Trust in self-driving cars was related to having fewer
+years as a driver, greater self-reported knowledge of self-driving cars, more experience with
+advanced vehicle technologies, no knowledge of any accidents involving a self-driving car, positive
+affect (enjoyment) experienced while driving, and being male.
+
+
+
+    Table III. Regression Analyses: Risk Perception, Benefit Perception, and Trust as Dependent Variables
+
+    Dependent Variable                      Risk Perception      Benefit Perception  Trust in Self-Driving
+                                                                                              Cars
+
+                                            b       S.E.     ß   b       S.E. ß     b         S.E. ß
+
+    Technology Knowledge
+
+
+
+    This article is protected by copyright. All rights reserved.
+
+Self-reported knowledge of self-                              0.26*                    0.23*
+driving cars                          -0.06    0.03   -0.05   **       0.03    0.22    **      0.03    0.21
+
+Heard of self-driving car accident²   0.11     0.06   0.05    -0.09    0.06    -0.04   -0.14*  0.06    -0.06
+
+Experience
+
+Experience with advanced                                      0.16*                    0.26*
+vehicle technologies                  -0.09*   0.04   -0.08   **       0.04    0.13    **      0.03    0.24
+
+                                                              -                        -
+                                                              0.009                    0.006
+Years as a driver                     0.003   0.002   0.05    ***      0.002   -0.14   ***     0.002   -0.10
+
+Frequency of driving per week         0.02     0.02   0.03    -0.01    0.02    -0.02   0.003   0.02    0.004
+
+Affect
+
+Positive affect: control              0.10*    0.04   0.07    -0.09*   0.04    -0.06   -0.06   0.04    -0.04
+
+                                                              0.15*                    0.10*
+Positive affect: enjoyment            0.01     0.04   0.01    **       0.04    0.12    *       0.03    0.09
+
+                                      0.15*
+Negative affect                       *        0.05   0.08    0.11*    0.05    0.06    0.05    0.05    0.03
+
+Demographics
+
+                                      0.16*
+Gender¹                               *        0.06   0.07    -0.15*   0.06    -0.06   -0.13*  0.05    -0.06
+
+Education                             -0.02    0.02  -0.02    0.01     0.02    0.02    0.02    0.02    0.03
+
+R²                                             .03                             .22                     .258
+
+    F(df₁, df₂)                          4.55*** (10, 1473)            42.35*** (10, 1473)     51.27*** (10, 1473)
+
+
+
+1Gender was coded 0 = men, 1 = women
+
+2Variable was coded as 0 = no / do not know, 1 = yes, heard stories
+
+*p < .05, **p < .01, and ***p < .001.
+
+
+
+
+
+
+
+
+
+
+This article is protected by copyright. All rights reserved.
+
+3.2. Acceptance of Self-Driving Cars
+
+3.2.1. Interest in Using a Self-Driving Car
+To investigate the influences of risk perception, benefit perception and trust on acceptance of self-
+driving cars, we conducted linear regression analyses with the dependent variable interest in using a
+self-driving car. We included the same variables as in the previous analyses to measure their direct
+influence on interest in using a self-driving car, but added risk perception, benefit perception and
+trust in self-driving cars to the model. The results of this analysis are displayed in Table IV. Risk
+perception, benefit perception and trust were all significant predictors, but benefit perception had
+the largest effect size among the three. Experiencing more negative affect when driving regular cars,
+more experience with advanced vehicle technologies, greater self-reported knowledge of self-driving
+cars, and fewer years as a driver were also related to interest in using a self-driving car. The effect
+size of risk perception was smaller compared with those for benefit perception and trust, which is
+consistent with the smaller explained variance in the model for risk perception (3%) as opposed to
+the models for benefit perception (22%) and trust (26%). Overall, this model accounted for over 72%
+of variance in the interest in use variable.
+
+
+
+
+
+Table IV. Regression Analyses: Interest in Using a Self-Driving Car as Dependent Variable
+
+ Dependent Variable Interest in Using a Self-Driving Car
+
+        b S.E. ß
+
+ Risk perception -0.09*** 0.02 -0.07
+
+ Benefit perception 0.60*** 0.02 0.53
+
+ Trust in self-driving cars 0.27*** 0.03 0.22
+
+ Knowledge
+
+ Self-reported knowledge of self-driving cars 0.15*** 0.02 0.11
+
+ Heard of self-driving car accident² -0.08 0.04 -0.03
+
+ Experience
+
+ Experience with advanced
+
+ vehicle technologies 0.05* 0.02 0.04
+
+ Years as a driver -0.007*** 0.001 -0.10
+
+ Frequency of driving per week -0.007 0.01 -0.01
+
+
+
+
+    This article is protected by copyright. All rights reserved.
+
+Affect
+
+Positive affect: control -0.03 0.03 -0.02
+
+Positive affect: enjoyment 0.03 0.02 0.02
+
+Negative affect 0.08* 0.03 0.03
+
+Demographics
+
+Gender¹ -0.009 0.04 -0.003
+
+Education 0.004 0.01 0.005
+
+R² .72
+
+F(df₁, df₂) 294.33***(13,1470)
+
+
+    1Gender was coded 0 = men, 1 = women;
+
+    2Variable was coded as 0 = no / do not know, 1 = yes, heard stories
+
+    *p < .05, **p < .01, and ***p < .001.
+
+
+
+
+
+
+3.2.2. Acceptance of self-driving cars in special use conditions
+An alternative measure of acceptance was whether participants would let a child ride in a self-
+driving car alone. In general, respondents were reluctant to do so. Only 1% of participants indicated
+that they would let a child under age 5 use a self-driving car alone. Slightly more (3.2%) would let a
+child between ages 5 and 12 use a self-driving car alone and 18.9% (n = 280) a child between 13 and
+17 years of age. To explore the impact of risk and benefit perceptions, trust, knowledge, experience,
+and affect on this measure of acceptance, we conducted a logistic regression with whether one
+would let a child between the ages 13 and 17 ride in a self-driving car alone as the dependent
+variable (see Table V; analyses for the younger age groups were not conducted due to the small
+number of those who would let a child ride alone). In line with the results in Table IV on interest in
+using a self-driving car (interest in use), this analysis revealed that risk perception, benefit
+perception and trust were all significant predictors of likelihood of agreeing to let a child ages 13 to
+17 use a self-driving car alone: greater risk perception was associated with a reduced likelihood, and
+greater benefit perception and greater trust were associated with a greater likelihood. Unlike the
+interest in use results, neither of the knowledge variables was a significant predictor, and only years
+of experience as a driver was significant among the experience variables; participants with fewer
+years of driving experience were more likely to say that they would let a child ages 13 to 17 ride in a
+self-driving car alone. Consistent with the interest in use results, experiencing more negative affect
+
+
+
+    This article is protected by copyright. All rights reserved.
+
+when driving regular cars was associated with a greater likelihood of agreeing to let a child use a
+self-driving car alone, and neither of the positive affect measures was significant. Different from the
+interest in use model, however, was that negative affect, benefit perception and trust all had similar
+impacts (in terms of effect size) on the dependent variable. Also different from the interest in use
+model was that gender and higher levels of education were significant predictors of people’s
+likelihood of agreeing to let a child ages 13 to 17 use a self-driving car alone. People with higher
+levels of education and men were more likely to agree to let them to ride alone.
+
+
+
+    Table V. Logistic Regression: Would you let a child between the ages of 13 and 17 ride in self-driving
+    car alone?
+
+
+
+Dependent Variable Let a child ride alone
+
+        b S.E. Exp(B)
+
+Risk perception -0.32*** 0.08 0.72
+
+Benefit perception 0.46*** 0.09 1.58
+
+Trust in self-driving cars 0.39*** 0.10 1.48
+
+Knowledge
+
+Knowledge about self-driving cars 0.06 0.09 1.06
+
+Heard of self-driving car accident² -0.08 0.17 0.93
+
+Experience
+
+Experience with advanced
+
+vehicle technologies -0.03 0.09 0.97
+
+Years as a driver -0.02** 0.005 0.98
+
+Frequency of driving per week -0.08 0.05 0.93
+
+Affect
+
+Positive affect: control -0.008 0.10 0.99
+
+Positive affect: enjoyment -0.009 0.10 0.99
+
+Negative affect 0.30** 0.11 1.35
+
+Demographics
+
+Gender¹ -0.66*** 0.16 0.52
+
+
+
+
+    This article is protected by copyright. All rights reserved.
+
+Education 0.10* 0.05 1.10
+
+R² (Nagelkerke) .31
+
+χ² (df) Model 310.30***(13)
+
+
+
+
+
+
+    1Gender was coded 0 = men, 1 = women;
+
+    2Variable was coded as 0 = no / do not know, 1 = yes, heard stories
+
+    *p < .05, **p < .01, and ***p < .001.
+
+
+
+4. DISCUSSION
+
+    Judging whether one would use a self-driving car without ever having seen one or experienced
+riding in one is a difficult task. When judgments involve complexity and uncertainty, people often
+rely on how they feel about it rather than engaging in effortful reasoning about arguments for their
+judgments. Drawing on decades of research on feelings as a source of information and decision
+heuristic (e.g., Lerner et al., 2015; Loewenstein & Lerner, 2003; Schwarz, 1990; Slovic & Peters, 2006;
+Zajonc, 1980), we hypothesized that people use their feelings to inform their judgments of self-
+driving cars. In this case we examined how feelings about a similar well-known technology, namely
+traditional driving, shaped people’s perceptions about a slightly different technology, self-driving
+cars. The results of this work not only contribute to an understanding of people’s perceptions and
+acceptance of self-driving cars, but also have theoretical implications in demonstrating that feelings
+about a target or an experience similar to that being judged can serve as information that shapes
+assessments. Further, the analysis here reinforces the importance of considering the
+multidimensional nature of affect (see Lerner et al., 2015 for a discussion). Instead of simply positive
+and negative PANAS factors, our data revealed three factors, with items traditionally capturing
+positive affect splitting into two variables that we labeled enjoyment and control.
+
+4.1. Risk and Benefit Perception and Trust
+Our results indicate that feelings experienced while driving regular cars inform people’s risk and
+benefit perceptions of as well as their trust in self-driving cars (e.g., Schwarz, 1990; Zajonc, 1980).
+We asked about people’s affective experiences driving traditional vehicles—not self-driving cars;
+nevertheless, people’s feelings about the more familiar driving of current vehicles carried over to
+their assessments of self-driving cars. One possible explanation for the transfer of affective impact in
+this case is that self-driving cars essentially represent a change to the status quo, in which humans
+bear the obligation for the driving task. For people who do not enjoy the responsibilities of driving or
+
+
+    This article is protected by copyright. All rights reserved.
+
+who find the driving experience to be burdensome or unpleasant (either because they would prefer
+to be doing something else or because they dislike the driving environment, for example), self-
+driving cars offer an enticing promise: people can still get where they need to go without having to
+navigate the driving experience and with the opportunity to use their driving time for some other
+tasks or purpose. As a result, one’s attitudes about the status quo should inform perceptions of
+change to it.
+
+In line with the literature (Baumeister et al., 2001), negative affect seems to be a particularly
+important source of information when judging both risks and benefits of self-driving cars. People
+who experienced high levels of negative affect had both higher risk and higher benefit perceptions
+of self-driving cars. This is contrary to what we would expect from research on the affect heuristic
+(Finucane et al., 2000), which suggests that negative affect should have opposite effects on risk and
+benefit perceptions. It may be possible, however, that participants who reported negative affect
+around driving may also have perceived certain specific or concrete features of self-driving cars to be
+beneficial – such as making the driving experience safer. This focus on certain details of the new
+technology would be in line with research showing that negative affect increases systematic
+processing of information (Forgas, 1995; Schwarz & Clore, 2003). While participants were not put in
+a negative mood, negative affect around driving may have still led to a more careful analysis of risks
+and benefits of self-driving cars. And when participants make judgments on a more concrete level,
+previous research has found that the inverse relationship of risk and benefit perceptions is reduced
+or eliminated (Sokolowska & Sleboda, 2015).
+
+Unlike the risk and benefit models, trust was not influenced by negative affect. One possible
+explanation is that judgments of trust do not necessarily trigger an implicit comparison between the
+status quo and a new technology, which would lead people to rely on negative affect. A second
+possible explanation is that our measure of negative affect was about current driving and not self-
+driving cars. If our measure had been about self-driving vehicle technologies, we may have observed
+different results.
+
+Positive affect (enjoyment), related to people’s reports of excitement and enthusiasm around
+driving, predicted benefit perceptions of self-driving cars but not risk perception. Because positive
+affect is associated with more automatic processing, people who have more positive associations
+with driving may also be less inclined to deliberate about potential risks associated with self-driving
+cars. Thus, positive affect (enjoyment) may actually be capturing a positive attitude toward driving
+or mobility in general, regardless of vehicle type, yielding a relationship between positive affect and
+benefit perceptions of self-driving cars. For these people the value in driving may be more
+instrumental, rather than intrinsic.
+
+This inverse relationship between risk and benefit perceptions is reflected in the impacts of positive
+affect (control) on these variables, although it was flipped: positive affect (control) was positively
+related to risk perception and negatively related to benefit perception. The change in status quo –
+from an active driver to a passive driver – may be perceived as a loss among those who value the
+feeling of control when driving. Loss aversion has a strong influence on human behavior (Kahneman,
+
+
+    This article is protected by copyright. All rights reserved.
+
+Knetsch, & Thaler, 1991; Tversky & Kahneman, 1981); thus, an anticipated loss of control may result
+in negative affective reactions when judging self-driving cars. This negative affect would explain
+higher risk and lower benefit perception of self-driving cars.
+
+Additional analysis with variables included in the survey indicates a strong positive correlation
+between positive affect (control) and confidence in one’s ability to execute various driving tasks
+successfully (e.g., react quickly to a change in the environment, reverse a vehicle in a straight line), r
+= .38, p < .01 (see Table A1 for detailed results). Thus, those who reported more feelings of control
+while driving were also more likely to be people who reported greater self-confidence in their own
+driving skills or competency. As a result, they may be even more hesitant to give up driving in its
+current form as it is a skill they believe they perform well, and they may be more suspicious of a self-
+driving car’s ability to handle the variety and complexity of driving challenges across a range of
+different environments as well as human operators do. Based on this, we should expect that the
+positive affect (control) variable should be negatively related to trust in self-driving cars: people who
+value their control and role as driver should be less likely to trust that a technology could replace
+what they do. The results in Table III are suggestive but not conclusive; the coefficient on the
+positive affect (control) variable is negative but is not statistically significant with a two-tailed test.
+
+Taken together, our results suggest that affective information people have about driving influences
+their judgments about self-driving cars, but that when the affective measure is similar but not
+identical to the target, it is key to understand what the affect is capturing. Because control more
+directly links both types of technologies through the change in status quo (having control in one type
+of vehicle and having to give it up in the other), the affect heuristic may be applicable. Future studies
+should investigate how affect toward similar targets may influence judgments of the target,
+particularly in cases of new technologies. Work should also delve into these affective assessments to
+explore whether they represent more global evaluations (e.g., driving or mobility generally) or more
+specific contexts (e.g., driving human operated vehicles). The affect questions people answered
+were about “driving;” had they been asked about “driving your current vehicle” or “driving human-
+operated cars” the answers we received and the analysis of the positive affect (enjoyment) and
+negative affect variables may have differed.
+
+Beyond the affect measures, as the risk perceptions literature would predict (Slovic, 1987; 2015),
+there was evidence that experience and knowledge shaped people’s risk and benefit perceptions.
+People who had greater experience with advanced vehicle technologies had lower risk and higher
+benefit perceptions as well as higher trust ratings of self-driving cars, consistent with other literature
+on new vehicle technologies (Abraham et al., 2018; Balfe et al., 2018; Lee et al., 2018). Years of
+experience as a driver were not related to risk perception but were negatively related to benefit
+perceptions of and trust in self-driving cars. Thus, people with presumably greater levels of expertise
+as drivers were less likely to see the benefits of the technology – or of making a change to their
+mobility habits – and less likely to trust the technology to perform. Again, this may be a result of
+being averse to the potential loss of control and giving up a skill they manage well and have been
+engaged in for many years. Expertise as a driver, however, was unrelated to risk perception – newer
+and more experienced drivers alike were just as likely to see the risks self-driving cars posed.
+
+
+    This article is protected by copyright. All rights reserved.
+
+Higher levels of self-reported knowledge were linked to higher perceived benefits of and higher
+levels of trust in self-driving cars, but like years of driving experience it was not associated with risk
+perceptions. People who thought they knew more and those who thought they knew less were just
+as likely to see the risks around self-driving cars. The other measure of knowledge, whether
+participants had heard any stories about accidents involving self-driving cars, was only associated
+with trust: those who said they had heard such stories reported lower trust levels in self-driving cars.
+Past work has shown that trust in particular can be quite fragile and can be easily destroyed by a
+single negative story (e.g., Slovic, 1999), so trust in self-driving cars may be more susceptible to the
+impact of negative information than risk and benefit assessments.
+
+4.2. Acceptance of Self-Driving Car Technologies
+
+In the second part of the analysis, we investigated how risk perception, benefit perception and trust
+in self-driving cars in turn affect interest in people’s willingness to accept self-driving cars, as
+measured by interest in using a self-driving car and use by adolescents alone. In line with the
+literature (Davis et al., 1989; Lee & See, 2004; Siegrist, 1999), we found support for all three
+hypotheses that lower risk perception, higher benefit perception and higher levels of trust in self-
+driving cars were associated with greater interest in using a self-driving car. While the coefficients
+for all of these variables were statistically significant, the size of the coefficient for benefit
+perception on interest in using a self-driving car was particularly notable. This result is supported by
+the literature on technology adoption, which identified perceived benefits (or perceived usefulness
+of a technology) as well as trust in the technology (or system reliability), as significant factors
+underlying technology adoption (Davis et al., 1989; Lee & Coughlin, 2015).
+
+We also assumed that affect should be particularly important in people’s interest in using a self-
+driving car due limited knowledge of and exposure to this technology. When risk and benefit
+perceptions and trust in the technology were controlled, however, only higher levels of negative
+affect related to driving predicted greater interest in using a self-driving car; neither positive affect
+(control) nor positive affect (enjoyment) was a significant predictor. This result underscores the
+importance of negative affect as an antecedent of people’s opinions (e.g., Baumeister et al., 2001;
+Zajonc, 1981) as well as the possibility that negative affect is more likely to carry over from a similar
+technology to predict the use of a new technology because it is related to more systematic
+processing.
+
+In line with research on technology acceptance (e.g., Cousin & Siegrist, 2010; Lee & Coughlin, 2015),
+greater subjective knowledge of self-driving cars was positively related to interest in using them.
+Knowledge of any accidents involving self-driving cars did not predict interest in using them, once
+risk and benefit perceptions and trust in the technology were controlled for, but one question is how
+the findings here may have differed had the item been about ongoing or regular use of the
+technology, as opposed to a more generic “interest in use,” which people might interpret as “trying
+the technology out some time.” More experience with advanced vehicle technologies was positively
+related to interest in using self-driving cars, controlling for other variables in the model, but more
+experienced drivers were less interested in using self-driving cars. For these participants, driving may
+
+
+    This article is protected by copyright. All rights reserved.
+
+have become a habit so ingrained in their daily lives that they saw little incentive to change from
+their current technology. This finding is of note because driving experience was so strongly
+correlated with age, and because older drivers might benefit particularly from self-driving cars if they
+confront health and functional challenges that impede their abilities to drive a human-operated
+vehicle safely (Anstey & Wood, 2011).
+
+We measured technology acceptance with a second variable, people’s willingness to let a child
+between the ages of 12 and 17 ride in a self-driving car alone. Similar to the interest in use measure,
+willingness to let a child ride alone was predicted by lower risk perception, higher benefit
+perception, higher trust in self-driving cars and higher levels of negative affect while driving. In a
+rational agent model – or one in which people make logically rational decisions (see Kahneman &
+Tversky, 1984 for an overview) – one would not expect differences between using a car for oneself
+or letting a child ride in it. Not surprisingly, this is not what we found. In contrast to the interest in
+use model, neither of the knowledge of self-driving cars variables was a significant predictor.
+Experience with advanced vehicle technologies also did not predict willingness to let an adolescent
+ride alone, but years of experience as a driver was significant. As years of driving experience
+increased, the likelihood of agreement decreased, controlling for other variables in the model. In this
+model gender and education also affected people’s likelihood of agreement, controlling for other
+variables: women were less likely to agree; and as people’s levels of education increased, they were
+less likely to agree to let an adolescent ride alone. Thus, when it came to a decision about letting a
+child ride in a self-driving car alone, risk and benefit perceptions, trust and negative affect were all
+significant, but women and people with higher levels of education tended to be more cautious than
+in the use case for themselves.
+
+4.4. Limitations
+Due to the cross-sectional study design, we cannot examine how people’s opinions and judgments
+change over time or in response to new information about self-driving cars or experiences with
+advanced vehicle technologies. We can only examine the direction and magnitude of relationships of
+the self-reported measures we have in the sample. The model in Table III explained a relatively small
+amount of variance in the risk perception variable, particularly compared to the benefit perception
+and trust variables. The inclusion of additional other predictors may be essential to explain and
+understand what shapes people’s risk perceptions of self-driving cars. One such variable that could
+be key to include is social trust. In this study trust was measured as trust in technology performance
+rather than trust in technology producers (i.e., social trust). While both types of trust matter for
+people’s perceptions, social trust has been identified as an important predictor of risk and benefit
+perceptions and ultimately acceptance of new technologies (Siegrist, 1999; Siegrist & Cvetkovich,
+2000; Siegrist, Cousin, Kastenholz, & Wiek, 2007; Siegrist, Cvetkovich, & Roth, 2000). Considering
+social trust may improve the prediction of trust in performance, benefit and in particular risk
+perceptions when affect has already been considered (Siegrist, Earle, & Gutscher, 2003). Another
+variable that may influence risk perception is negative media coverage around self-driving cars.
+Having heard of accidents related to self-driving cars did negatively influence trust in them, but not
+participants’ risk perception. However, future research may consider studying media coverage in a
+
+
+
+    This article is protected by copyright. All rights reserved.
+
+more nuanced way, as most people’s current knowledge of self-driving cars comes from the media,
+which often portray the technology negatively by focusing on risks rather than benefits and
+reporting extensively and dramatically about accidents and legal or ethical issues (e.g., Borchers,
+2013; Goidel & Langley, 1995). Significant media coverage with affect-laden images and stories also
+makes events like accidents more vivid and easily available in people’s minds, which in turn can
+increase people’s perceptions of risk (Raue & Scholl, 2018; Tversky & Kahneman, 1974).
+
+        Furthermore, there are some limitations and cautions around using the PANAS and global
+measures of affect generally, despite the use of the PANAS in prior studies on technology
+acceptance. First, in this study we focus on affect around “driving” but use these measures to
+explore people’s judgments around a new driving technology. While we demonstrate the impact of
+these affective responses, people’s affect toward the experience of driving may differ from their
+affect around current vehicle technologies, which may also differ from their affect toward self-
+driving cars in particular. Second, particular emotional reactions may be more powerful in
+understanding risk and benefit perceptions, trust in and adoption of new technologies. Some of the
+so-called basic emotions – such as anger and fear – are absent from the usual PANAS inventory, but
+they may be important when it comes to technology adoption. For example, fear of a new
+technology or anger with a current technology may be powerful motivators around acceptance (see
+Lerner & Keltner, 2001 for the influence of fear and anger on risk perception). Future work should
+explore how some of these individual emotions, as well as more global affective assessments,
+contribute to risk and benefit perceptions and to acceptance.
+
+4.5 Conclusions
+In this study we found evidence that affect related to regular driving influences people’s perceptions
+and acceptance of self-driving cars. Self-driving cars are a new technology, and relatively few people
+have had any direct experience with it at this point. Although subjective knowledge of and
+experience with advanced vehicle technologies were significant predictors of perceptions of and
+interest in using self-driving cars, our results illustrate how affect around the experience of using a
+similar technology – driving current vehicles – might shape people’s assessments of a new
+technology. In the case of self-driving cars and new technologies more generally, our results suggest
+that it may be important to consider whether and in what ways these technologies disrupt
+individuals’ senses of autonomy and control. Giving up control may, in fact, be one of the major
+barriers to the adoption of self-driving cars (Abraham et al., 2018; Howard & Dai, 2013; Kyriakidis et
+al., 2015). As technologies and automated systems continue to take on tasks once reserved for
+humans, understanding how people make judgments about them, and how these judgments affect
+their acceptance and use, will become increasingly important.
+
+Our results further underscore the significance of benefit perception for understanding technology
+acceptance. As self-driving cars are still more conceptual than tangible, their usefulness may not be
+obvious to many, but so too may the risks of such technologies not be fully understood. As the
+technology continues to mature and become more widely adopted, it may be especially important to
+communicate to the public about its benefits and risks, so that communities can make better
+decisions about how they want to use and interact with the technology.
+
+
+    This article is protected by copyright. All rights reserved.
+
+ACKNOWLEDGEMENTS
+
+This research was supported in part by grants from the US Department of Transportation University
+Transportation Centers Program and the AARP.
+
+
+
+APPENDIX
+
+
+Table A1. Variable: Confidence in driving skills
+
+
+
+
+Variable          Item Wording                                                                   Response Options     M (SD)
+
+Confidence in     How confident do you feel about your ability to do each of the following?      From 1 (not at all   4.39 (0.62)
+driving skills                                                                                   confident) to 5 (very
+                  -  React quickly to a change in the environment by steering to avoid a crash   confident)
+
+                  -  Maintain driving at the speed of traffic while traveling on a highway
+
+                  -  Scan an intersection to make sure that it is safe to drive through it
+
+                  -  Reverse a vehicle in a straight line
+
+                  -  While driving in traffic, change into a right-hand lane
+
+                  -  React quickly to a change in the environment by braking suddenly
+
+                  -  Parallel park between two vehicles
+
+                  -  While driving in traffic, change into a left-hand lane
+
+                  -  Physically turn around to reverse a vehicle
+
+                  D = .88
+
+
+
+
+
+
+
+Table A2. Correlations of all variables
+
+
+
+
+                              1        2     3 4 5 6 7                                           8 9 10               11
+
+1   Self-reported knowledge of
+    self-driving cars
+
+2   Experience with advanced
+    vehicle technologies      .42**
+
+3   Years as a driver         -.31**   -.35**
+
+
+
+
+
+This article is protected by copyright. All rights reserved.
+
+4   Driving frequency               .15**    .21**    -.15**
+
+5   Positive affect - enjoyment     .26**    .46**    -.14**   .17**
+
+6   Positive affect - control       0.01     -0.03    .17**    -0.03    .31**
+
+7   Negative affect                 .22**    .29**    -.38**   0.03     .14**   -.20**
+
+8   Risk perception                 -.09**   -.10**   .07**    -0.005   -0.01   .07**    0.02
+
+9   Benefit perception              .37**    .35**    -.30**   .09**    .25**   -.06*    .22**    -.46**
+
+10  Trust in self-driving cars      .38**    .43**    -.28**   .13**    .27**   -0.05    .21**    -.49**   .64**
+
+11  Interest in self-driving cars   .45**    .43**    -.39**   .11**    .28**   -.08**   .28**    -.44**   .80**    .69**
+
+12  Confidence in driving skills    .06*     0.05     .21**    .14**    .18**   .38**    -.31**   .08**    -.08**   -0.03 -.08**
+
+
+
+
+*p < .05, **p < .01.
+
+N = 1484
+
+
+
+
+
+
+
+
+
+
+REFERENCES
+
+Abdu, R., Shinar, D., & Meiran, N. (2012). Situational (state) anger and driving. Transportation
+ Research Part F: Traffic Psychology and Behaviour, 15(5), 575–580.
+ http://doi.org/10.1016/j.trf.2012.05.007
+
+Abraham, H., Lee, C., Brady, S., Fitzgerald, C., Mehler, B., Reimer, B., & Coughlin, J. F. (2016).
+ Autonomous Vehicles, Trust, and Driving Alternatives: A survey of consumer preferences. White
+ Paper. Massachusetts Institute of Technology, Cambridge, MA.
+
+Abraham, H., Reimer, B., Seppelt, B. D., Fitzgerald, C., Mehler, B., & Coughlin, J. F. (2018). Consumer
+ Interest in Automation: Change Over One Year. Annual Meeting of the Transportation Research
+ Board, Washington, D.C.
+
+
+
+
+
+
+This article is protected by copyright. All rights reserved.
+
+Alhakami, A. S., & Slovic, P. (1994). A Psychological Study of the Inverse Relationship Between
+    Perceived Risk and Perceived Benefit. Risk Analysis, 14(6), 1085–1096.
+    http://doi.org/10.1111/j.1539-6924.1994.tb00080.x
+
+Anstey, K. J., & Wood, J. (2011). Chronological age and age-related cognitive deficits are associated
+    with an increase in multiple types of driving errors in late life. Neuropsychology, 25(5), 613–621.
+    http://doi.org/10.1037/a0023835
+
+Balfe, N., Sharples, S., & Wilson, J. R. (2018). Understanding Is Key: An Analysis of Factors Pertaining
+    to Trust in a Real-World Automation System. Human Factors, 60(4), 477–495.
+    http://doi.org/10.1177/0018720818761256
+
+Bansal, P., & Kockelman, K. M. (2016). Are we ready to embrace connected and self-driving vehicles?
+    A case study of Texans. Transportation, 45(2), 641–675. http://doi.org/10.1007/s11116-016-
+    9745-z
+
+Bansal, P., Kockelman, K. M., & Singh, A. (2016). Assessing public opinions of and interest in new
+    vehicle technologies: An Austin perspective. Transportation Research Part C: Emerging
+    Technologies, 67, 1–14. http://doi.org/10.1016/j.trc.2016.01.019
+
+Baumeister, R. F., Bratslavsky, E., Finkenauer, C., & Vohs, K. D. (2001). Bad is stronger than good.
+    Review of General Psychology, 5(4), 323–370.
+
+Bearth, A., & Siegrist, M. (2016). Are risk or benefit perceptions more important for public
+    acceptance of innovative food technologies: A meta-analysis. Trends in Food Science &
+    Technology, 49, 14–23. http://doi.org/10.1016/j.tifs.2016.01.003
+
+Berdoulat, E., Vavassori, D., & Sastre, M. T. M. (2013). Driving anger, emotional and instrumental
+    aggressiveness, and impulsiveness in the prediction of aggressive and transgressive driving.
+    Accident Analysis & Prevention, 50, 758–767. http://doi.org/10.1016/j.aap.2012.06.029
+
+Borchers, T. A. (2013). Persuasion in the Media Age (3rd ed.). Long Grove, IL: Waveland Press.
+
+Bureau of Transportation Statistics. (2017). Passenger Travel. Retrieved August 23, 2017, from
+    https://www.bts.gov/topics/passenger-travel
+
+Cabanac, M. (1992). Pleasure: the common currency. Journal of Theoretical Biology, 155(2), 173–
+    200.
+
+Center for Disease Control. (2016, March). Older Drivers in the Workplace: How Employers and
+    Workers Can Prevent Crashes. Retrieved May 9, 2017, from
+    https://www.cdc.gov/motorvehiclesafety/older_adult_drivers/
+
+Chauvin, B. (2018). Individual Differences in the Judgment of Risks: Sociodemographic
+    characteristics, Cultural orientation, and Level of expertise. In M. Raue, E. Lermer, & B. Streicher
+    (Eds.), Psychological Perspectives on Risk and Risk Analysis - Theory, Models and Applications.
+    New York, NY.
+
+Chen, M., & Bargh, J. A. (2016). Consequences of Automatic Evaluation: Immediate Behavioral
+    Predispositions to Approach or Avoid the Stimulus. Personality and Social Psychology Bulletin,
+    25(2), 215–224. http://doi.org/10.1177/0146167299025002007
+
+
+    This article is protected by copyright. All rights reserved.
+
+Chihuri, S., Mielenz, T. J., DiMaggio, C. J., Betz, M. E., DiGuiseppi, C., Jones, V. C., & Li, G. (2016).
+    Driving Cessation and Health Outcomes in Older Adults. Journal of the American Geriatrics
+    Society, 64(2), 332–341. http://doi.org/10.1111/jgs.13931
+
+Choi, J. K., & Ji, Y. G. (2015). Investigating the Importance of Trust on Adopting an Autonomous
+    Vehicle. International Journal of Human-Computer Interaction, 31(10), 692–702.
+    http://doi.org/10.1080/10447318.2015.1070549
+
+Cousin, M.-E., & Siegrist, M. (2010). The public's knowledge of mobile communication and its
+    influence on base station siting preferences. Health, Risk & Society, 12(3), 231–250.
+    http://doi.org/10.1080/13698571003710332
+
+Davis, F. D., Bagozzi, R. P., & Warshaw, P. R. (1989). User Acceptance of Computer Technology: A
+    Comparison of Two Theoretical Models. Management Science, 35(8), 982–1003.
+    http://doi.org/10.1287/mnsc.35.8.982
+
+Dingus, T. A., Guo, F., Lee, S., Antin, J. F., Perez, M., Buchanan-King, M., & Hankey, J. (2016). Driver
+    crash risk factors and prevalence evaluation using naturalistic driving data. Proceedings of the
+    National Academy of Sciences of the United States of America, 113(10), 2636–2641.
+    http://doi.org/10.1073/pnas.1513271113
+
+Donorfio, L. K. M., D'Ambrosio, L. A., Coughlin, J. F., & Mohyde, M. (2009). To drive or not to drive,
+    that isn't the question—the meaning of self-regulation among older drivers. Journal of Safety
+    Research, 40(3), 221–226. http://doi.org/10.1016/j.jsr.2009.04.002
+
+Faraji-Rad, A., & Pham, M. T. (2017). Uncertainty Increases the Reliance on Affect in Decisions.
+    Journal of Consumer Research, 44. http://doi.org/10.2139/ssrn.2715333
+
+Federal Highway Administration. (2015). Highway Statistics 2015. Retrieved August 23, 2017, from
+    https://www.fhwa.dot.gov/policyinformation/statistics/2015/dv1c.cfm
+
+Finucane, M. L., Alhakami, A., Slovic, P., & Johnson, S. M. (2000). The Affect Heuristic in Judgments of
+    Risks and Benefits. Journal of Behavioral Decision Making, 13, 1–17.
+
+Fischhoff, B., Slovic, P., Lichtenstein, S., Read, S., & Combs, B. (1978). How safe is safe enough? A
+    psychometric study of attitudes towards technological risks and benefits. Policy Sciences, 9(2),
+    127–152.
+
+Forgas, J. P. (1995). Mood and judgment: The affect infusion model (AIM). Psychological Bulletin,
+    117(1), 39–66. http://doi.org/10.1037//0033-2909.117.1.39
+
+Fox-Glassman, K. T., & Weber, E. U. (2016). What makes risk acceptable? Revisiting the 1978
+    psychological dimensions of perceptions of technological risks. Journal of Mathematical
+    Psychology, 75, 157–169. http://doi.org/10.1016/j.jmp.2016.05.003
+
+Frewer, L. J., Howard, C., & Shepherd, R. (1995). Genetic engineering and food: what determines
+    consumer acceptance? British Food Journal, 97(8), 31–36.
+    http://doi.org/10.1108/00070709510100118
+
+
+
+
+
+
+    This article is protected by copyright. All rights reserved.
+
+Goidel, R. K., & Langley, R. E. (1995). Media Coverage of the Economy and Aggregate Economic
+    Evaluations: Uncovering Evidence of Indirect Media Effects. Political Research Quarterly, 48(2),
+    313–328. http://doi.org/10.1177/106591299504800205
+
+Hengstler, M., Enkel, E., & Duelli, S. (2016). Applied artificial intelligence and trust—The case of
+    autonomous vehicles and medical assistance devices. Technological Forecasting and Social
+    Change, 105, 105–120. http://doi.org/10.1016/j.techfore.2015.12.014
+
+Hirshleifer, D., & Shumway, T. (2003). Good Day Sunshine: Stock Returns and the Weather. The
+    Journal of Finance, 58(3), 1009–1032. http://doi.org/10.1111/1540-6261.00556
+
+Hohenberger, C., Spörrle, M., & Welpe, I. M. (2016). How and why do men and women differ in their
+    willingness to use automated cars? The influence of emotions across different age groups.
+    Transportation Research Part A: Policy and Practice, 94, 374–385.
+    http://doi.org/10.1016/j.tra.2016.09.022
+
+Howard, D., & Dai, D. (2013). Public Perceptions of Self-driving Cars: The Case of Berkeley, California.
+    93rd Annual Meeting of the Transportation Research Board.
+
+Hulse, L. M., Xie, H., & Galea, E. R. (2018). Perceptions of autonomous vehicles: Relationships with
+    road users, risk, gender and age. Safety Science, 102, 1–13.
+    http://doi.org/10.1016/j.ssci.2017.10.001
+
+Isen, A. M. (2000). Some perspectives on positive affect and self-regulation. MIS Quarterly, 11(3),
+    184–187. http://doi.org/10.2307/1449800
+
+Kahneman, D., & Tversky, A. (1984). Choices, values, and frames. American Psychologist, 39(4), 341–
+    350. http://doi.org/10.1037/0003-066X.39.4.341
+
+Kahneman, D., Knetsch, J. L., & Thaler, R. H. (1991). Anomalies: The endowment effect, loss aversion,
+    and status quo bias. The Journal of Economic Perspectives, 5, 193–206.
+
+König, M., & Neumayr, L. (2017). Users’ resistance towards radical innovations: The case of the self-
+    driving car. Transportation Research Part F: Traffic Psychology and Behaviour, 44, 42–52.
+    http://doi.org/10.1016/j.trf.2016.10.013
+
+Kyriakidis, M., Happee, R., & de Winter, J. C. F. (2015). Public opinion on automated driving: Results
+    of an international questionnaire among 5000 respondents. Transportation Research Part F:
+    Traffic Psychology and Behaviour, 32, 127–140. http://doi.org/10.1016/j.trf.2015.04.014
+
+Lara, E. R., Pascual, C. O., Borondo, J. P., & Pino, G. (2016). Nanoimplants that Enhance Human
+    Capabilities: A Cognitive‐Affective Approach to Assess Individuals’ Acceptance of this
+    Controversial Technology. Psychology & Marketing, 33(9), 704–712.
+    http://doi.org/10.1002/mar.20911
+
+Lee, C., & Coughlin, J. F. (2015). Older Adults' Adoption of Technology: An Integrated Approach to
+    Identifying Determinants and Barriers. Journal of Product Innovation Management, 32(5), 747–
+    759. http://doi.org/10.1111/jpim.12176
+
+
+
+
+
+
+    This article is protected by copyright. All rights reserved.
+
+Lee, C., Seppelt, B. D., Abraham, H., Reimer, B., Mehler, B., & Coughlin, J. F. (2018). Consumer
+    Comfort with In-Vehicle Automation: Technology of Today Drives Acceptance of a Self-Driving
+    Future. White Paper. Massachusetts Institute of Technology, Cambridge, MA.
+
+Lee, C., Ward, C., Raue, M., D'Ambrosio, L., & Coughlin, J. F. (2017). Age Differences in Acceptance of
+    Self-driving Cars: A Survey of Perceptions and Attitudes. In J. Zhou & Salvendy, G. (Eds.). Human
+    Aspects of IT for the Aged Population. Aging, Design and User Experience (4 ed., Vol. 10297, pp.
+    3–13). Cham: Springer. http://doi.org/10.1007/978-3-319-58530-7_1
+
+Lee, J. D., & See, K. A. (2004). Trust in Automation: Designing for Appropriate Reliance. Human
+    Factors, 46(1), 50–80. http://doi.org/10.1518/hfes.46.1.50_30392
+
+Lee, M.-C. (2009). Factors influencing the adoption of internet banking: An integration of TAM and
+    TPB with perceived risk and perceived benefit. Electronic Commerce Research and Applications,
+    8(3), 130–141. http://doi.org/10.1016/j.elerap.2008.11.006
+
+Lerner, J. S., & Keltner, D. (2001). Fear, anger, and risk. Journal of Personality and Social Psychology.
+
+Lerner, J. S., Li, Y., Valdesolo, P., & Kassam, K. S. (2015). Emotion and Decision Making. Annual
+    Review of Psychology, 66(1), 799–823. http://doi.org/10.1146/annurev-psych-010213-115043
+
+Loewenstein, G., & Lerner, J. S. (2003). The Role of Affect in Decision Making. In R. Davidson, H.
+    Goldsmith, & K. Scherer (Eds.), Handbook of Affective Science (pp. 619–642). Oxford, UK: Oxford
+    University Press.
+
+Luo, X., Li, H., Zhang, J., & Shim, J. P. (2010). Examining multi-dimensional trust and multi-faceted
+    risk in initial acceptance of emerging technologies: An empirical study of mobile banking
+    services. Decision Support Systems, 49(2), 222–234. http://doi.org/10.1016/j.dss.2010.02.008
+
+Marottoli, R. A., Leon, C. F. M., Glass, T. A., Williams, C. S., Cooney, L. M., Berkman, L. F., & Tinetti, M.
+    E. (1997). Driving Cessation and Increased Depressive Symptoms: Prospective Evidence from the
+    New Haven EPESE. Journal of the American Geriatrics Society, 45(2), 202–206.
+    http://doi.org/10.1111/j.1532-5415.1997.tb04508.x
+
+National Highway Safety Administration. (2015). Critical Reasons for Crashes Investigated in the
+    National Motor Vehicle Crash Causation Survey. Retrieved August 3, 2017, from
+    https://crashstats.nhtsa.dot.gov/Api/Public/ViewPublication/812115
+
+National Highway Safety Traffic Administration. (2017). 2016 Fatal Motor Vehicle Crashes: Overview.
+    Retrieved October 2, 2018, from https://www.nhtsa.gov/press-releases/usdot-releases-2016-
+    fatal-traffic-crash-data
+
+Nielsen, T. A. S., & Haustein, S. (2018). On sceptics and enthusiasts: What are the expectations
+    towards self-driving cars? Transport Policy, 66, 49–55.
+    http://doi.org/10.1016/j.tranpol.2018.03.004
+
+Pelegrín-Borondo, J., Reinares-Lara, E., & Olarte-Pascual, C. (2017). Assessing the acceptance of
+    technological implants (the cyborg): Evidences and challenges. Computers in Human Behavior,
+    70, 104–112. http://doi.org/10.1016/j.chb.2016.12.063
+
+
+
+
+
+    This article is protected by copyright. All rights reserved.
+
+Peters, E., Västfjäll, D., Gärling, T., & Slovic, P. (2006). Affect and decision making: A “hot” topic.
+    Journal of Behavioral Decision Making, 19, 79–85.
+
+Raue, M., & Scholl, S. G. (2018). The Use of Heuristics in Decision-Making under Risk and
+    Uncertainty. In M. Raue, E. Lermer, & B. Streicher (Eds.), Psychological Perspectives on Risk and
+    Risk Analysis - Theory, Models and Applications. New York, NY: Springer.
+
+Sanbonmatsu, D. M., Strayer, D. L., Yu, Z., Biondi, F., & Cooper, J. M. (2018). Cognitive underpinnings
+    of beliefs and confidence in beliefs about fully automated vehicles. Transportation Research
+    Part F: Traffic Psychology and Behaviour, 55, 114–122. http://doi.org/10.1016/j.trf.2018.02.029
+
+Schoettle, B., & Sivak, M. (2014). A survey of public opinion about autonomous and self-driving
+    vehicles in the U.S., the U.K., and Australia. The University of Michigan Transportation Research
+    Institute, Report No. UMTRI-2014-21.
+
+Schwarz, N. (1990). Feelings as information: Informational and motivational functions of affective
+    states. In E. T. Higgins & R. M. Sorrentino (Eds.), Handbook of Motivation and Cognition
+    Foundations of Social Behavior (Vol. 2, pp. 527–561). New York, NY: Guilford Press.
+
+Schwarz, N. (2012). Feelings-as-information theory. In P. Van Lange, A. Kruglanski, & E. T. Higgins
+    (Eds.), Handbook of Theories of Social Psychology (pp. 289–308). Thousand Oaks, CA: Sage.
+
+Schwarz, N., & Clore, G. L. (1983). Mood, misattribution, and judgments of well-being: Informative
+    and directive functions of affective states. Journal of Personality and Social Psychology, 45(3),
+    513–523.
+
+Schwarz, N., & Clore, G. L. (2003). Mood as Information: 20 Years Later. Psychological Inquiry, 14(3-
+    4), 296–303. http://doi.org/10.1080/1047840X.2003.9682896
+
+Shabanpour, R., Golshani, N., Shamshiripour, A., & Mohammadian, A. K. (2018). Eliciting preferences
+    for adoption of fully automated vehicles using best-worst analysis. Transportation Research Part
+    C: Emerging Technologies, 93, 463–478. http://doi.org/10.1016/j.trc.2018.06.014
+
+Siegrist, M. (1999). A Causal Model Explaining the Perception and Acceptance of Gene Technology.
+    Journal of Applied Social Psychology, 29(10), 2093–2106. http://doi.org/10.1111/j.1559-
+    1816.1999.tb02297.x
+
+Siegrist, M. (2000). The Influence of Trust and Perceptions of Risks and Benefits on the Acceptance of
+    Gene Technology. Risk Analysis, 20(2), 195–204. http://doi.org/10.1111/0272-4332.202020
+
+Siegrist, M., & Cvetkovich, G. (2000). Perception of Hazards: The Role of Social Trust and Knowledge.
+    Risk Analysis, 20(5), 713–720. http://doi.org/10.1111/0272-4332.205064
+
+Siegrist, M., Cousin, M.-E., Kastenholz, H., & Wiek, A. (2007). Public acceptance of nanotechnology
+    foods and food packaging: The influence of affect and trust. Appetite, 49(2), 459–466.
+    http://doi.org/10.1016/j.appet.2007.03.002
+
+Siegrist, M., Cvetkovich, G., & Roth, C. (2000). Salient Value Similarity, Social Trust, and Risk/Benefit
+    Perception. Risk Analysis, 20(3), 353–362. http://doi.org/10.1111/0272-4332.203034
+
+
+
+
+
+    This article is protected by copyright. All rights reserved.
+
+Siegrist, M., Earle, T. C., & Gutscher, H. (2003). Test of a Trust and Confidence Model in the Applied
+    Context of Electromagnetic Field (EMF) Risks. Risk Analysis, 23(4), 705–716.
+    http://doi.org/10.1111/1539-6924.00349
+
+Slovic, P. (1987). Perception of Risk. Science, 236(4799), 280–285.
+    http://doi.org/10.1126/science.3563507
+
+Slovic, P. (1999). Trust, Emotion, Sex, Politics, and Science: Surveying the Risk‐Assessment
+    Battlefield. Risk Analysis, 19(4), 689–701. http://doi.org/10.1111/j.1539-6924.1999.tb00439.x
+
+Slovic, P. (2015). Understanding Perceived Risk: 1978–2015. Environment: Science and Policy for
+    Sustainable Development, 58(1), 25–29. http://doi.org/10.1080/00139157.2016.1112169
+
+Slovic, P., & Peters, E. (2006). Risk Perception and Affect. Current Directions in Psychological Science,
+    15(6), 322–325. http://doi.org/10.1111/j.1467-8721.2006.00461.x
+
+Slovic, P., Finucane, M. L., Peters, E., & MacGregor, D. G. (2004). Risk as analysis and risk as feelings:
+    Some thoughts about affect, reason, risk, and rationality. Risk Analysis, 24(2), 311–322.
+
+Slovic, P., Finucane, M., Peters, E., & MacGregor, D. G. (2003). The Affect Heuristic. In T. Gilovich, D.
+    Griffin, & D. Kahneman (Eds.), Heuristics and Biases: The Psychology of Intuitive Judgment (pp.
+    1–51). Cambridge, UK: Cambridge University Press.
+
+Sokolowska, J., & Sleboda, P. (2015). The Inverse Relation Between Risks and Benefits: The Role of
+    Affect and Expertise. Risk Analysis, 35(7), 1252–1267. http://doi.org/10.1111/risa.12346
+
+Srull, T. K. (1984). The Effects of Subjective Affective States on Memory and Judgment. In T. Kinnear
+    (Ed.), Advances in Consumer Research (Vol. 11, pp. 530–533). Provo, UT: ACR North American
+    Advances.
+
+Tompkins, M. K., Bjälkebring, P., & Peters, E. (2018). Emotional Aspects of Risk Perceptions. In M.
+    Raue, E. Lermer, & B. Streicher (Eds.), Psychological Perspectives on Risk and Risk Analysis -
+    Theory, Models and Applications. New York, NY: Springer.
+
+Turner, M., Love, S., & Howell, M. (2008). Understanding emotions experienced when using a mobile
+    phone in public: The social usability of mobile (cellular) telephones. Telematics and Informatics,
+    25(3), 201–215. http://doi.org/10.1016/j.tele.2007.03.001
+
+Tversky, A., & Kahneman, D. (1974). Judgment under Uncertainty: Heuristics and Biases. Science,
+    185, 1124–1131.
+
+Tversky, A., & Kahneman, D. (1981). The framing of decisions and the psychology of choice. Science,
+    211(4481), 453–458.
+
+Vanderbilt, T. (2008). Traffic: Why We Drive the Way We Do (and What It Says About Us). New York,
+    NY: Random House.
+
+Venkatesh, V., Thong, J. Y. L., & Xu, X. (2012). Consumer acceptance and use of information
+    technology: extending the unified theory of acceptance and use of technology. MIS Quarterly,
+    36(1), 157–178. http://doi.org/10.2307/41410412
+
+
+
+
+    This article is protected by copyright. All rights reserved.
+
+Visschers, V. H. M., & Siegrist, M. (2018). Differences in risk perception between hazards and
+    between individuals. In M. Raue, E. Lermer, & B. Streicher (Eds.), Psychological Perspectives on
+    Risk and Risk Analysis - Theory, Models and Applications. New York, NY: Springer.
+
+Watson, D., Clark, L. A., & Tellegen, A. (1988). Development and validation of brief measures of
+    positive and negative affect: the PANAS scales. Journal of Personality and Social Psychology,
+    54(6), 1063.
+
+World Health Organization. (2016). Road traffic injuries. Retrieved August 3, 2017, from
+    http://www.who.int/mediacentre/factsheets/fs358/en/
+
+Zajonc, R. B. (1980). Feeling and thinking: Preferences need no inferences. American Psychologist,
+    35(2), 151–175. http://doi.org/10.1037/0003-066X.35.2.151
+
+Zmud, J., Sener, I. N., & Wagner, J. (2016). Revolutionizing Our Roadways: Consumer Acceptance and
+    Travel Behavior Impacts of Automated Vehicles. Texas A&M Transportation Institute.
+
+
+
+
+
+
+
+
+
+
+    This article is protected by copyright. All rights reserved.
+

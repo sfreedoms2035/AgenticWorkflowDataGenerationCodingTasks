@@ -1,0 +1,419 @@
+THE UNIVERSITY OF WARWICK
+
+
+
+
+Manuscript version: Author’s Accepted Manuscript
+The version presented in WRAP is the author’s accepted manuscript and may differ from the
+published version or Version of Record.
+
+Persistent WRAP URL:
+http://wrap.warwick.ac.uk/187050
+
+How to cite:
+The repository item page linked to above, will contain details on accessing citation guidance
+from the publisher.
+
+Copyright and reuse:
+The Warwick Research Archive Portal (WRAP) makes this work of researchers of the
+University of Warwick available open access under the following conditions.
+
+This article is made available under the Creative Commons Attribution 4.0 International
+license (CC BY 4.0) and may be reused according to the conditions of the license. For more
+details see: http://creativecommons.org/licenses/by/4.0/.
+
+
+
+
+
+Publisher’s statement:
+Please refer to the repository item page, publisher’s statement section, for further
+information.
+
+For more information, please contact the WRAP Team at: wrap@warwick.ac.uk
+
+
+
+
+
+
+
+
+
+
+
+
+
+warwick.ac.uk/lib-publications
+
+        Towards Robust ISO 34503 ODD Language Syntax and Semantics
+
+Guild Bruce, Antonio Bruto da Costa, Siddartha Khastgir, and Paul Jennings
+
+
+             Abstract— This paper presents the development of a novel     •      Composability: They enable the combination of simpler
+    language for specifying Operational Design Domains (ODD),                  specifications into more complex ones, facilitating the
+    offering a significant contribution to the field of safety-critical     description of complex systems.
+    systems. The language design, which   is   in harmony        with
+    the ISO 34503 standard, is meticulously crafted to augment            • Scalability: They can handle large or potentially infinite
+    the precision and composability of system specifications. A                sets of specifications, accommodating the complexity of
+    thorough examination of the ISO 34503 standard is undertaken,           real-world systems.
+    with a particular emphasis on the language requirements for
+    ODD specification. The practicality   and  advantages of      the              Past work has indeed proposed various languages for
+    newly proposed ODD language are substantiated through a                     specifying ODDs. For instance, a past study proposed a
+    variety of case studies, illustrating its application in real-world
+    contexts. The research concludes that the innovative language            two-level abstraction ODD Definition Language [19], [20].
+    design markedly enhances the comprehensibility and semantic            Part I of the study presented a structured natural language
+    interpretation of ODDs, thereby facilitating the development of        ODD representation format, while Part II presented a formal
+    more dependable and robust automated driving systems.                     treatment of the representation for the ODD of Automated
+                         I. INTRODUCTION                                       Driving Systems (ADSs). The objective of these proposed
+  The rapid advancement of Automated Driving Systems languages was to ascertain whether a given situation is
+(ADS) has necessitated the development of robust and encompassed within or excluded from the ODD. These
+reliable safety-critical systems. Scenario-based testing has studies were grounded in the BSI PAS 1883 standard that
+emerged as a crucial approach in the validation and veri- was prevalent at the time [21].
+    fication (V&V) of ADS [1]–[5]. It allows for the systematic                Despite the significant contributions of these previous
+assessment of an ADS’s ability to handle a wide range of works, they lacked a standardized format to ground them.
+real-world driving situations [6]. A scenario is a ‘temporal This was due to the absence of any guiding principles at
+development between several scenes in a sequence of scenes. the time. A lack of standardization can result in inconsisten-
+Every scenario starts with an initial scene. Action and events cies and potential misinterpretations in ODD specifications.
+as well as goals & values may be specified to characterise This highlights the need for a formal language for ODD
+this temporal development in a scenario. Other than a scene, specification that aligns with a recognized standard such as
+    a scenario spans a certain amount of time.’ [7].                           ISO 34503:2023 Road Vehicles — Test scenarios for auto-
+            Central to these systems is the Operational Design Domain     mated driving systems — Specification for operational design
+    (ODD), which defines the specific conditions under which an                domain, henceforth referred to as ISO 34503. A language
+    ADS is designed to function. The specification of ODDs is                   adhering to such a standard would not only enhance the
+    a complex task that requires a clear and precise language             clarity and composability of system specifications, but also
+    to ensure accurate communication and understanding [8],               ensure their alignment with internationally recognized stan-
+    [9]. The effectiveness of scenario-based testing is therefore          dards. This alignment is crucial for the broader acceptance
+    heavily reliant on the accuracy and clarity of the ODD               and application of these specifications in the development of
+    specification [10]–[14]. Given the safety-critical nature of         automated driving systems.
+    these systems, it is crucial that the specifications are clear,         This paper addresses this challenge by introducing a novel
+    precise, and unambiguous.                                              language for specifying ODDs that is designed in accordance
+            The need for a formal language for specifying ODDs arises    with the ISO 34503 standard. This aims to enhance the clarity
+    from the complexity and criticality of the systems being             and composability of safety-critical system specifications.
+    described [15], [16]. A formal language provides a standard-          The remainder of     this paper presents the design      and
+    ized way of expressing these specifications, reducing the risk            practical application of the proposed ODD language. This
+    of misinterpretation and ensuring a common understanding                language enhances the readability and semantic understand-
+    among all stakeholders [17], [18].                                           ing of ODDs and adheres to the guidelines provided in
+     Formal languages have several key advantages:                          the ISO 34503 standard. The adherence to these guidelines,
+  • Precision: They allow for exact definitions, reducing the along with the practical benefits of the language, contributes
+     risk of ambiguity or misinterpretation.                             to the development of more robust and reliable automated
+  All authors are with WMG, University of Warwick, Coventry, United driving systems and more effective scenario-based testing.
+Kingdom. Emails: {guild.bruce, antonio.bruto-da-costa, This work is a step forward in the field of safety-critical
+    s.khastgir.1, paul.jennings}@warwick.ac.uk                           system specifications.
+
+    Dynamic    Dynamic
+
+
+    Junctions    Junctions
+
+
+
+
+
+    Soowtl
+
+
+
+
+
+
+
+       Fig. 1. ISO 34503 ODD Taxonomy                                Fig. 2.        ODD Mode Specifications applied to the ISO 34503 Taxonomy.
+                                                                     The default mode is applied at the root of the taxonomy, while permissive
+                                                                     (green) mode is applied ODD attribute Scenery Elements    and restrictive
+       II. ISO 34503 ODD LANGUAGE REQUIREMENTS                       (red) mode is applied to Weather
+             The ISO 34503 standard provides a comprehensive frame-
+            work for defining an ODD language [22]. It outlines the                 conditions that, if satisfied, modify the applicability of
+          requirements for a functional language that caters to the    the statement within its scope.
+        needs of various stakeholders, including regulators, system  •                      Mode Specifications: The mode specification for an
+       engineers, and local authorities. However, the standard does    ODD attribute A determines how sub-attributes of                      A
+      not provide a specific language for simulation-based testing,                      are handled when they are not specified within an ODD
+    leaving this to the ASAM-OpenODD project [23].                     definition. It should be noted that A                 could be the root
+           The ODD definition in the ISO 34503 standard refers to a                        node of the taxonomy in use. The standard specifies
+          taxonomy, which provides a structured way of categorizing                    three modes: permissive, restrictive, and default. When
+         and understanding the elements of an ODD [24]. This taxon-    the                   permissive mode is applied to an attribute A, any
+         omy is crucial for ensuring consistency and clarity in ODD    unspecified attributes in the sub-tree rooted at                  A are
+       specifications. Figure 1 offers a high-level overview of the                     treated as inside the ODD, while the restrictive mode,
+         ISO 34503 taxonomy. Please note that it does not encompass    if applied to                   A, treats any unspecified attributes in
+       all the details but provides a simplified representation for    the sub-tree rooted at                        A as outside the ODD. The
+    better understanding.                                              default mode is akin to the                    permissive mode in terms
+          Consider C as the current operational domain (COD) of the                   of how unspecified attributes are treated, however, only
+               Automated Driving System (ADS), encompassing all ODD                attributes of interest (as explicitly stated) are monitored
+    attributes present in the ADS’s vicinity. The objective of this                      during ADS operation, with the rest considered to not
+       paper is to devise a language facilitating the assessment of    impact ADS performance and may not be monitored.
+          whether an ADS is within or beyond its Operational Design                   Figure 2 illustrates how a basic ODD specification looks
+Domain (ODD). In other words, the ODD definition should when only mode specifications are applied to three of the
+establish a boundary condition, denoted as B, such that the several ODD attributes in the ISO 34503 taxonomy. Without
+ADS is within its ODD if and only if C ⊆ B . Throughout any other include/exclude specifications, the ODD defined
+this paper, we will refer to the condition of satisfying the visually in Figure 2, straightforwardly includes Scenery
+boundary condition B as being within the ODD of the ADS. Elements and its sub-attributes, since the mode permissive is
+  The ISO 34503 standard outlines four key types of speci- applied to it. As the mode restrictive is applied to Weather,
+fications for an ODD language: mode, include, exclude, and with no other attributes explicitly included, the ODD implic-
+conditional statements. Each of these specifications serves itly excludes all sub-attributes of Weather.
+         a distinct purpose in delineating the operational boundary                Once modes are specified, it becomes possible to explicitly
+    conditions of an ADS:                                                             exclude sub-attributes of an ODD attribute that has been
+  • Include Specifications: These identify the ODD at- defined as permissive; or conversely, to include some sub-
+       tributes that fall within the ADS’s ODD.                      attributes of an ODD attribute been defined as restrictive.
+     •           Exclude Specifications: These identify the ODD at-                      In the following sections, we will provide the formal
+       tributes that fall outside the ADS’s ODD.                                          syntax and semantic of our proposed ODD language and
+  • Conditional Statements: These are employed to sup- discuss how it adheres to these requirements and enhances
+     plement an include or exclude statement, specifying the specification of safety-critical systems.
+
+                 III. ODD LANGUAGE DESIGN                                Syntax Rule for using Metrics in Definitive Statements
+  This section presents the ODD language tailored for ISO INCLUDE {attribute metric} of {ODD parent attribute}
+    34503. An ODD definition comprises two main elements.                 is/are          {child attribute list/range/value list}
+We begin this section by detailing the specification for the EXCLUDE {attribute metric} of {ODD parent attribute}
+    header, followed by an overview of the various statements             is/are          {child attribute list/range/value list}
+- definitive (includes/excludes) and conditional - that con- Example: Definitive Statements with Range and Metric
+stitute the body of the ODD specification. To enhance the INCLUDE speed of 'Subject vehicle' is [0:112 kmph]
+readability of the language rules, we employ several symbols
+throughout the text. Keywords are highlighted in a sans- C. Conditional Statements
+serif font and are capitalized. Syntax components that can
+    be substituted with ODD-attributes, lists of attributes, values,          This section delves into the concept of conditional ODD
+    ranges, or metrics, are enclosed within braces ‘{’ and ‘}’.          statements. Here, a conditional statement is represented as
+                                                                         a block of statements. In our proposed ODD language,
+    A. Headers                                                           the block statement form of conditional statements, while
+  The header may be used to specify metadata about the different in structure, is fundamentally compatible with the
+ODD definition. This metadata includes, the path to the ISO 34503 standard. This is because each block statement
+taxonomy (a JSON file in this case) indicated by the keyword can be mapped to an equivalent set of individual conditional
+USE, the AUTHOR of the ODD, along with a MODE definition statements as defined in the ISO standard.
+    for the taxonomy root. The specification of the author is                In the block statement form, a condition is specified at
+    optional. The ISO 34503 standard describes three modes, as           the beginning of the block and applies to all the statements
+    described earlier, each represented by a specific keyword:           within that block. This can be translated to the ISO form
+    DEFAULT, PERMISSIVE, and RESTRICTIVE.                                by attaching the same condition to each individual statement
+    USE:  '../Taxonomies/ISO34503.json'                                  within the block. In this way, the semantics of the block
+    AUTHOR:  'Verification & Validation Team, WMG, UoW'                  statement form are preserved in the ISO form.
+    MODE: DEFAULT                                                            This conditional block format for conditional statements
+                                                                         provides the benefits of enhanced readability and structure,
+    B. Definitive Statements                                             while still adhering to the internationally recognized stan-
+                                                                         dard.
+           Definitive statements explicitly specify the ODD-attributes   Syntax Rule for Conditional Statements
+    that are inside or outside of the ODD. The statements are            CONDITIONAL IF {Boolean Expression over Attributes}:
+    composed of an INCLUDE or EXCLUDE keyword, a compulsory               {Definitive/Conditional Statement}
+    parent attribute, the is or are       keyword, and end with either    ...
+    a list of child attributes, a range, or a list of values. The   is    {Definitive/Conditional Statement}
+    and are keywords are equivalent. The all keyword may be                   Within a conditional statement, a Boolean Expression is
+    used as a shorthand for listing all individual child attributes.     essentially a Boolean combination of constraints applied to
+             When specifying an ODD-attribute or a list of attributes,   ODD-attributes. The structure of these constraints mirrors
+    a reference to the parent is made for readability purposes.          the syntax used for constraints within Definite statements.
+    Syntax Rule for Definitive Statements                                That is to say, an atomic constraint is formed of an optional
+INCLUDE {ODD parent attribute} is/are {child attribute metric, the referenced ODD-attributes, and their associated
+          list/range/value list}                                         parent  attribute. This structure ensures  a consistent and
+EXCLUDE {ODD parent attribute} is/are {child attribute clear representation of constraints across different types of
+          list/range/value list}                                         statements.
+    Example: Definitive Statements with Child Attributes                 Example: Conditional Statement with Single Condition
+    EXCLUDE  'Drivable area surface type'     is ['Gravel']              CONDITIONAL IF 'Drivable area type'   is ['Motorways']:
+    INCLUDE  'Information signs' are [all]                                       EXCLUDE    'Weather' is ['Snowfall']
+    INCLUDE  'Drivable area type' is
+            ['Minor roads',     'Motorways', 'Parking']                  Example: Nested Conditional Statements
+  In the preceding example note that when referencing any CONDITIONAL IF 'Drivable area type' is ['Motorways']:
+        CONDITIONAL IF 'Weather' is ['Rainfall']:
+    ODD-attributes, its parent is referenced.                                       INCLUDE speed of 'Subject vehicle' is
+    Example: Definitive Statements with Range                                        [0:96 kmph]
+    INCLUDE  'Lane dimensions'  is [3.7:- m]                                    Note that the example above may be re-stated, equiva-
+    INCLUDE  'Ambient air temperature'     is [-15:40 C]                 lently, as follows:
+  Metrics of attributes, which could include speed, radius, CONDITIONAL IF 'Drivable area type' is ['Motorways']
+    among others, can also serve to quantify the measurements                        and    'Weather' is ['Rainfall']:
+    of existing attributes.                                               INCLUDE speed of 'Subject vehicle'        is [0:96 kmph]
+
+    D. Modes and Sections                                                   ODD Definition 1: Motorway Driving Only:
+
+  As outlined in the ISO 34503 standard and illustrated in USE: '../Taxonomies/ISO34503.json'
+Figure 2, an ODD definition can be segmented based on AUTHOR: 'Verification & Validation Team, WMG, UoW'
+        MODE: DEFAULT
+ODD-attributes. These segments can have different modes
+applied to them, allowing for a more nuanced and detailed INCLUDE 'Drivable area type' is
+    specification of the ODD.                                                ['Motorways or highways or interstates',
+                                                                             'Slip roads or off-ramps']
+    Syntax Rule for ODD-Attribute Mode Assignment:                   INCLUDE  'Lane dimensions'  is [2.8:- m]
+                                                                     INCLUDE  'Lane type'     is ['Traffic lane']
+    WITH {ODD attribute} as MODE: {Mode}:                            EXCLUDE  'Lane marking'  is ['No lane marking',
+     INCLUDE...                                                      INCLUDE 'Temporary lane marking']
+     EXCLUDE...                                                      INCLUDE  'Direction of travel'  is ['Left-hand travel']
+                                                                              'Drivable area edge'  is
+                                                                             ['Solid barriers (e.g.
+                                                                             grating, rails, curb, cones)',
+    As stated earlier, the ISO 34503 standard describes three                'Shoulder (grass)']
+modes. Correspondingly Mode may be replaced by one of INCLUDE 'Transverse plane type' is ['Divided',
+    three keywords:  DEFAULT, PERMISSIVE, and RESTRICTIVE.           INCLUDE 'Undivided']
+                                                                              'Temporary drivable area structures'   are
+      Please note that for a section that is defined over an ODD-            ['Signage']
+attribute A, the definite statements within that section can INCLUDE 'Drivable area surface type' is ['Asphalt']
+only impose constraints on attributes that belong to the sub- EXCLUDE 'Junctions' are [all]
+    tree originating at A.                                           EXCLUDE  'Agent type' are  ['Horse riders']
+                                                                     EXCLUDE  'Presence of special vehicles'    are  [all]
+         Example: Sectioning on Environmental Conditions             INCLUDE  'Illumination'  is [all]
+                                                                     INCLUDE  'Particulates'  are
+                                                                             ['Non-precipitating water droplets',
+    WITH 'Environmental Conditions'      as MODE:RESTRICTIVE:                'Water spray']
+      INCLUDE        'Weather'   is ['Wind', 'Rainfall']             INCLUDE  'Rainfall intensity'    is ['No rain',
+      INCLUDE        'Illumination'  is ['Day']                              'Light rain']
+      INCLUDE        'Connectivity'  is [all]                        INCLUDE  'Snowfall'  is ['No snow']
+        INCLUDE 'Drivable area surface condition' are ['Wet']
+        EXCLUDE 'Drivable area surface features' are [all]
+In the preceding example, since Environmental Conditions INCLUDE 'Special structure type' are ['Bridge']
+is specified to be restrictive, unless otherwise explicitly INCLUDE speed of 'Subject vehicle' is [0:130 kph]
+stated (using other mode definitions or definitive statements),
+    unspecified sub-attributes of Environmental Conditions, such             The second example presents an ODD definition for an
+    as ‘Particulates’, are excluded from the ODD.                    ADS designed to operate on UK Motorways and A-roads
+        It is important to note that the ODD-attributes that form    in mild weather conditions. This case is more complex, and
+    the boundary of an ODD can only be determined once the           requires the use of multiple modes and conditional statements
+    complete ODD specification has been examined.                    in order to accurately describe the ODD.
+                                                                       A specific section of the second example is now discussed,
+                                                                     in order to  better  illustrate how  the mode   functions in
+                                                                     conjunction with compositional statements.
+                      IV. CASE STUDIES                                       As ‘Environmental Conditions’ are considered here in
+                                                                     conjunction  with the    PERMISSIVE  mode,  any attribute of
+                                                                     ‘Environmental Conditions’ that is not explicitly excluded
+         In this section, we provide detailed ODD definitions for    is considered to be within the ODD definition. For exam-
+    two use-cases. Each case study starts with the use-case and      ple, this means that ‘Rainfall’ and all child attributes are
+    its related details, then an ODD is defined using our proposed   allowed in the ODD definition. Additionally, ‘Sand’, ‘Dust’,
+    syntax, and finally, an explanation.                             and ‘Smoke and Pollution’ are also included in the ODD
+                                                                     definition, as these are attributes of ‘Particulates’ that are
+           The following example presents an ODD definition for a    not explicitly excluded.
+    high-speed Automated Lane Keeping System (ALKS). As                       ODD Definition 2: UK Motorways and A-roads, consid-
+the scope of this ALKS is limited, the ODD definition is ering only mild weather conditions:
+relatively simple, and uses the same mode for the whole
+definition—all statements are considered in conjunction with USE: '../Taxonomies/ISO34503.json'
+the DEFAULT mode, meaning only the attributes explicitly AUTHOR: 'Verification & Validation Team, WMG, UoW'
+mentioned here are required to be monitored during the MODE: DEFAULT
+operation of the ADS.
+
+WITH 'Environmental Conditions'               as MODE:PERMISSIVE:             V. DISCUSSION
+ EXCLUDE  'Ambient air temperature'         is [-:-15 deg C]                    In the process of defining ODD using the language require-
+ EXCLUDE  'Ambient air temperature'         is [40:- deg C]               ments proposed by ISO 34503, several best practices have
+ EXCLUDE  'Wind'     is ['Hurricane force']                               emerged. A fundamental understanding of the taxonomy used
+ EXCLUDE  'Snowfall'       is ['Heavy snow']                              to define the ODD is crucial. This becomes particularly
+ EXCLUDE  'Particulates'           is ['Volcanic ash']                    significant when considering different modes of operation.
+WITH 'Dynamic elements'     as MODE:PERMISSIVE:                                    In a permissive mode, if the taxonomy undergoes changes
+ INCLUDE  'Subject vehicle speed'                 is [0:112 kmph]         while the ODD remains constant, any new additions to the
+WITH 'Scenery'              as MODE:PERMISSIVE:                           taxonomy are interpreted as being within the ODD of the
+ EXCLUDE  'Drivable area type'                    is ['Shared space']     ADS. This mode offers flexibility but may also introduce
+ EXCLUDE  'Drivable area surface type'              is                    unexpected scenarios into the ODD.
+         ['Cobblestone']                                                        On the other hand, in a restrictive mode, an ODD attribute
+ EXCLUDE Radius of 'Curved road'              is [0:5 m]                  is considered outside the ODD unless it is explicitly included.
+ EXCLUDE Gradient of 'Longitudinal up-slope'     is                       This mode ensures a high level of control over the ODD but
+         [20:-]                                                           requires comprehensive and explicit definitions. For instance,
+ EXCLUDE Gradient of 'Longitudinal down-slope'                     is     if ‘temperature’ is a necessary concept to include in the
+         [20:-]                                                           ODD, and ‘environmental conditions’ is in restrictive mode
+ CONDITIONAL IF 'Induced surface conditions'                  are         but not explicitly included, then no temperature would fall
+         ['Icy',                'Wet road', 'Snow on surface']:           within the ODD. This could lead to problematic situations
+        EXCLUDE Gradient of 'Longitudinal up-slope'                  is   where essential attributes are inadvertently excluded from the
+          [10:-]                                                          ODD.
+        EXCLUDE Gradient of 'Longitudinal down-slope'
+          is [10:-]                                                                Therefore, a balance between permissive and restrictive
+                                                                          modes is necessary when defining an ODD. The choice of
+ EXCLUDE  'Lane dimension'     is [-:3.7 m]                               mode should be guided by the specific requirements and
+ EXCLUDE  'Direction of travel'              is ['Right hand              safety considerations of the ADS. Furthermore, regular re-
+         travel']                                                         views and updates of the ODD definitions are recommended
+ EXCLUDE  'Lane type'       is ['Emergency lane']
+ EXCLUDE  'Drivable area edge'    is ['Snowbanks']                        to ensure they remain accurate and relevant as the taxonomy
+                                                                          and ADS technology evolve.
+WITH 'Junctions'     as MODE:PERMISSIVE:                                            The ‘default’ mode combines the advantages of both the
+ EXCLUDE  'Roundabout'       is ['Multiple']                              permissive and restrictive modes. In this mode, the attributes
+INCLUDE  'Basic road structures'    is [all]                              of interest that are listed in the ODD definition are explicitly
+EXCLUDE  'Special structure type'           is ['Toll plaza']             stated as either inside or outside the ODD. These attributes
+INCLUDE  'Temporary drivable area structures'     is [all]                will be monitored during the operation of the ADS.
+CONDITIONAL IF 'Drivable area type'     is ['Motorway']:                            The remaining attributes, which are unspecified in the
+ EXCLUDE  'Rainfall'       is ['Cloudburst']                              ODD definition, are considered not to affect the performance
+INCLUDE 'Drivable area surface type' is ['Asphalt', of the ADS and may not be monitored. However, these
+         'Cement concrete']                                               unspecified attributes in the default mode are also considered
+ INCLUDE  'Drivable area surface feature'           is                    to be inside the ODD. This approach provides a balance
+        ['Potholes']                                                      between flexibility and control, allowing for a more nuanced
+ INCLUDE  'Number of lanes'    is [2:-]                                   definition of the ODD.
+ EXCLUDE  'Actor type'      are  ['Animals',    'VRUs',           'Non-   The default mode therefore offers a flexible yet robust
+          motor vehicles']
+ EXCLUDE  'Tranverse plane type'                 is ['Undivided']         approach to defining ODD. It allows for explicit control over
+ EXCLUDE  'Lane marking'     is ['No lane marking']                       the attributes of interest while also accommodating changes
+ CONDITIONAL IF 'Illumination'              is ['Night']:                 in the taxonomy. This makes it a valuable addition to the
+        CONDITIONAL IF ['Mist or fog']:                                   toolbox for defining ODD in automated driving systems.
+         INCLUDE speed of 'Subject vehicle'     is                               In conclusion, the use of the proposed ISO 34503 language
+              [0:48 kmph]                                                 for defining ODD offers a robust and flexible approach, but
+                                                                          it also requires careful consideration and application of these
+ CONDITIONAL IF 'Induced surface conditions'                 is           best practices to ensure the safety and reliability of ADS.
+         ['Snow on surface']:
+        INCLUDE speed of 'Subject vehicle'      is                            VI. CONCLUSIONS
+            [0:80 kmph]                                                            This research has developed a robust language for spec-
+CONDITIONAL IF 'Special structures'              is ['Tunnel']:           ifying ODDs. This language, designed in alignment with
+ EXCLUDE  'Drivable area induced surface condition'                       the ISO 34503 standard, significantly enhances the precision
+         is ['Flooded', 'Standing water']                                 and composability of system specifications. Our thorough
+                                                                          examination of the ISO 34503 standard and its language
+                                                                          requirements for ODD specification has led to the creation of
+
+                   a language that is not only practical but also advantageous   [13]  P. Weissensteiner, G. Stettinger, S. Khastgir, and D. Watzenig, “Oper-
+                    in real-world contexts. The case studies presented in this         ational design domain-driven coverage for the safety argumentation of
+                   paper substantiate the utility and benefits of the language   [14]  automated vehicles,” IEEE Access, vol. 11, pp. 12 263–12 284, 2023.
+                     in defining ODD for ADS. Ultimately, it has the potential         H. Blache, P.-A. Laharotte, and N.-E. El Faouzi, “How to rationalise
+                                                                                       the sampling of test-scenarios in automated driving based on critical-
+                   to significantly improve the comprehensibility and semantic         ity metrics?” in      2023 8th International Conference on Models and
+                  interpretation of ODDs, thereby contributing to the develop-         Technologies for Intelligent Transportation Systems (MT-ITS).   IEEE,
+ment of more dependable and robust ADS.                                          [15]  2023, pp. 1–6.
+                                                                                       S. Khastgir, H. Sivencrona, G. Dhadyalla, P. Billing, S. Birrell, and
+                                                                                       P. Jennings, “Introducing asil inspired dynamic tactical safety decision
+                                      ACKNOWLEDGEMENT                                  framework for automated vehicles,” in 2017 IEEE 20th International
+                                                                                       Conference on Intelligent Transportation Systems (ITSC).        IEEE,
+                        The work presented in this paper has been supported by         2017, pp. 1–6.
+                           UKRI Future Leaders Fellowship (Grant MR/S035176/1)   [16]  G. Stettinger, P. Weissensteiner, and S. Khastgir, “Trustworthiness
+                    and the UK Department for Transport and Vehicle Certifica-         assurance assessment for high-risk ai-based systems,”    IEEE Access,
+                                                                                       2024.
+                      tion Agency (Reference: VCA0009). The authors would like   [17]  S. Khastgir, S. Birrell, G. Dhadyalla, and P. Jennings, “Effect of
+                             to thank the WMG center of HVM Catapult, and WMG,         knowledge of automation capability on trust and workload in an
+                         University of Warwick, UK for providing the necessary         automated vehicle: a driving simulator study,” in Advances in Human
+                                                                                       Aspects of Transportation: Proceedings of the AHFE 2018 Interna-
+                    infrastructure for conducting this study. No new data were         tional Conference on Human Factors in Transportation, July 21-25,
+                    created in this study. For the purpose of open access, the         2018, Loews Sapphire Falls Resort at Universal Studios, Orlando,
+                      author(s) has applied a Creative Commons Attribution (CC   [18]  Florida, USA 9.   Springer, 2019, pp. 410–420.
+                                                                                       A. A. B. Da Costa, P. Irvine, X. Zhang, S. Khastgir, and P. Jennings,
+BY) license to any Accepted Manuscript version arising.                                “Writing accessible and correct test scenarios for automated driving
+                                                                                       systems,” in      2022 IEEE International Conference on Systems, Man,
+                                         REFERENCES                              [19]  and Cybernetics (SMC). IEEE, 2022, pp. 1356–1363.
+                                                                                       P. Irvine, X. Zhang, S. Khastgir, E. Schwalb, and P. Jennings, “A Two-
+ [1]        X. Zhang, S. Khastgir, H. Asgari, and P. Jennings, “Test framework         Level Abstraction ODD Definition Language: Part I,” in 2021 IEEE
+          for automatic test case generation and execution aimed at developing         International Conference on Systems, Man, and Cybernetics (SMC),
+       trustworthy avs from both verifiability and certifiability aspects,” in         2021, pp. 2614–2621.
+            2021 IEEE International Intelligent Transportation Systems Confer-   [20]  E. Schwalb, P. Irvine, X. Zhang, S. Khastgir, and P. Jennings, “A Two-
+      ence (ITSC), 2021, pp. 312–319.                                                  Level Abstraction ODD Definition Language: Part II,” in 2021 IEEE
+ [2]        T. Menzel, G. Bagschik, and M. Maurer, “Scenarios for development,         International Conference on Systems, Man, and Cybernetics (SMC),
+      test and validation of automated vehicles,”       arXiv, vol. 2018-June,         2021, pp. 1669–1676.
+      no. Iv, pp. 1821–1827, 2018.                                               [21]  BSI, “PAS 1883:2020 Operational Design Domain (ODD) taxonomy
+ [3]  D. J. Fremont,     E. Kim, Y.   V. Pant, S. A.   Seshia, A.     Acharya,         for an automated driving system (ADS) - Specification, Standard,”
+          X. Bruso, P. Wells, S. Lemke, Q. Lu, and S. Mehta, “Formal scenario-         2020.
+             based testing of autonomous vehicles: From simulation to the real   [22]  International     Organization  for Standardization, ISO   34503:2023
+      world,” in        2020 IEEE 23rd International Conference on Intelligent         Road Vehicles        — Test  scenarios for automated  driving systems
+      Transportation Systems (ITSC), 2020, pp. 1–8.                                    — Specification   for operational design   domain,    2023. [Online].
+ [4]    E. Esenturk, A. G. Wallace, S. Khastgir, and P. Jennings, “Identifica-         Available: www.iso.org
+      tion of traffic accident patterns via cluster analysis and test scenario   [23]  ASAM, “ASAM OpenODD® Standard,” 2024. [Online]. Available:
+      development for autonomous vehicles,”          IEEE Access, vol. 10, pp.         https://www.asam.net/standards/detail/opendrive/
+      6660–6675, 2022.                                                           [24]  J. Erz, B. Sch¨utt, T. Braun, H. Guissouma, and E. Sax, “Towards
+ [5]           N. Webb, D. Smith, C. Ludwick, T. Victor, Q. Hommes, F. Favaro,         an ontology that reconciles the operational design domain, scenario-
+      G.  Ivanov,  and    T. Daniel,  “Waymo’s  safety methodologies       and         based testing, and automated vehicle architectures,” in     2022 IEEE
+      safety readiness determinations,”       CoRR, vol. abs/2011.00054, 2020.         international systems conference (SYSCON). IEEE, 2022, pp. 1–8.
+      [Online]. Available: https://arxiv.org/abs/2011.00054
+ [6]      E. Esenturk, D. Turley, A. Wallace, S. Khastgir, and P. Jennings, “A
+       data mining approach for traffic accidents, pattern extraction and test
+        scenario generation for autonomous vehicles,” International Journal of
+           Transportation Science and Technology, vol. 12, no. 4, pp. 955–972,
+      2023.
+ [7]             S. Ulbrich, T. Menzel, A. Reschka, F. Schuldt, and M. Maurer,
+         “Defining and substantiating the terms scene, situation, and scenario
+            for automated driving,” in 2015 IEEE 18th International Conference
+      on Intelligent Transportation Systems, 2015, pp. 982–988.
+ [8]            K. Czarnecki, “Operational design domain for automated driving
+      systems,”        Taxonomy of Basic Terms “, Waterloo Intelligent Systems
+      Engineering (WISE) Lab, University of Waterloo, Canada, 2018.
+ [9]            O. Hans, M. Avezum, S. Borysov, H.-L. Ross, and J. Adamy, “Op-
+           erational design domain qualification framework for remotely driven
+          vehicles in urban environment,” in 2023 IEEE International Automated
+      Vehicle Validation Conference (IAVVC).    IEEE, 2023, pp. 1–6.
+[10]  X.  Zhang,   S. Khastgir,  J.-K. Tiele,  K. Takenaka, T.       Hayakawa,
+             and P. Jennings, “Odd and behaviour based scenario generation for
+      automated driving systems,” IEEE Access, 2024.
+[11]     A. A. B. da Costa, P. Irvine, X. Zhang, S. Khastgir, and P. Jennings,
+             “Ontology-based scenario generation for automated driving systems
+       verification and validation using rules of the road,” IEEE Transactions
+      on Intelligent Vehicles, 2024.
+[12]           S. Khastgir, S. Brewerton, J. Thomas, and P. Jennings, “Systems
+           approach to creating test scenarios for automated driving systems,”
+      Reliability engineering & system safety, vol. 215, p. 107610, 2021.
+

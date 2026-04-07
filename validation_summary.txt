@@ -1,0 +1,23 @@
+[PASS] Study_European-AI-Standards_FINAL_Turn1_Task1.json
+[PASS] Study_European-AI-Standards_FINAL_Turn1_Task2.json
+[PASS] Study_European-AI-Standards_FINAL_Turn2_Task1.json
+[PASS] Study_European-AI-Standards_FINAL_Turn2_Task2.json
+[PASS] Study_European-AI-Standards_FINAL_Turn4_Task1.json
+[PASS] Study_European-AI-Standards_FINAL_Turn5_Task1.json
+[PASS] Study_European-AI-Standards_FINAL_Turn5_Task2.json
+[PASS] Study_European-AI-Standards_FINAL_Turn6_Task1.json
+[PASS] Study_European-AI-Standards_FINAL_Turn6_Task2.json
+[PASS] Study_European-AI-Standards_FINAL_Turn7_Task1.json
+[PASS] Study_European-AI-Standards_FINAL_Turn7_Task2.json
+[PASS] Study_European-AI-Standards_FINAL_Turn8_Task1.json
+[PASS] Study_European-AI-Standards_FINAL_Turn8_Task2.json
+
+SUMMARY: 13/17 Passed. Failed: 4
+
+--- Study_European-AI-Standards_FINAL_Turn3_Task1.json ---
+
+--- Study_European-AI-Standards_FINAL_Turn3_Task1_backup_before_partial_repair.json ---
+
+--- Study_European-AI-Standards_FINAL_Turn3_Task2.json ---
+
+--- Study_European-AI-Standards_FINAL_Turn4_Task2.json ---

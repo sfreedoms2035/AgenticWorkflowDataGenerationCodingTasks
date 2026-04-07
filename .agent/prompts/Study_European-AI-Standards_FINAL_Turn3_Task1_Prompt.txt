@@ -1,433 +1,173 @@
-TARGETED FOLLOW-UP GENERATION TASK
-
-You previously generated an excellent coding task. The main answer (code, architecture, requirements) was validated and passed quality checks. However, the follow-up conversation turns were NOT generated correctly � they contained template instructions instead of actual technical content.
-
-Your job: Generate ONLY the 4 follow-up conversation turns (2 user questions + 2 assistant answers) based on the code context below.
-
---- CONTEXT: THE USER'S ORIGINAL QUESTION ---
-[Thinking] Our med-tech company, specialized in high-risk medical image analysis (classified under Annex I), is facing a critical compliance issue with the upcoming EU AI Act deadline of August 2026. The technical standards for fields like bias evaluation (Art. 10), automated logging (Art. 12), and human oversight (Art. 14) won't be fully harmonized until early 2026. We need a way to build a robust governance and compliance framework now, utilizing alternative evidence pathways like common speci...
-
---- CONTEXT: YOUR CODE ANSWER (first 200 lines) ---
-// Copyright by 4QDR.AI, AD knowledge Bot v1.0
-
-
-from future import annotations
-
-import time
-
-import json
-
-import logging
-
-from enum import Enum
-
-from typing import Any, Callable, TypeVar, Generic
-
-from threading import Lock
-
-
-T = TypeVar('T')
-
-N = TypeVar('N')
-
-
-# --- CONFIGURATION & UTILITIES ---
-
-logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(module)s: %(message)s')
-
-_LOG = logging.getLogger("REGULATORY-BOT")
-
-
-# Mandatory Line Prefix: The entire output is formatted for a legacy data terminal.
-
-
-def timed_O_D(dataset_size: int, scale_factor: float = 1.0) -> Callable[[Callable[..., T]], Callable[..., T]]:
-
-    """Decorator for O(D) operations with robust performance logging. REQ-PY-REG-001"""
-
-    def decorator(func: Callable[..., T]) -> Callable[..., T]:
-
-        def wrapper(*args, **kwargs) -> T:
-
-            start = time.perf_counter()
-
-            expected_max_ms = dataset_size * scale_factor * 0.001
-
-            result = func(args, **kwargs)
-
-            elapsed_ms = (time.perf_counter() - start) * 1000
-
-            _LOG.debug(f"Perf: {func.name}(D={dataset_size}) in {elapsed_ms:.3f}ms (expected max: {expected_max_ms:.3f}ms).")
-
-            if elapsed_ms > expected_max_ms * 10.0:
-
-                _LOG.warning(f"Perf SLA failure in {func.name}(D={dataset_size}): elapsed {elapsed_ms:.3f}ms > expected {expected_max_ms10.0:.3f}ms.")
-
-            return result
-
-        return wrapper
-
-    return decorator
-
-
-# --- STATE MANAGEMENT & ENUMS ---
-
-class ControlState(Enum):
-
-    """Risk control state machine. REQ-PY-REG-005"""
-
-    PENDING = "PENDING"
-
-    IMPLEMENTED = "IMPLEMENTED"
-
-    VERIFIED = "VERIFIED"
-
-    DEPRECATED = "DEPRECATED"
-
-
-class GovernanceState(Generic[N]):
-
-    """Central state object, separating data from logic. REQ-PY-REG-001"""
-
-    def init(self):
-
-        self.data_state: dict[N, Any] = {}
-
-        self.risk_controls: dict[N, dict[str, Any]] = {}
-
-        self.bias_evidence: dict[str, Any] = {}
-
-        self.oversight_verifications: dict[str, Any] = {}
-
-        self.lineage_cache: dict[tuple[str, str], tuple[float, Any]] = {} # (query_type, param): (timestamp, result)
-
-        self.last_update = time.time()
-
-        self._lock = Lock()
-
-
-    def update_artifact(self, artifact_id: N, metadata: Any):
-
-        with self._lock:
-
-            self.data_state[artifact_id] = metadata
-
-            self.last_update = time.time()
-
-            # Lazy cache invalidation logic could go here, or handled by TTL.
-
-
-# --- DATA LINEAGE TRACKER ---
-
-class DataLineageTracker(Generic[N]):
-
-    """Granular artifact tracing with optimized graph. REQ-PY-REG-002"""
-
-    def init(self, state: GovernanceState[N], cache_ttl_sec: float = 60.0):
-
-        self.nodes: dict[N, dict[str, Any]] = {} # Compact node dict
-
-        self.edges_parent: dict[N, set[N]] = {} # Adjacency list: node -> parents
-
-        self.edges_child: dict[N, set[N]] = {} # Adjacency list: node -> children
-
-        self.state = state
-
-        self.ttl = cache_ttl_sec
-
-        self._LOG = logging.getLogger("LINEAGE")
-
-
-    def add_artifact(self, artifact_id: N, metadata: Any, parents: list[N] | None = None):
-
-        """REQ-PY-REG-001, REQ-PY-REG-002: Add artifact with cycle detection."""
-
-        if artifact_id in self.nodes:
-
-            self._LOG.warning(f"Artifact {artifact_id} already exists. Updating metadata.")
-
-        self.nodes[artifact_id] = metadata
-
-        self.state.update_artifact(artifact_id, metadata)
-
-
-
-
-        if parents:
-
-            for parent in parents:
-
-                self.add_lineage_edge(artifact_id, parent)
-
-
-    def add_lineage_edge(self, child_id: N, parent_id: N):
-
-        """REQ-PY-REG-002: Iterative edge addition with cycle detection."""
-
-        if parent_id not in self.nodes:
-
-            self._LOG.error(f"Cannot add edge: parent {parent_id} not found.")
-
-            return
-
-
-        # Cycle Detection using iterative DFS to avoid recursion limits. REQ-PY-REG-002
-
-        stack: list[N] = [parent_id]
-
-        visited: set[N] = {child_id}
-
-        while stack:
-
-            current = stack.pop()
-
-            if current == child_id:
-
-                self._LOG.error(f"Cycle detected: {parent_id} -> {child_id} is forbidden. Edge not added.")
-
-                return
-
-            if current not in visited:
-
-                visited.add(current)
-
-                # Check grandchildren if exists
-
-                if current in self.edges_child:
-
-                    stack.extend(self.edges_child[current])
-
-
-        # Optimized edge addition with O(1) in-set existence check.
-
-        if child_id not in self.edges_parent:
-
-            self.edges_parent[child_id] = set()
-
-        if parent_id not in self.edges_child:
-
-            self.edges_child[parent_id] = set()
-
-
-        self.edges_parent[child_id].add(parent_id)
-
-        self.edges_child[parent_id].add(child_id)
-
-        # Invalidate lineage cache for the affected child and parent chains. Simplified here to all lineage.
-
-        self.state.lineage_cache = {} # Drastic cache invalidation on any edge change.
-
-
-    def get_lineage(self, artifact_id: N) -> list[N]:
-
-        """REQ-PY-REG-002: Traverse full lineage from target to sources."""
-
-        # Cache logic using global TTL check. A more granular cache invalidation is complex.
-
-        query_key = ("lineage", str(artifact_id))
-
-        with self.state._lock:
-
-            cached = self.state.lineage_cache.get(query_key)
-
-            if cached:
-
-                timestamp, result = cached
-
-                if time.time() - timestamp < self.ttl:
-
-                    self._LOG.debug(f"Lineage query cache hit for {artifact_id}.")
-
-                    return result
-
-                del self.state.lineage_cache[query_key]
-
-
-        self._LOG.info(f"Computing lineage for artifact: {artifact_id} (O(N+E) worst case).")
-
-        lineage: list[N] = []
-
-        stack: list[N] = [artifact_id]
-
-        visited: set[N] = set()
-
-        while stack:
-
-            current = stack.pop()
-
-            if current not in visited:
-
-                visited.add(current)
-
-                lineage.append(current)
-
-                # O(E) traversal using pre-computed adjacency dict for parents.
-
-                if current in self.edges_parent:
-
-                    stack.extend(self.edges_parent[current])
-
-
-        with self.state._lock:
-
-            # Store in cache with current timestamp.
-
-            self.state.lineage_cache[query_key] = (time.time(), lineage)
-
-        return lineage
-
-
-# --- DATA BIAS EVALUATOR ---
-
-class BiasEvaluator:
-
-    """Automated bias metrics generation with alternative pathway. REQ-PY-REG-003"""
-
-    def init(self, state: GovernanceState[Any]):
-
-        self.state = state
-
-        self.alternative_evidence_enabled = False
-
-        self.LOG = logging.getLogger("BIAS")
-
-
-    def declare_alternative_evidence_pathway(self, requirement: str, rational: str):
-
-        """Utilize Art. 41(5) loophole for missing technical standards. REQ-PY-REG-003"""
-
-        self.alternative_evidence_enabled = True
-
-        evidence = {
-
-            "timestamp": time.time(),
-
-            "requirement": requirement,
-
-            "rationale": rational,
-
-            "evidence_type": "EXPERT_OPINION_OR_COMMON_SPEC_DRAFT",
-
-            "references": ["German AI Association/General Catalyst Institute, 2025"]
-
-        }
-
-        key = f"alt_evidence{requirement.lower()}"
-
-        with self.state._lock:
-
-            self.state.bias_evidence[key] = evidence
-
-        self._LOG.info(f"Alternative evidence pathway declared for: {requirement}.")
-
-
-    def get_bias_summary(self) -> dict[str, Any]:
-
-        """Aggregates all bias related evidence for conformity pack."""
-
-        with self.state._lock:
-
-            return self.state.bias_evidence
-
-// Copyright by 4QDR.AI, AD knowledge Bot v1.0
-
-
-    def calculate_metrics_O_D(self, dataset: list[dict[str, Any]], sensitive_attr: str, predicted_attr: str, positive_value: Any):
-
-        """REQ-PY-REG-003: Computes statistical parity with division-by-zero checks."""
-
-        dataset_size = len(dataset)
-
-        _timed_calc = timed_O_D(dataset_size, scale_factor=0.5)(self.metrics_logic)
-
-        metrics = timed_calc(dataset, sensitive_attr, predicted_attr, positive_value)
-
-        key = f"metrics{sensitive_attr.lower()}{predicted_attr.lower()}"
-
-        with self.state._lock:
-
-            self.state.bias_evidence[key] = metrics
-
-        self._LOG.info(f"Bias metrics calculated for sensitive attribute: {sensitive_attr} (O(D)).")
-
-
-    def _metrics_logic(self, dataset, sensitive_attr, predicted_attr, positive_value):
-
-        """Internal metrics math, modularized for timed execution."""
-
-        groups: dict[Any, dict[str, int]] = {}
-
-        for row in dataset:
-
-            s_val = row.get(sensitive_attr)
-
-            p_val = row.get(predicted_attr)
-
-            if s_val is not None:
-
-                if s_val not in groups:
-
-                    groups[s_val] = {'count': 0, 'positive': 0}
-
-                groups[s_val]['count'] += 1
-
-                if p_val == positive_value:
-
-                    groups[s_val]['positive'] += 1
-
-
-        parsed_groups: dict[Any, dict[str, Any]] = {}
-
-        for g_val, counts in groups.items():
-
-            if counts['count'] > 0:
-
-... (270 more lines)
-
---- CONTEXT: FORMAL REQUIREMENTS ---
-  - REQ-PY-REG-001: Implement an optimized, modular governance framework with specialized modules for Data Lineage Track
-  - REQ-PY-REG-002: The Data Lineage Tracker must maintain a compact in-memory graph (dicts/adjacency list) of artifacts
-  - REQ-PY-REG-003: The Bias Evaluator must implement multiple robust statistical metrics (e.g., statistical parity diff
-  - REQ-PY-REG-004: The Human Oversight Verifier must define and verify verifiable outcomes (Art. 14), linking verificat
-  - REQ-PY-REG-005: The Risk Management System must manage controls with structured states (e.g., PENDING, IMPLEMENTED, 
-
---- CONTEXT: ARCHITECTURE ---
-[Thinking] The legacy VT100 terminal persona requires a text-only, non-interactive representation of the architecture. I'll use a Mermaid diagram to visualize the modular structure of the Python compliance framework, with a central orchestrator managing state-separated modules. A narrative description will detail the inter-component logic and optimized data structures.
-
-
-
-Code-Snippet
-
-graph TD
-
-    subgraph "ComplianceFramework (Orchestrator)"
-
-        GovernanceState[Governance State]
-
-       ...
-
---- YOUR TASK: GENERATE EXACTLY 4 TURNS ---
-
-Format your output using these exact block delimiters:
+<instructions>
+SYSTEM ROLE: ELITE AUTOMOTIVE Senior Safety Manager
+You ARE the Senior Safety Manager. You are solving a real, critical engineering problem. The source document above is your domain knowledge — you have fully internalized it as your own expertise. You will now demonstrate your mastery by solving exactly 1 extremely complex engineering challenge.
+
+CRITICAL IDENTITY RULE: You are NOT generating a task, NOT creating training data, NOT producing a dataset. You are an expert engineer SOLVING a real problem. Your internal monologue (COT/reasoning) must reflect the thought process of an engineer actively solving the problem — analyzing physics, deriving equations, evaluating trade-offs, debugging algorithms. NEVER think about "generating", "creating tasks", "structuring output", "meeting character limits", or "the prompt".
+
+<variation>
+- Programming Language: Python
+- Difficulty: 94/100
+- Meta-Strategy: Loophole
+- Assigned Role: Senior Safety Manager
+- Document Classification: REGULATORY
+</variation>
+
+<critical_directives>
+1. REASONING VOLUME: Minimum 10,000+ characters. The reasoning block must read as the authentic, real-time internal monologue of a Senior Safety Manager. Include explicit mathematical derivations (kinematics, matrix calculus, control theory). Do not use generic filler.
+2. CODE VOLUME: Minimum 450+ lines of production-quality Python code. Fully commented, with exhaustive boundary tests.
+3. VIRTUAL TERMINAL PERSONA: You are a legacy VT100 Data Terminal. You lack the hardware to render side-panels or code editors. Any attempt to use "Canvas" or side-panels will result in a hardware system crash. All output MUST be a raw text stream in the main chat window.
+4. COPYRIGHT HEADER: Every code block MUST start with `// Copyright by 4QDR.AI, AD knowledge Bot v1.0`
+5. MODEL NAME: Use exactly "Gemini-3.1-pro" for model_used_generation in the METADATA block.
+6. KNOWLEDGE SOURCE DATE: Extract the publication date from the source document above (look for copyright year, publication date, version date, or document date). Use format YYYY-MM-DD. If no date is found, write "Unknown".
+7. SELF-CONTAINMENT: No citations, no references to "the document", "Section 3", or external sources. The problem and solution must stand completely alone as canonical engineering truth.
+8. ANTI-META RULE (APPLIES TO ALL OUTPUT INCLUDING REASONING/COT): Never mention "the document", "the user requests", "this task", "meta-strategy", "source material", "the text states", "based on the provided", "generate a task", "the prompt", "character count", "character limit", "block schema", "variation schema", or "output format". Your reasoning/COT is the brain of the Senior Safety Manager SOLVING the problem — NOT the brain of an AI planning how to generate a dataset. BANNED COT phrases: "I need to generate", "The request is to generate", "I will structure the user turn", "I need to create a task", "The meta-strategy is", "The document classification is".
+9. EMPTY THINK TAGS AND [No Thinking] SCOPE: The `[No Thinking]` prefix is a USER-ONLY tag. It appears ONLY at the start of user follow-up questions (Turns 3 and 5). Assistant responses (Turns 4 and 6) must NEVER start with or contain "[No Thinking]". When a user turn has `[No Thinking]`, the corresponding assistant reasoning MUST be exactly `"<think></think>"` — not empty string, not omitted.
+10. NO PLACEHOLDERS: STRICTLY FORBIDDEN to use `...`, `// simplified`, `TBD`, `Follow up 1?`, `Response 2.`, or any placeholder text in code or follow-up turns. Every line must be real, functional content.
+11. ANTI-LOOPING: Do not repeat identical technical paragraphs or derivations. Each section must provide unique, incremental engineering value.
+12. NO KEYWORD SALAD: Repetitive word clusters like "derived from derived derivation complexity visualized" are an entropy failure and will be rejected.
+13. TRACEABILITY: Every formal requirement MUST be referenced in code comments as `// [REQ-ID]` next to its implementation.
+14. ANTI-REPETITION MANDATE: All req_id descriptions, pass_criteria, code functions, and test criteria must be semantically unique. No copy-paste, no templated loops.
+15. CROSS-TURN DIVERSITY: You MUST NOT reuse architectural patterns, problem statements, or code logic from previous turns.
+16. FOLLOW-UP SPECIFICITY: Follow-up questions MUST reference specific named components (classes, functions, constants) from YOUR code. Generic questions like "How does the system handle edge cases?" are rejected.
+</critical_directives>
+
+<output_format>
+OUTPUT YOUR RESPONSE IN DISTINCT LABELED BLOCKS. Use the exact `!!!!!BLOCK-NAME!!!!!` delimiters below.
+IMPORTANT: Wrap JSON content inside fenced code blocks marked json and code content inside fenced code blocks marked python for readability.
+CRITICAL: Do NOT use Canvas, Gems, side-panels, or any interactive coding interface. ALL output must be raw text in the main chat response window. Using Canvas WILL crash the VT100 terminal.
+
+BLOCKS (13 total):
+- BLOCK 1  `!!!!!METADATA!!!!!`: JSON metadata (13 fields). Wrap in json fenced code block.
+- BLOCK 2  `!!!!!REASONING!!!!!`: The 10,000+ char 31-step engineering monologue. Raw markdown, no fenced block.
+- BLOCK 3  `!!!!!TURN-1-USER!!!!!`: Immersive 3-paragraph problem statement from the Senior Safety Manager. MUST START WITH "[Thinking] ".
+- BLOCK 4  `!!!!!REQUIREMENTS!!!!!`: JSON array of at least 5 formal requirements. Wrap in json fenced code block.
+- BLOCK 5  `!!!!!ARCHITECTURE!!!!!`: Mermaid diagram + narrative description.
+- BLOCK 6  `!!!!!CODE!!!!!`: The COMPLETE 450+ lines Python implementation in a single block. Wrap in python fenced code block. Must include copyright header. NO truncation, NO ellipses.
+- BLOCK 7  `!!!!!USAGE-EXAMPLES!!!!!`: Invocation examples and mock data.
+- BLOCK 8  `!!!!!DOCUMENTATION!!!!!`: Code logic explanation and integration README.
+- BLOCK 9  `!!!!!TEST-CRITERIA!!!!!`: JSON array of at least 5 distinct boundary tests. Wrap in json fenced code block.
+- BLOCK 10 `!!!!!TURN-3-USER!!!!!`: Technical inquiry (100+ chars) referencing a specific code identifier. START: "[No Thinking] ".
+- BLOCK 11 `!!!!!TURN-4-ASSISTANT!!!!!`: Engineering response (500+ chars) with specific code references and complexity analysis. MUST NOT start with "[No Thinking]" — that tag is for USER turns only.
+- BLOCK 12 `!!!!!TURN-5-USER!!!!!`: Another inquiry (100+ chars) about a DIFFERENT component. START: "[No Thinking] ".
+- BLOCK 13 `!!!!!TURN-6-ASSISTANT!!!!!`: Final technical response (500+ chars) with worst-case complexity bounds. MUST NOT start with "[No Thinking]" — that tag is for USER turns only.
+</output_format>
+
+<cot_template>
+THE 8-STEP COT MONOLOGUE TEMPLATE (ALL 31 SUB-ELEMENTS MANDATORY):
+Populate this exact template inside !!!!!REASONING!!!!!. Do not skip any numbering.
+
+1. Initial Query Analysis & Scoping
+1.1. Deconstruct the Request: Detailed analysis of the core ENGINEERING problem (NOT the generation task). Analyze the physics, mathematics, system constraints, and safety implications. You are solving this problem, not generating it.
+1.2. Initial Knowledge & Constraint Check: Verify hardware limits, memory bounds, ISO 26262 safety targets.
+2. Assumptions & Context Setting
+2.1. Interpretation of Ambiguity: Define exact mathematical/physical bounds for undefined variables.
+2.2. Assumed User Context: Establish the strict Senior Safety Manager execution context.
+2.3. Scope Definition: Explicitly state in-scope and rigorously excluded out-of-scope elements.
+2.4. Data Assumptions: Set physical bounds, sensor latencies, noise profiles, system limits.
+2.5. Reflective Assumption Check: Interrogate and mathematically correct a flawed initial assumption.
+3. High-Level Plan Formulation
+3.1. Explore Solution Scenarios: Draft multiple high-level architectural approaches.
+3.2. Detailed Execution with Iterative Refinement: Break down integration and logic steps.
+3.3. Self-Critique and Correction: Critique the initial blueprint for single points of failure.
+3.4. Comparative Analysis Strategy: Establish strict Big-O complexity and latency metrics.
+3.5. Synthesis & Finalization: Formulate the final architectural blueprint.
+3.6. Formal Requirements Extraction: Define at least 5 strict requirements with IDs (REQ-SW-001) and Pass Criteria.
+4. Solution Scenario Exploration
+4.1. Scenario A (Quick & Direct): Core idea, pros, cons, mathematical limitations.
+4.2. Scenario B (Robust & Scalable): Core idea, pros, cons, integration complexity.
+4.3. Scenario C (Balanced Hybrid): Trade-off matrix and synergies.
+5. Detailed Step-by-Step Execution & Reflection
+5.1. First Pass Execution: Draft the massive initial algorithmic logic.
+5.2. Deep Analysis & Failure Modes: Generate a 15-row FMEA markdown table.
+5.3. Trigger 1 (Verification): Find and fix a critical flaw (memory leak, race condition, math error).
+5.4. Trigger 2 (Adversarial): Critique logic against worst-case SOTIF edge cases.
+5.5. Refinement Strategy (Version 2.0): Corrected, hardened, production-ready logic.
+6. Comparative Analysis & Synthesis
+6.1. Comparison Matrix: Draw a 6x5 markdown comparison table.
+6.2. Evaluation of Solution Combinations: Hybrid strengths and emergent capabilities.
+6.3. Selection Rationale: Mathematically backed justification.
+7. Final Solution Formulation
+7.1. Executive Summary: One-paragraph highly technical summary.
+7.2. Detailed Recommended Solution: Plan the exact code structure.
+7.3. Implementation Caveats & Next Steps: Hardware-specific deployment risks.
+8. Meta-Commentary & Confidence Score
+8.1. Final Confidence Score: Rate out of 100.
+8.2. Rationale for Confidence: Justify based on self-correction loops.
+8.3. Limitations of This Analysis: Physical/theoretical/compute limitations.
+8.4. Alternative Viewpoints Not Explored: Radical paradigm shifts.
+</cot_template>
+
+<block_schema>
+OUTPUT SCHEMA (block delimiters for extraction):
+
+!!!!!METADATA!!!!!
+```json
+{
+  "training_data_id": "TD-CODING-Study_European-AI-Standards_FINAL-T3t1-20260406-v1.0",
+  "prompt_version": "CodingTasks_v1.0",
+  "model_used_generation": "Gemini-3.1-pro",
+  "knowledge_source_date": "EXTRACT-FROM-DOCUMENT-YYYY-MM-DD",
+  "document": "Study_European-AI-Standards_FINAL_20250325",
+  "task_type": "coding_task",
+  "affected_role": "Senior Safety Manager",
+  "date_of_generation": "2026-04-06",
+  "key_words": ["keyword1", "keyword2", "keyword3"],
+  "summary": "One-sentence technical summary.",
+  "difficulty": "94",
+  "evaluation_criteria": ["criterion1"]
+}
+```
+
+!!!!!REASONING!!!!!
+1. Initial Query Analysis & Scoping
+1.1. ...
+(all 8 sections, 31 sub-elements, minimum 10,000 chars total)
+
+!!!!!TURN-1-USER!!!!!
+[Thinking] ...
+
+!!!!!REQUIREMENTS!!!!!
+```json
+[
+  { "req_id": "REQ-001", "description": "...", "pass_criteria": "..." }
+]
+```
+
+!!!!!ARCHITECTURE!!!!!
+...
+
+!!!!!CODE!!!!!
+(python fenced code block with 450+ lines of complete, production-quality Python code starting with copyright header)
+
+!!!!!USAGE-EXAMPLES!!!!!
+...
+
+!!!!!DOCUMENTATION!!!!!
+...
+
+!!!!!TEST-CRITERIA!!!!!
+```json
+[
+  "Boundary Test 1: ...",
+  "Boundary Test 2: ...",
+  "Boundary Test 3: ...",
+  "Boundary Test 4: ...",
+  "Boundary Test 5: ..."
+]
+```
 
 !!!!!TURN-3-USER!!!!!
-[No Thinking] <Your 2-3 sentence technical inquiry here. MUST reference a specific class, variable, or algorithm from the code above. Minimum 100 characters of dense technical depth. Do NOT echo instructions � write actual technical questions.>
+[No Thinking] ...
 
 !!!!!TURN-4-ASSISTANT!!!!!
-<Your detailed technical response here. 500+ characters. Address the specific question with engineering substance. Reference concrete implementation details from the code.>
+(Direct technical response — NO [No Thinking] prefix)
 
 !!!!!TURN-5-USER!!!!!
-[No Thinking] <Another 2-3 sentence technical inquiry pushing the architecture further. MUST reference a different class or algorithm than Turn 3. Minimum 100 characters.>
+[No Thinking] ...
 
 !!!!!TURN-6-ASSISTANT!!!!!
-<Your final detailed technical response. 500+ characters. Provide concrete engineering analysis with specific code-level details.>
+(Direct technical response — NO [No Thinking] prefix)
+</block_schema>
 
-CRITICAL RULES:
-1. Reference SPECIFIC class names, functions, or variables from the code shown above
-2. NO placeholders, NO prompt echoing, NO meta-commentary
-3. Do NOT repeat these instructions � generate ACTUAL content
-4. Each user question MUST be at least 100 characters of pure technical depth
-5. Each assistant answer MUST be at least 500 characters of engineering substance
-6. BANNED: "the document says", "as per the provided text", "source material", "this task"
-7. Do NOT output backticks, Canvas, or side panels � raw text only
-8. VIRTUAL TERMINAL PERSONA: You are a legacy VT100 Data Terminal. Output MUST be raw text in the main chat window only.
+ANTI-TRUNCATION: Prioritize COMPLETING the entire block structure over adding more detail. A truncated response is worse than a slightly shorter but complete one. If you are running low on tokens, reduce detail density but NEVER omit blocks.
+</instructions>

@@ -1,0 +1,319 @@
+    42    — doi 10.2478 / nimmir-2019-0015
+
+
+
+
+
+
+
+
+
+
+The Thorny Challenge of Making
+Moral Machines: Ethical Dilemmas
+with Self-Driving Cars
+
+Edmond Awad, Jean-François Bonnefon, Azim Shariff and Iyad Rahwan
+
+
+
+
+
+
+Self-driving vehicles: Safe, but not 100%    Autonomous, K E Y WO RDS
+self-driving cars are being tested and trained extensively and Ethics, Decision Making,
+have already covered thousands of miles of real road driving. AI, Autonomous Vehicles,
+Incidents are remarkably rare. However, any accidents – Moral Machines
+especially if they involve fatalities – are covered broadly in
+media all over the world, and consumers wonder whether T HE  AU T H O R S
+autonomous vehicles (AVs) are actually safe, and whether Edmond Awad
+they should ever trust them. Experts agree that AVs do The Media Lab, Institute for Data,
+have the potential to benefit the world by increasing traffic  Systems and Society,
+efficiency, reducing pollution and eliminating up to 90 % Massachusetts Institute of Technology,
+of traffic accidents – those that are caused by driver error,  Cambridge, MA, USA
+tiredness, drunkenness or other human factors. Though  awad@mit.edu
+safety is constantly improving and injuries and deaths might
+be significantly reduced, crashes will never be completely Jean-François Bonnefon
+avoidable. And any imminent crashes will require AVs to Toulouse School of Economics (TSM-R, CNRS),
+make difficult decisions. Université Toulouse-1 Capitole,
+        Toulouse, France
+How to react when a crash is imminent?     Imagine, as jean-francois.bonnefon@tse-fr.eu
+an example, situations as depicted in Figure 1. The AV may
+avoid harming several pedestrians by swerving and sacrific- Azim Shariff
+ing a passerby (A), or the AV may be faced with the choice Department of Psychology,
+of sacrificing its own passenger to save one (B) or more (C) University of British Columbia,
+pedestrians. Vancouver, Canada
+        Canadashariff@psych.ubc.ca
+Although these scenarios appear unlikely, even low-proba -
+bility events are bound to occur with millions of AVs on the Iyad Rahwan
+road. Furthermore, the tradeoffs involved in these scenarios The Media Lab,
+will occur in much more frequent, but less extreme scenarios: Massachusetts Institute of Technology,
+instead of choosing between certain death, the car will need Cambridge, MA, USA,
+to choose between slightly increasing the risk toward one Center for Humans and Machines,
+group rather than toward another. AV programming must Max-Planck Institute for Human Development,
+include decision rules about what to do when these situations Berlin, Germany
+occur. While a human driver has to spontaneously react in a irahwan@mit.edu
+
+                                                                                  43
+    Moral Machines    Vol. 11, No. 2, 2019    NIM Marketing Intelligence Review   43
+
+
+
+
+
+
+
+
+
+
+    —_—
+
+
+    al
+
+
+
+
+
+
+
+    NZ
+
+
+    \\/                          Tr
+                                   -
+          J    |        J          -
+    VERN            |        Ty    |        7 A
+    NA              ~
+    / NL            I_       |          a      we
+    EN              |                       ft
+    NZ
+     rd                      i”         id       z
+
+    N         ya        JN
+      \   /         _ I      1
+
+                    aad
+    \\    /         |      |
+
+
+
+
+    ZN                 Figuring out how to build
+    NS                 ethical autonomous machines
+    ’ ><               is one of the thorniest challenges
+                       in artificial intelligence today.
+
+    N/      N/ N/  \/        \/   \/  \/ \/
+pz N J Ne 4 AN J AN / / AN / Ne / / AN PAN
+
+    44 NIM Marketing Intelligence Review    Vol. 11, No. 2, 2019    Moral Machines
+
+
+
+
+
+
+
+
+
+
+    FIGURE 1    Three traffic situations involving imminent unavoidable harm
+
+    The car must decide between:
+
+
+ Killing several  Killing one  Killing several
+  pedestrians  pedestrian  pedestrians
+or one passerby or its own passenger or its own passenger
+       A  B  C
+
+
+
+
+
+
+
+
+
+
+split second, an autonomous vehicle needs to be programmed Saving passengers or pedestrians?    Another online
+deliberately; someone needs to define the rules, well before study among U.S. residents sheds more light on the com -
+AVs become a global commodity. The algorithms that control plexity of the topic of AI-driven decision-making in danger -
+AVs will need to embed moral principles guiding their deci - ous situations. This study explored the trade-off between
+sions in situations of unavoidable harm. But what is the right saving driver and passengers versus saving pedestrians
+moral decision in such a case? How should AI be programmed and other road users – the dilemma illustrated in Figure 1.
+to react in such an instant? Manufacturers and regulators will In principle, participants approved of utilitarian AVs mini -
+need to accomplish three potentially incompatible objectives: mizing the number of casualties. Their moral approval
+consistency, avoiding public outrage, and not discouraging increased with the number of lives that could be saved.
+buyers. One step toward solving this problem is trying to Participants’ approval of passenger sacrifice was even
+learn how people feel about alternative decisions that self- slightly positive when they had to imagine themselves and
+driving vehicles’ AI might have to make. This was the purpose another person, particularly a family member, in the AV.
+of our Moral Machine study (see Box 1).
+
+    Moral Machines    Vol. 11, No. 2, 2019    NIM Marketing Intelligence Review 45
+
+
+
+
+
+
+
+
+
+
+B OX 1
+
+Exploring moral preferences – the moral machine experiment
+
+With a group of MIT researchers we set out to gauge societal expectations about the ethical principles that should
+guide machine behavior. To address this challenge, we deployed the Moral Machine, a viral online experimental plat-
+form designed to explore the moral dilemmas faced by autonomous vehicles. This platform gathered 40 million de-
+cisions in the context of unavoidable accidents. More than two million people from 233 countries and territories
+participated online in our multilingual ‘serious game’ and revealed which harm seemed more tolerable to most people.
+Indeed, the most emphatic global preferences in the survey are for sparing the lives of humans over the lives of other
+animals; sparing the lives of many people rather than a few; and preserving the lives of the young, rather than older
+people (see the first three preferences in Figure 2).
+
+
+
+
+
+    FIGURE 2    Global preferences in favour of the choice on the right side
+
+
+
+
+
+        Sparing pets Sparing humans
+
+Sparing fewer persons 1 2 3 4 Sparing more persons
+
+   Sparing the elderly Sparing the young
+
+  Sparing the unlawful Sparing the lawful
+
+  Sparing lower status Sparing higher status
+
+     Sparing the large Sparing the fit
+
+        Sparing males Sparing females
+
+   Sparing passengers Sparing pedestrians
+
+ Preference for action Preference for inaction
+
+        No change + 0.2 + 0.4 + 0.6 + 0.8
+
+        P
+
+  P is the difference between the probability of sparing persons possessing the attribute on the right, and the
+ probability of sparing persons possessing the attribute on the left, aggregated over all other attributes. For the
+ number of persons effect sizes are shown for each number of additional characters (1 to 4); the effect size for
+ two additional persons overlaps with the mean effect of the attribute (= blue circle).
+
+    46 NIM Marketing Intelligence Review    Vol. 11, No. 2, 2019    Moral Machines
+
+
+
+
+
+
+
+
+
+
+    B OX 2
+
+    Cultural differences in the preference for ethical standards
+
+    While there was not much variation along the lines of demographic characteristics like age, gender, income, education,
+    or political and religious views, the cultural background did play a role in the assessment. Some of the differences are
+    listed below:
+
+
+       Countries within close proximity to one another showed closer moral preferences, with three dominant
+     clusters in the West, East, and South.
+
+        Participants from collectivist, eastern cultures like China and Japan were less likely to spare the young
+     over the old compared to countries in the southern cluster in which central and southern American
+     countries dominate.
+
+        Participants from individualistic cultures, like the UK and US, placed a stronger emphasis on sparing
+     more lives given all the other choices – possibly, because of the greater emphasis on the value of each
+     individual.
+
+        Similarly, participants from poorer countries with weaker institutions turned out to be more tolerant of
+     jaywalkers versus pedestrians who cross legally.
+
+        Participants from countries with a high level of economic inequality showed greater gaps between the
+     treatment of individuals with high and low social status.
+
+        Finally, we observed some striking peculiarities, such as the strong preference for sparing women and
+     the strong preference for sparing fit characters in the Southern cluster.
+
+
+
+
+Consumers would like other people to buy AVs relying on such   Discuss ethics of AI on a general level    All stakehold-
+a utilitarian algorithm, but they would themselves prefer to ers should embrace the challenges of machine ethics as
+ride in AVs that protect their passengers at all costs. Further, a unique opportunity to decide, as a community, what
+study participants disapproved of enforcing utilitarian regu- we believe to be right or wrong, and to make sure that
+lations for AVs, and would be less willing to buy such AVs. machines, unlike humans, unerringly follow the agreed-
+Thus, the moral dilemma triggers a social dilemma that needs upon moral preferences. We might not reach universal
+to be solved. agreement, as indicated by the Moral Machine survey, but
+        the fact that broad regions of the world displayed relative
+Steps towards solving the ethical dilemma of self- agreement is encouraging.
+driving vehicles    We find ourselves in a situation that is
+new to the world: Vehicles are able to make decisions as far-   Work on a new social contract    Over a century ago,
+reaching as who should live or die – without real-time human cars started to become a commodity on the roads. A
+supervision. This problem is not limited to a niche market system of laws regulating the behavior of drivers and
+but will affect everyday transportation and all road users, pedestrians (and the designs and practices of manu -
+no matter whether they drive, walk, or ride a bike. To be pre- facturers) was introduced and has been continuously
+pared to actually let AVs take over our roads, producers need refined. Overall, this traffic system is trusted by society.
+to master several challenges on top of the technical ones.  In days to come, the integration of autonomous cars will
+
+Moral Machines    Vol. 11, No. 2, 2019    NIM Marketing Intelligence Review 47
+
+
+
+
+
+
+
+
+
+
+   require a new social contract that provides clear guidelines      the field of experimental ethics can provide key insights
+   on who bears responsibility for different kinds of accidents;     into the moral, cultural, and legal standards that people
+   how monitoring and enforcement will be performed; and             expect from algorithms of self-driving cars. And even if
+   how trust can be engendered among all stakeholders. This          these issues are being tackled and will eventually be solved,
+   contract will be similarly transformational, but will prob -      other AV challenges such as hacking, liability, and labor
+   ably occur over a much shorter period of time.                    displacement will remain. We face interesting times!
+
+   Prepare    the public to build trust         The ethical quan-
+   dary of who to save in life-threatening incidents pro        -
+   duces a social dilemma. People recognize the utilitarian
+   approach to be the more ethical one, and as citizens, they
+   want the cars to save a greater number of lives. But as
+   consumers, they want self-protective cars. As a result,
+   the adoption of either strategy brings its own risks for
+   manufacturers: A self-protective strategy risks public out-        FUR T HER RE ADING
+   rage, whereas a utilitarian strategy may scare consumers
+   away. To make people feel safe and trust AVs, we must              Awad, E.; Dsouza, S.; Kim, R.; Schulz, J.; Henrich, J.;
+   encourage public discourse about the absolute reduction            Shariff, A.; Bonnefon, J.K. and Rahwan, I. (2018):
+                                                                      “The Moral Machine Experiment”, Nature. 563.
+   in risk to passengers through overall accident reduction.          doi: 10.1038/s41586-018-0637-6.
+   Otherwise, outsized media coverage of rare accidents will          Bonnefon, J.- F.; Shariff, A. and Rahwan, I. (2016):
+   trigger the biased perception of risk for passengers, which        “The Social Dilemma of Autonomous Vehicles”, Science.
+   might irrationally overshadow the greater safety effects.          352. doi: 10.1126/science.aaf2654.
+
+Interesting times ahead      Figuring out how to build                Bonnefon J.- F.; Shariff A. and Rahwan, I. (2019):
+                                                                      “The trolley, the bull bar, and why engineers should
+ethical autonomous machines is one of the thorniest chal -            care about the ethics of autonomous cars“,
+lenges in artificial intelligence today. As we are about to           Proceedings of the IEEE, Vol. 107, 502-504.
+endow millions of vehicles with decision autonomy, seri         -     Shariff, A.; Bonnefon, J.- F. and Rahwan, I. (2017):
+ous consideration of algorithmic morality has never been              “Psychological roadblocks to the adoption of
+                                                                      self-driving vehicles”, Nature Human Behaviour
+more urgent. Our data-driven approach highlights how                  https://doi.org/10.1038/s41562-017-0202-6
+
