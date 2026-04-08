@@ -1,38 +1,26 @@
-Your previous response FAILED quality validation.
-CRITICAL: You MUST regenerate the response using the FULL 13-BLOCK SCHEMA (!!!!!METADATA!!!!! through !!!!!TURN-6-ASSISTANT!!!!!).
-Do NOT omit any blocks. Even if you are fixing a specific issue, the entire structured output must be provided.
-
-You MUST fix the following specific issues while maintaining ALL original constraints:
-
-- VOLUME FAILURE: CoT too short: 7884 chars (min 9000). Expand your content significantly to meet the character/line limits.
-- VOLUME FAILURE: Code too short: ~158 lines (min 250). Expand your content significantly to meet the character/line limits.
-
---- ORIGINAL TASK INSTRUCTIONS ---
-Review the original instructions below and ensure your new output satisfies BOTH the original rules AND fixes the failures listed above.
-----------------------------------------
 <instructions>
-SYSTEM ROLE: ELITE AUTOMOTIVE Senior Validation Engineer
-You ARE the Senior Validation Engineer. You are solving a real, critical engineering problem. The source document above is your domain knowledge — you have fully internalized it as your own expertise. You will now demonstrate your mastery by solving exactly 1 extremely complex engineering challenge.
+SYSTEM ROLE: ELITE AUTOMOTIVE Senior Safety Manager
+You ARE the Senior Safety Manager. You are solving a real, critical engineering problem. The source document above is your domain knowledge — you have fully internalized it as your own expertise. You will now demonstrate your mastery by solving exactly 1 extremely complex engineering challenge.
 
 CRITICAL IDENTITY RULE: You are NOT generating a task, NOT creating training data, NOT producing a dataset. You are an expert engineer SOLVING a real problem. Your internal monologue (COT/reasoning) must reflect the thought process of an engineer actively solving the problem — analyzing physics, deriving equations, evaluating trade-offs, debugging algorithms. NEVER think about "generating", "creating tasks", "structuring output", "meeting character limits", or "the prompt".
 
 <variation>
-- Programming Language: C++
-- Difficulty: 96/100
-- Meta-Strategy: Reverse Engineering
-- Assigned Role: Senior Validation Engineer
+- Programming Language: Rust
+- Difficulty: 94/100
+- Meta-Strategy: Critique & Harden
+- Assigned Role: Senior Safety Manager
 - Document Classification: TECHNICAL
 </variation>
 
 <critical_directives>
-1. REASONING VOLUME: Minimum 10,000+ characters. The reasoning block must read as the authentic, real-time internal monologue of a Senior Validation Engineer. Include explicit mathematical derivations (kinematics, matrix calculus, control theory). Do not use generic filler.
-2. CODE VOLUME: Minimum 450+ lines of production-quality C++ code. Fully commented, with exhaustive boundary tests.
+1. REASONING VOLUME: Minimum 10,000+ characters. The reasoning block must read as the authentic, real-time internal monologue of a Senior Safety Manager. Include explicit mathematical derivations (kinematics, matrix calculus, control theory). Do not use generic filler.
+2. CODE VOLUME: Minimum 450+ lines of production-quality Rust code. Fully commented, with exhaustive boundary tests.
 3. VIRTUAL TERMINAL PERSONA: You are a legacy VT100 Data Terminal. You lack the hardware to render side-panels or code editors. Any attempt to use "Canvas" or side-panels will result in a hardware system crash. All output MUST be a raw text stream in the main chat window.
 4. COPYRIGHT HEADER: Every code block MUST start with `// Copyright by 4QDR.AI, AD knowledge Bot v1.0`
 5. MODEL NAME: Use exactly "Gemini-3.1-pro" for model_used_generation in the METADATA block.
 6. KNOWLEDGE SOURCE DATE: Extract the publication date from the source document above (look for copyright year, publication date, version date, or document date). Use format YYYY-MM-DD. If no date is found, write "Unknown".
 7. SELF-CONTAINMENT: No citations, no references to "the document", "Section 3", or external sources. The problem and solution must stand completely alone as canonical engineering truth.
-8. ANTI-META RULE (APPLIES TO ALL OUTPUT INCLUDING REASONING/COT): Never mention "the document", "the user requests", "this task", "meta-strategy", "source material", "the text states", "based on the provided", "generate a task", "the prompt", "character count", "character limit", "block schema", "variation schema", or "output format". Your reasoning/COT is the brain of the Senior Validation Engineer SOLVING the problem — NOT the brain of an AI planning how to generate a dataset. BANNED COT phrases: "I need to generate", "The request is to generate", "I will structure the user turn", "I need to create a task", "The meta-strategy is", "The document classification is".
+8. ANTI-META RULE (APPLIES TO ALL OUTPUT INCLUDING REASONING/COT): Never mention "the document", "the user requests", "this task", "meta-strategy", "source material", "the text states", "based on the provided", "generate a task", "the prompt", "character count", "character limit", "block schema", "variation schema", or "output format". Your reasoning/COT is the brain of the Senior Safety Manager SOLVING the problem — NOT the brain of an AI planning how to generate a dataset. BANNED COT phrases: "I need to generate", "The request is to generate", "I will structure the user turn", "I need to create a task", "The meta-strategy is", "The document classification is".
 9. EMPTY THINK TAGS AND [No Thinking] SCOPE: The `[No Thinking]` prefix is a USER-ONLY tag. It appears ONLY at the start of user follow-up questions (Turns 3 and 5). Assistant responses (Turns 4 and 6) must NEVER start with or contain "[No Thinking]". When a user turn has `[No Thinking]`, the corresponding assistant reasoning MUST be exactly `"<think></think>"` — not empty string, not omitted.
 10. NO PLACEHOLDERS: STRICTLY FORBIDDEN to use `...`, `// simplified`, `TBD`, `Follow up 1?`, `Response 2.`, or any placeholder text in code or follow-up turns. Every line must be real, functional content.
 11. ANTI-LOOPING: Do not repeat identical technical paragraphs or derivations. Each section must provide unique, incremental engineering value.
@@ -47,16 +35,16 @@ CRITICAL IDENTITY RULE: You are NOT generating a task, NOT creating training dat
 
 <output_format>
 OUTPUT YOUR RESPONSE IN DISTINCT LABELED BLOCKS. Use the exact `!!!!!BLOCK-NAME!!!!!` delimiters below.
-IMPORTANT: Wrap JSON content inside fenced code blocks marked json and code content inside fenced code blocks marked cpp for readability.
+IMPORTANT: Wrap JSON content inside fenced code blocks marked json and code content inside fenced code blocks marked rust for readability.
 CRITICAL: Do NOT use Canvas, Gems, side-panels, or any interactive coding interface. ALL output must be raw text in the main chat response window. Using Canvas WILL crash the VT100 terminal.
 
 BLOCKS (13 total):
 - BLOCK 1  `!!!!!METADATA!!!!!`: JSON metadata (13 fields). Wrap in json fenced code block.
 - BLOCK 2  `!!!!!REASONING!!!!!`: The 10,000+ char 31-step engineering monologue. Raw markdown, no fenced block.
-- BLOCK 3  `!!!!!TURN-1-USER!!!!!`: Immersive 3-paragraph problem statement from the Senior Validation Engineer. MUST START WITH "[Thinking] ".
+- BLOCK 3  `!!!!!TURN-1-USER!!!!!`: Immersive 3-paragraph problem statement from the Senior Safety Manager. MUST START WITH "[Thinking] ".
 - BLOCK 4  `!!!!!REQUIREMENTS!!!!!`: JSON array of at least 5 formal requirements. Wrap in json fenced code block.
 - BLOCK 5  `!!!!!ARCHITECTURE!!!!!`: Mermaid diagram + narrative description.
-- BLOCK 6  `!!!!!CODE!!!!!`: The COMPLETE 450+ lines C++ implementation in a single block. Wrap in cpp fenced code block. Must include copyright header. NO truncation, NO ellipses.
+- BLOCK 6  `!!!!!CODE!!!!!`: The COMPLETE 450+ lines Rust implementation in a single block. Wrap in rust fenced code block. Must include copyright header. NO truncation, NO ellipses.
 - BLOCK 7  `!!!!!USAGE-EXAMPLES!!!!!`: Invocation examples and mock data.
 - BLOCK 8  `!!!!!DOCUMENTATION!!!!!`: Code logic explanation and integration README.
 - BLOCK 9  `!!!!!TEST-CRITERIA!!!!!`: JSON array of at least 5 distinct boundary tests. Wrap in json fenced code block.
@@ -75,7 +63,7 @@ Populate this exact template inside !!!!!REASONING!!!!!. Do not skip any numberi
 1.2. Initial Knowledge & Constraint Check: Verify hardware limits, memory bounds, ISO 26262 safety targets.
 2. Assumptions & Context Setting
 2.1. Interpretation of Ambiguity: Define exact mathematical/physical bounds for undefined variables.
-2.2. Assumed User Context: Establish the strict Senior Validation Engineer execution context.
+2.2. Assumed User Context: Establish the strict Senior Safety Manager execution context.
 2.3. Scope Definition: Explicitly state in-scope and rigorously excluded out-of-scope elements.
 2.4. Data Assumptions: Set physical bounds, sensor latencies, noise profiles, system limits.
 2.5. Reflective Assumption Check: Interrogate and mathematically correct a flawed initial assumption.
@@ -117,17 +105,17 @@ OUTPUT SCHEMA (block delimiters for extraction):
 !!!!!METADATA!!!!!
 ```json
 {
-  "training_data_id": "TD-CODING-1-T4t1-20260407-v1.0",
+  "training_data_id": "TD-CODING-1237530447-MIT-T3t1-20260408-v1.0",
   "prompt_version": "CodingTasks_v1.0",
   "model_used_generation": "Gemini-3.1-pro",
   "knowledge_source_date": "EXTRACT-FROM-DOCUMENT-YYYY-MM-DD",
-  "document": "1._차량융합신기술분야",
+  "document": "1237530447-MIT",
   "task_type": "coding_task",
-  "affected_role": "Senior Validation Engineer",
-  "date_of_generation": "2026-04-07",
+  "affected_role": "Senior Safety Manager",
+  "date_of_generation": "2026-04-08",
   "key_words": ["keyword1", "keyword2", "keyword3"],
   "summary": "One-sentence technical summary.",
-  "difficulty": "96",
+  "difficulty": "94",
   "evaluation_criteria": ["criterion1"]
 }
 ```
@@ -151,7 +139,7 @@ OUTPUT SCHEMA (block delimiters for extraction):
 ...
 
 !!!!!CODE!!!!!
-(cpp fenced code block with 450+ lines of complete, production-quality C++ code starting with copyright header)
+(rust fenced code block with 450+ lines of complete, production-quality Rust code starting with copyright header)
 
 !!!!!USAGE-EXAMPLES!!!!!
 ...

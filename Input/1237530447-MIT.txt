@@ -1,0 +1,2864 @@
+          Developing a Simulator to Aid in the Design of a
+               Safety Interlock for Self-Driving Cars
+                                 by
+                       Angela Leong Feng Ping
+                        S.B., M.I.T. (2018)
+ Submitted to the Department of Electrical Engineering and Computer
+                              Science
+    in partial fulfillment of the requirements for the degree of
+Master of Engineering in Electrical Engineering and Computer Science
+                               at the
+               MASSACHUSETTS INSTITUTE OF TECHNOLOGY
+                           February 2020
+    c Massachusetts Institute of Technology 2020. All rights reserved.
+    ○
+
+
+
+
+    Author . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+                                                                                 Department of Electrical Engineering and Computer Science
+                                                                                                                          February 5, 2020
+
+    Certified by . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+                                                                                                                         Daniel N. Jackson
+                                                                                                                                 Professor
+                                                                                                                         Thesis Supervisor
+
+    Accepted by . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+                                                                                                                           Katrina LaCurts
+                                                                                             Chair, Master of Engineering Thesis Committee
+
+    Developing a Simulator to Aid in the Design of a Safety
+        Interlock for Self-Driving Cars
+        by
+        Angela Leong Feng Ping
+
+   Submitted to the Department of Electrical Engineering and Computer Science
+        on February 5, 2020, in partial fulfillment of the
+        requirements for the degree of
+       Master of Engineering in Electrical Engineering and Computer Science
+
+Abstract
+Self-driving cars have tremendous potential to be safer than human drivers, but are
+complex systems for which evaluating safety is challenging: using a statistical ap-
+proach requires self-driving cars to have clocked on the order of billions of miles of
+driving to present convincing evidence. Thus there is potential in exploring a new
+design architecture for self-driving cars in which a small, trusted module of code co-
+operates with the main controller to ensure safety while being easily verifiable; we
+call this the safety Interlock. This thesis focuses on the scenario of an ego car driving
+in a single, straight lane behind a lead car that may suddenly brake. We first propose
+and prove, using formal verification, an algorithm for Interlock to prevent collision
+by maintaining a safe separation distance that allows the ego car to stop in time. We
+then present a simulation program developed using the Processing programming lan-
+guage, which provides visual confirmation of the efficacy of the Interlock algorithm,
+and is designed to be extensible to more complex road scenarios.
+
+Thesis Supervisor: Daniel N. Jackson
+Title: Professor
+
+
+
+
+
+
+
+
+
+
+    2
+
+Acknowledgments
+
+My greatest thanks go to my advisor Daniel Jackson, who has given me many nice
+ideas and guidance not only in this project but also in other topics. He has been a
+genuinely caring mentor, and I believe I have learned from him in many more ways
+than technically, and for this I am very grateful.
+   I have benefited a lot from working with members of the Toyota Research Institute,
+the Interlock team, as well as the larger Software Design Group during my time on
+this project. I have felt very enriched and constantly impressed by the thought-
+provoking discussions at our meetings. Special thanks to Matt McCutchen and Xin
+Zhang whom I credit for Chapter 2; I have presented their work in deriving a safe
+separation distance to the best of my understanding in that chapter.
+   The simulator began as a team effort, and I would like to thank Mike Wang for
+laying a solid foundation for me to build upon; I credit him for the implementation
+of LiDAR (Chapter 3) and lane changing in the simulator (Chapter 5).
+   I want to thank my parents for their selfless support and sacrifice to enable me to
+pursue my best life.
+   I’ll also take this chance to express my gratitude to my friends, with whom I started
+my Bachelor’s journey and who have accompanied me through part of this M.Eng.
+journey. I thank them for giving me a community and for this shared adventure that
+began way before this thesis and will continue after.
+   Finally, thank you to Kevin, who has been an unwavering source of much-needed
+emotional support, and to whom the original intended length of this thesis is dedi-
+cated.
+
+
+
+
+
+
+
+
+
+
+    3
+
+ Contents
+
+
+
+
+ 1  Introduction                           10
+1.1 Motivation . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 10
+1.2 The Broader Context . . . . . . . . . . . . . . . . . . . . . . . . . . . 11
+1.3 Contributions . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 12
+
+ 2  The Single Lane, Two Cars Scenario     13
+2.1 Defining the Scenario . . . . . . . . . . . . . . . . . . . . . . . . . . . 14
+2.2 Establishing Stopping Distance . . . . . . . . . . . . . . . . . . . . . 15
+2.3 Initial Hypothesis: Minimum Separation Distance is Difference in Stop-
+     ping Distances . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 16
+2.4 Deriving Conditions for Emergency Separation . . . . . . . . . . . . . 17
+     2.4.1 Case: Ego Car Has Stronger Deceleration, Lower Speed . . . . 18
+     2.4.2 Case: Ego Car Has Stronger Deceleration, Higher Speed . . . 19
+     2.4.3 Case: Ego Car Has Weaker Deceleration . . . . . . . . . . . . 20
+     2.4.4 Recap . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 21
+2.5 Deriving Conditions for Safe Separation . . . . . . . . . . . . . . . . . 22
+2.6 Interlock Algorithm for Safe Separation . . . . . . . . . . . . . . . . . 24
+
+ 3  The Simulator                          26
+3.1 Development Environment . . . . . . . . . . . . . . . . . . . . . . . . 27
+3.2 A Quick Demo . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 27
+     3.2.1 Visual Interface . . . . . . . . . . . . . . . . . . . . . . . . . . 27
+     3.2.2 Launching Simulator from Command Line . . . . . . . . . . . 30
+
+        4
+
+3.3 Structure of Simulator Program . . . . . . . . . . . . . . . . . . . . . 35
+     3.3.1 Entry Point of Program . . . . . . . . . . . . . . . . . . . . . 36
+     3.3.2 The World Object . . . . . . . . . . . . . . . . . . . . . . . . 37
+     3.3.3 The Car Object . . . . . . . . . . . . . . . . . . . . . . . . . . 38
+     3.3.4 Collision Checking . . . . . . . . . . . . . . . . . . . . . . . . 39
+     3.3.5 Simulation of LiDAR . . . . . . . . . . . . . . . . . . . . . . . 40
+3.4 Simulating and Verifying the Interlock Algorithm . . . . . . . . . . . 43
+3.5 Uncovering the Jittering Problem . . . . . . . . . . . . . . . . . . . . 46
+3.6 Limitations of the Simulator . . . . . . . . . . . . . . . . . . . . . . . 49
+
+ 4  Addressing Jittering                       51
+4.1 Initial Exploration . . . . . . . . . . . . . . . . . . . . . . . . . . . . 51
+4.2 Experiments . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 53
+4.3 Further Exploration . . . . . . . . . . . . . . . . . . . . . . . . . . . . 56
+
+ 5  Other Functionalities in the Simulator     58
+5.1 Lane Changing . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 58
+     5.1.1 Implementation . . . . . . . . . . . . . . . . . . . . . . . . . . 58
+     5.1.2 Applications . . . . . . . . . . . . . . . . . . . . . . . . . . . . 61
+     5.1.3 Improvements . . . . . . . . . . . . . . . . . . . . . . . . . . . 62
+5.2 Recording and Replaying Arbitrary Trajectories . . . . . . . . . . . . 63
+     5.2.1 Applications . . . . . . . . . . . . . . . . . . . . . . . . . . . . 66
+5.3 Experimenting with Road Configurations . . . . . . . . . . . . . . . . 67
+     5.3.1 Examples . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 67
+     5.3.2 Improvements . . . . . . . . . . . . . . . . . . . . . . . . . . . 72
+
+ 6  Conclusion                                 73
+6.1 Improvements and Future Work . . . . . . . . . . . . . . . . . . . . . 74
+6.2 Tying Back to the Broader Context . . . . . . . . . . . . . . . . . . . 75
+
+
+
+
+
+                  5
+
+    List of Figures
+
+
+
+2-1 Bird’s-eye view of the ‘single lane, two cars’ scenario. . . . . . . . . . 14
+2-2 Flowchart illustrating different required initial conditions for different
+     combinations of velocity and acceleration properties of ego and lead
+     cars. Boxed components represent states of the scenario, and arrows
+     indicate transition between states. . . . . . . . . . . . . . . . . . . . . 21
+
+3-1 Visual interface of simulator modeling the ‘single lane, two cars’ scenario. 28
+3-2 A paused view of the same simulation from Figure 3-1. . . . . . . . . 29
+3-3 Labeled structure of command line arguments to launch the simulator
+     from the terminal. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 30
+3-4 Two example roads created in the simulator to show how a road is
+     specified by command line arguments. Note how the direction of travel
+     is determined by the start and end points. Also note that the size of
+     the ego car is same on both roads, for scale. The lighter-colored lane
+     indicates the current lane of the ego car; this is discussed in Chapter 5. 32
+3-5 Structure of simulator showing the relationship between different files/
+     classes in our sketch folder. . . . . . . . . . . . . . . . . . . . . . . . . 35
+3-6 A Car that has collided with another Car in the current frame is
+     indicated by a ‘X’ over it. . . . . . . . . . . . . . . . . . . . . . . . . 40
+3-7 Range of LiDAR as defined by a range magnitude and minimum and
+     maximum angles. In this case the lead (red) car is within range of the
+     ego (green) car’s LiDAR. (Note that the ego car is driving from left to
+     right.) . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 41
+
+
+    6
+
+3-8 (from top to bottom) Sequence of repeated deceleration and accelera-
+     tion in the ego (green) car as it gets too close to the lead (red) car,
+     applies maximum deceleration because of the Interlock, regains safe
+     separation distance, accelerates, and consequently gets too close again.
+     Note the short span of time in which the car cycles between deceler-
+     ation and acceleration, as indicated by the multiple appearances and
+     disappearances of the black outline within a few frames. . . . . . . . . 48
+
+4-1 Same simulation from Figure 3-8 with jittering prevention implemented;
+     the ego car brakes only once and allows the distance to the lead car to
+     widen, instead of following close behind and jittering. . . . . . . . . . 57
+
+5-1 Composite of screenshots taken during lane changing: when the user
+     presses ‘4’ on the keyboard, the car, originally in the first (top in figure)
+     lane, performs a smooth lane change to the fourth (bottom in figure)
+     lane. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 59
+5-2 The classes that together define and enable the simulator to model
+     lane-changing on a multi-lane road. Each class is in its own file with
+     the same name followed by the ‘.pde’ extension. . . . . . . . . . . . . 59
+5-3 Composite of screenshots taken during lane changing with the same
+     PID values as in Figure 5-1 but with an ego car velocity of 5 𝑚/𝑠, to
+     demonstrate unsteady swerving behavior. . . . . . . . . . . . . . . . . 62
+5-4 The closest model the simulator can currently achieve of a road with
+     bidirectional traffic: traffic moves from left to right in the top two lanes,
+     and from right to left in the bottom two lanes. (Note that velocity and
+     acceleration information for the bottom two cars are displayed upside
+     down; this issue does not feature when we model the ‘single lane, two
+     cars’ scenario but should also be addressed in future if modeling other
+     scenarios in which it becomes a problem.) . . . . . . . . . . . . . . . 63
+
+
+
+
+
+    7
+
+5-5 A section of an example output that is written to file when we record
+     a trajectory in the simulator. Every line captures the car’s (i) velocity
+     and (ii) steering command at that frame of the animation. . . . . . . 64
+5-6 Composite of screenshots showing a lead car (in red) that is initialized
+     5 𝑚 ahead of the ego car (in green) and replays a trajectory in which
+     it changes to the bottom lane and then changes back to the top lane.
+     This results in a collision with the ego car when it swerves into the ego
+     car’s path during this lane changing. . . . . . . . . . . . . . . . . . . 66
+5-7 Simulating a collision at a T-junction. . . . . . . . . . . . . . . . . . . 68
+5-8 Intersection example created in the simulator that resembles an en-
+     trance ramp to a highway. . . . . . . . . . . . . . . . . . . . . . . . . 69
+5-9 Another intersection example, which showcases the versatility of the
+     simulator in creating roads of any orientation and length. . . . . . . . 70
+5-10 A simulation of a “pedestrian”, modeled by the red car beside the green
+     ego car, crossing the road at an intersection. The black outlines around
+     the other cars indicate that they are stationary (acceleration ≤ 0).
+     For simplicity we have turned off visual feedback on the velocity and
+     acceleration of the cars and safe separation distance around the ego car. 71
+
+
+
+
+
+
+
+
+
+
+    8
+
+    List of Tables
+
+
+
+2.1 Variables in the derivation of safe separation distance . . . . . . . . . 14
+2.2 Variables in the counterexample that disproves using the difference in
+     stopping distances as the minimum separation distance . . . . . . . . 16
+
+3.1 Command line arguments to define a road . . . . . . . . . . . . . . . 34
+3.2 Command line arguments to define a car . . . . . . . . . . . . . . . . 34
+
+
+
+
+
+
+
+
+
+
+    9
+
+    Chapter 1
+
+    Introduction
+
+
+1.1 Motivation
+
+There have been multiple high-profile accidents in recent years involving self-driving
+cars, including a few that have resulted in fatalities. While most of these fatalities
+were the drivers of these cars, the first pedestrian fatality has already occurred in
+2018 [1], providing a stark reminder that the safety of self-driving cars is an issue
+that affects all groups of road users. At the same time, given the potential of self-
+driving cars to drive more safely than human drivers and reduce accident rates [2],
+it would be unfortunate if negative public perception and unaddressed safety issues
+prevent the realization of this potential. Multiple challenges currently stand in the
+way: self-driving cars are very complex systems prone to failure in various aspects,
+and lack the human intuition and contextual understanding required in many road
+scenarios. A major challenge is to ensure safety without being too conservative.
+   In terms of verifying safety, a statistical data-driven method is too expensive,
+requiring an infeasible thirty billion miles to be driven in order to prove that self-
+driving cars are three orders of magnitude safer than human drivers [3]. A critical
+metric for evaluating safety is the number of fatalities per 100,000,000 (100 million)
+miles driven. In 2016, this figure was 1.18 fatalities for 100 million miles driven by
+human drivers [4]. Self-driving cars have yet to drive enough distance to provide a
+convincing data point for this metric: as of February 2018, industry leader Waymo
+
+        10
+
+has covered 5 million miles with its autonomous vehicles, and this was with a human
+driver on board to monitor and override the vehicle’s autonomous mode to improve
+safety [5].
+
+
+1.2 The Broader Context
+
+This thesis is part of a larger project to design a new architecture for self-driving
+cars. It began with what we termed a safety Interlock, which was envisioned as a
+small module of code separate from most other system components (e.g. GPS and
+vision) and hence less affected by failures in these other aspects. The Interlock should
+interact cohesively with the existing controller, and be able to veto instructions sent
+to the actuators or send its own instructions, in order to keep the car safe in a variety
+of road scenarios.
+   As a small, modular piece of code, the Interlock can be independently verified
+to maintain safety in different scenarios. This avoids the issue present in the sta-
+tistical data-driven approach that requires driving on the order of billions of miles
+to convincingly evaluate the safety of a self-driving car system. Formal methods—
+techniques and tools based in mathematics—can be used to specify and verify such
+an Interlock system [6]; they involve a process of formulating specifications and then
+verifying that these specifications are fulfilled by a proposed design. One class of
+computational tools used in formal methods are satisfiability modulo theories (SMT)
+solvers [7], and two such SMT solvers—Microsoft’s Z3 Theorem Prover [8] and the
+open-source dReal [9]—were used in this project.
+   Finally, the team decided that simulation programs and physical demonstrations
+would prove helpful in the safety argument. For the latter, the team is programming
+RC cars with the Interlock algorithm. This thesis presents a simulation program
+developed for this purpose, and also serves to consolidate important discussions and
+core findings in the early stages of the project, notably the ‘single lane, two cars’ road
+scenario elaborated on in the next section.
+
+
+
+    11
+
+1.3 Contributions
+
+   ∙ Formal verification of a safe separation distance in the ‘single lane, two cars’
+      scenario. This is the case in which the self-driving car is driving behind another
+      car that may brake at any moment. We use formal techniques to verify the
+      minimum distance the self-driving car should maintain to the car in front so
+      that it can stop in time to avoid collision should the car in front suddenly
+      decelerate.
+
+   ∙ A simulator to model a range of road scenarios. Designed to provide visual
+      feedback on the behavior of all cars at all times in the simulation of a road
+      scenario, this simulator can catch unexpected behaviors that are not evident
+      through formal verification.
+
+   ∙ Exploration of the “jittering” issue and how to resolve it. Jittering is one such
+      unexpected behavior captured by the simulator, in which the self-driving car
+      rapidly cycles between acceleration and deceleration as it repeatedly violates and
+      regains safe separation distance to the car in front. We discuss ways of solving
+      this and demonstrate a working strategy that we verified using the simulator.
+
+
+
+
+
+
+
+
+
+
+    12
+
+    Chapter 2
+
+    The Single Lane, Two Cars Scenario
+
+
+
+This section analyzes the case where the ego car is driving behind another car—
+the lead car—in a single, straight lane. In the real world, this best models suburban
+driving, such as on a one-way road or on a two-lane road with traffic going in opposite
+directions in either lane. Without the option of changing lanes, the ego car needs to
+constantly maintain a safe separation distance from the lead car to avoid collision if
+the latter suddenly stops. This section presents the derivation of this safe separation
+distance from the velocity and acceleration properties of both cars. It proposes that
+the Interlock intervene when the distance between both cars is less than the safe
+separation distance, and provides a formal verification that this strategy indeed keeps
+the ego car safe.
+   A complication is that the Interlock runs periodically and so is limited by its cycle
+time in how frequently it can check whether the safe separation distance has been
+violated. Furthermore, the sensors from which the Interlock obtains environmental
+information—including the distance to the lead car—and the actuators that actually
+turn the instructions from the Interlock into physical actions of the ego car have their
+own delays as well. This means that in a particular cycle, the Interlock might be
+using stale sensor data to determine the car’s next course of action; then when it
+decides this next action, it has to account for the delay in propagating instructions to
+the actuators and in the actuators manifesting these instructions. These delays and
+cycle times are addressed in Section 2.5.
+
+        13
+
+    D v, A    — vA’
+        2
+
+
+
+
+    -
+    direction of traffic
+
+
+
+                Figure 2-1: Bird’s-eye view of the ‘single lane, two cars’ scenario.
+
+                Table 2.1: Variables in the derivation of safe separation distance
+
+        𝑥     distance between ego car and lead car, measured from the centers of each car
+        𝑣     velocity of ego car
+        𝑣′    velocity of lead car
+        𝐴     maximum acceleration of ego car
+        𝐴′    maximum acceleration of lead car
+        𝐷     maximum deceleration of ego car
+    |   𝐷′    maximum deceleration of lead car
+    |   𝑇𝑖  | Interlock cycle time (duration of one period)
+        𝑇𝑎   actuator delay
+        𝑇𝑠   sensor delay
+        𝑒     𝑇𝑖 + 𝑇𝑎 + 𝑇𝑠; represents the upper bound on the total time from one sensor
+               reading to the actuation of the next Interlock cycle
+
+
+2.1 Defining the Scenario
+
+Figure 2-1 depicts the scenario of a single lane of traffic moving from left to right,
+with the ego car (in green) driving behind the lead car (in red). Each car’s velocity
+and acceleration properties are labeled in the figure, with a legend in Table 2.1. The
+acceleration and deceleration variables 𝐴, 𝐴′, 𝐷, and 𝐷′ are defined such that they
+are always positive—𝐴 and 𝐴′ always point in the cars’ forward direction (to the right
+in Figure 2-1) and 𝐷 and 𝐷′ always point in the cars’ reverse direction (to the left in
+the figure). Alternatively, they can be thought of as the magnitude of the acceleration
+
+        14
+
+    or deceleration, with the direction indicated by the arrows in Figure 2-1. Sections 2.4
+    and 2.5 refer extensively to Figure 2-1 and Table 2.1.
+
+
+    2.2  Establishing Stopping Distance
+
+    The kinematics equations that inform the derivation in this and the next sections are
+
+                           𝑢   =  𝑢 + 𝑎𝑡                                        (2.1)
+                                    0
+                          ∆𝑑   =  ( 𝑢 + 𝑢⁰ )𝑡                                   (2.2)
+                          ∆𝑑   =  𝑢 2  1
+                                    0𝑡 + 2 𝑎𝑡²                                   (2.3)
+                                    2
+                          𝑢²   =  𝑢  + 2𝑎∆𝑑                                     (2.4)
+                                    0
+
+    where
+
+        𝑢   =  current velocity
+
+       𝑢₀   =  initial velocity
+
+        𝑎   =  acceleration
+
+        𝑡   =  time elapsed between current and initial states
+
+       ∆𝑑   =  change in displacement
+
+   Using Equation 2.4, the ego car, traveling at velocity 𝑣 and applying maximum
+deceleration 𝐷, can stop in distance 2𝐷𝑣2 . Note that this does not account for the
+Interlock cycle time or actuator and sensor delays; it is simply the displacement of
+the ego car as it goes from a velocity of 𝑣 to a complete standstill, measured from the
+moment the brakes are applied to give maximum deceleration 𝐷.
+
+
+
+
+
+
+
+
+
+
+                                  15
+
+2.3 Initial Hypothesis: Minimum Separation Dis-
+        tance is Difference in Stopping Distances
+
+To begin, we omit any delay time (from the Interlock cycle or from the actuators
+or sensors) to simplify the discussion, and also treat both cars as points. From the
+previous section, we can assert that the lead car will stop in distance 𝑣′2 if it applies
+        2𝐷′
+maximum deceleration. Similarly, if the ego car has already determined that it is too
+close and is decelerating maximally, then it will stop after travelling 2𝐷𝑣² .
+   In the worst case scenario, in which both cars end up as close as they can be
+without collision, the points representing both cars will be at the same position when
+both cars have fully stopped. This means that when both cars began decelerating
+(recall our assumption that the ego car is immediately aware of when the lead car
+starts to decelerate, and is itself able to start decelerating at the same moment), the
+ego car was exactly 2𝐷𝑣2 − 𝑣′2 behind the lead car. Does this give us the minimum
+        2𝐷′
+separation distance?
+   We can use SMT solvers to find counterarguments; two such solvers used in this
+project are (1) dReal, an open-source SMT solver that is fully automated and sound
+proof [8], and (2) Z3 Theorem Prover by Microsoft [9]. We want to check our hypoth-
+esis that keeping a minimum separation distance 𝑥 of 2𝐷𝑣2 − 𝑣′2 , i.e. maintaining the
+        2𝐷′
+condition that 𝑥 − 2𝐷𝑣² + 𝑣′2 ≥ 0 prevents the ego car from colliding with the lead car
+        2𝐷′
+for all possible velocity and acceleration properties of both cars. Here, Z3 produced
+the following counterargument:
+
+    Table 2.2: Variables in the counterexample that disproves using the difference in
+    stopping distances as the minimum separation distance
+
+               𝐷    9
+               𝐷′   1.5
+               𝑡    1
+               𝑥₀   271
+               𝑣₀   64
+                     10
+               𝑣′   2
+                   0
+
+
+
+               16
+
+   We can plug in these values to see what’s going on: given an initial separation
+distance 𝑥₀ = 271 𝑚, if the ego car has a velocity 𝑣 = 10 𝑚/𝑠 and decelerates
+        64 0
+with maximum deceleration 𝐷 = 9 𝑚/𝑠², then after 1 second has elapsed, the ego
+car would have moved forward by 𝑣₀𝑡 − 𝐷𝑡2 9 1
+        2 = (10 · 1 − · 2 ) 𝑚 = 5.5 𝑚 (using
+        2
+Equation 2.3). Similarly, in this time the lead car would have moved forward by
+𝑣₀′ 𝑡 − 𝐷₂′𝑡² = (2 · 1 − 1.5·1₂ 2 ) 𝑚 = 1.25 𝑚. The new separation distance after 1 second has
+elapsed is ( 271 − 5.5 + 1.25) 𝑚 = − 1 𝑚. The negative sign indicates that the ego car
+        64 64
+has overtaken the lead car at this point, before either car has stopped, and we realize
+that using the difference in stopping distances as the minimum separation distance
+does not necessarily prevent a crash. Given appropriate velocity and acceleration
+properties, the ego car can still overtake the lead car at some point while both cars
+are slowing down, even if the ego car would end up stopping first.
+   So we proceed to consider all possible combinations of velocities and accelera-
+tion properties in the ego and lead cars to derive a more sound (and actually safe)
+separation distance.
+
+
+2.4 Deriving Conditions for Emergency Separation
+
+As before, we begin by (i) omitting consideration of the Interlock cycle time and
+actuator and sensor delays, and (ii) modeling both cars as points to simplify the
+problem.
+   Define an emergency separation, ES, as the condition that if the ego car applies
+maximum deceleration 𝐷, it can avoid collision with the lead car. Avoiding collision
+necessitates that 𝑥 ≥ 0 at all times; assuming 𝑇 = 0 is the time the ego car begins
+decelerating at 𝐷, we want to prove that if ES(T=0) holds, then for any 𝑡 > 0,
+ES(T=t) holds. We do so by considering four possible combinations of velocities
+and accelerations in ego and lead cars, and show that the required initial conditions
+for ES are as follows:
+
+
+
+
+
+    17
+
+     ∙ ego car has stronger deceleration (𝐷 > 𝐷′)
+
+           – ego car has lower velocity (𝑣 ≤ 𝑣′): 𝑥 ≥ 0
+
+           – ego car has higher velocity (𝑣 > 𝑣′): 𝑥 ≥ (𝑣−𝑣′)2
+                                                          2(𝐷−𝐷′)
+
+     ∙ ego car has weaker deceleration (𝐷 ≤ 𝐷′)
+
+        – ego car has higher velocity (𝑣 ≥ 𝑣′): 𝑥 + 𝑣′2 − 𝑣² ≥ 0
+        2𝐷′ 2𝐷
+        – ego car has lower velocity (𝑣 < 𝑣′): 𝑥 ≥ 0 and 𝑥 + 𝑣′2 − 𝑣² ≥ 0
+        2𝐷′ 2𝐷
+
+     The proof for each case is presented in the following sub-sections. In all four
+    cases, the “worst” possible lead car—the one which gives the ego car the shortest
+    distance to stop—applies maximum deceleration 𝐷′. Any lead car that applies less
+    than maximum deceleration will stay ahead of the “worst” possible lead car at all
+    times.  This means that if we prove that ES(T=t) holds for the “worst” lead car,
+    then ES(T=t) holds for any lead car that suddenly decelerates.
+
+    2.4.1                       Case: Ego Car Has Stronger Deceleration, Lower Speed
+
+Using the variables in Table 2.2, this is the case where 𝐷 > 𝐷′, 𝑣 ≤ 𝑣′. Given
+ES(T=0), if the ego car is able to slow down more quickly than the lead car and
+was moving at most as fast as the lead car at 𝑇 = 0, then 𝑣 ≤ 𝑣′ is guaranteed for all
+𝑡 > 0, and 𝑥 can only increase. So the only condition for ES(T=t) to hold is that
+the ego car must have a non-negative separation distance from the lead car to begin
+with, i.e. 𝑥 ≥ 0 at 𝑇 = 0.
+
+
+
+
+
+
+
+
+
+
+           18
+
+ 2.4.2                                        Case: Ego Car Has Stronger Deceleration, Higher Speed
+
+ Here, 𝐷 > 𝐷′, 𝑣 > 𝑣′. There must be a point in time, 𝑇 = 𝑡𝑒, at which 𝑣(𝑡𝑒) = 𝑣′(𝑡𝑒).
+ Using Equation 2.1, we derive 𝑡𝑒 as follows:
+
+                          𝑣(𝑡𝑒)  =  𝑣(0) − 𝐷𝑡𝑒
+
+                         𝑣′(𝑡𝑒)  =  𝑣′(0) − 𝐷′𝑡𝑒
+
+ Rearranging,      𝑣(0) − 𝑣′(0)   =  (𝐷 − 𝐷′)𝑡𝑒
+                             𝑡𝑒   =  𝑣(0) − 𝑣′(0)
+                                           𝐷 − 𝐷′
+                                    =  𝑣 − 𝑣′     [simplifying the 𝑣 terms]
+                                       𝐷 − 𝐷′
+
+ We examine 𝑥 at three points/intervals in time:
+
+ 1. 𝑇 = 𝑡𝑒.
+
+     𝑥(𝑡𝑒) = 𝑥(0) + displacement of lead car − displacement of ego car
+
+              =  𝑥(0) + (𝑣′𝑡𝑒 − 1 𝐷′𝑡²) + (−𝑣𝑡 + 1 𝐷𝑡²  Equation
+              =  𝑥(0) + 𝑡𝑒[(𝑣′ −2𝑣) −𝑒𝑡𝑒 (𝐷′ − 𝐷𝑒 )] 2 𝑒) [using  2.3]
+                                       2       [rearranging terms]
+     ≥ (𝑣 − 𝑣′)² + 𝑡 [(𝑣′ − 𝑣) − 𝑡𝑒 (𝐷′ − 𝐷)] [applying def. of ES]
+                 2(𝐷 − 𝐷′)   𝑒              2
+     = (𝑣 − 𝑣′)² + [ 𝑣 − 𝑣′ ][(𝑣′ − 𝑣) − 1 (𝑣′ − 𝑣)] [substituting 𝑡 ]
+                 2(𝐷 − 𝐷′)      𝐷 − 𝐷′        2        𝑒
+                                           2
+                 (𝑣 − 𝑣′)²   (𝑣 − 𝑣′)
+              =  2(𝐷 − 𝐷′) − 2(𝐷 − 𝐷′)
+              =  0
+
+   Here we see that the initial condition 𝑥(0) ≥ (𝑣−𝑣′)2 is necessary for ensuring
+     2(𝐷−𝐷′)
+   that at the moment both cars have the same velocity, the separation distance
+   between them is at least 0.
+
+2. 0 ≤ 𝑇 ≤ 𝑡𝑒. 𝑣(𝑡) ≥ 𝑣′(𝑡) for this entire time interval, so 𝑥 is decreasing from
+   some initial separation distance 𝑥(𝑇 = 0) to 𝑥(𝑇 = 𝑡𝑒), which we just showed
+   to be non-negative. Thus 𝑥(𝑇 ) ≥ 𝑥(𝑡𝑒) ≥ 0 for 0 ≤ 𝑇 ≤ 𝑡𝑒, and there is no
+
+                                           19
+
+           collision before 𝑇 = 𝑡𝑒.
+
+   3. 𝑇 >= 𝑡𝑒. At time 𝑡𝑒 (and after), we are in an initial condition that satisfies
+      the case in Section 2.4.2, and we have shown there that the only condition for
+      ES(T=t) to hold is 𝑥 ≥ 0 at 𝑇 = 0.
+
+    2.4.3  Case: Ego Car Has Weaker Deceleration
+
+         Proving the following lemma will be useful for both the case where the ego car has a
+    lower speed than the lead car, and vice versa.
+
+             Lemma 2.4.1 When both the lead car and the ego car applies maximum deceleration,
+    𝑑𝑡𝑑 (𝑥 + 𝑣′2 − 𝑣² ) = 0 until one of the cars stops.
+                2𝐷′  2𝐷
+
+The proof is as follows: The “worst” possible lead car has 𝑑𝑣′ = −𝐷′. Then, since
+        𝑑𝑡
+the discussion of ES entails the ego car applying maximum deceleration, 𝑑𝑣 = −𝐷.
+        𝑑𝑡
+Finally, assuming 𝑣, 𝑣′ ≥ 0, then 𝑑𝑥 = 𝑣′ − 𝑣. Putting all these terms together, we
+        𝑑𝑡
+can rewrite
+
+               𝑑 (𝑥 +         𝑣′2   − 𝑣² ) =  (𝑣′ − 𝑣) + (𝑣′ 𝑑𝑣′ 1 ) + (−𝑣 𝑑𝑣 1 )
+               𝑑𝑡          2𝐷′     2𝐷             𝑑𝑡     𝐷′        𝑑𝑡 𝐷
+                                               =  𝑣′ − 𝑣 − 𝑣′ + 𝑣 = 0
+
+    This means that the term 𝑥 + 𝑣′2 − 𝑣²      remains constant (until one of the cars stops),
+                                    2𝐷′     2𝐷
+        and we can apply this to the prove the initial conditions for the following two cases
+    in this category:
+
+   ∙ Ego Car Has Higher Speed. If initially 𝑣 ≥ 𝑣′, then the ego car, having
+      a weaker deceleration, will always have a higher speed. This persists until the
+      lead car stops and 𝑣′ reaches 0. In this time, for the same reasons (𝑣 ≥ 𝑣′ and
+      𝐷 ≤ 𝐷′), 𝑣′2 − 𝑣² ≤ 0. Now if 𝑥 + 𝑣′2 − 𝑣² ≥ 0 initially, and remains constant
+                         2𝐷′   2𝐷               2𝐷′      2𝐷
+      per Lemma 2.4.1, then 𝑥 ≥ 0 must remain true. Once the lead car stops, this
+      equation becomes 𝑥 − 2𝐷𝑣² ≥ 0, which implies a separation distance of 2𝐷𝑣2 —this
+      is exactly the stopping distance of the ego car, so ES is fulfilled.
+
+                                                  20
+
+                                    ∙ Ego Car Has Lower Speed. If initially 𝑣 < 𝑣′, but the ego car decelerates
+                            more slowly, then 𝑥 will increase until either the ego car stops (𝑣 = 0) or the two
+                                cars have the same velocity. In the former scenario, we also need the condition
+                               that 𝑥 ≥ 0 at the start to claim that the ego car stops safely (since up to that
+                                point 𝑥 only increases. The latter scenario corresponds to the previous case of
+                               the ego car having a higher speed, in which we proved that ES is fulfilled given
+        the initial condition 𝑥 +             𝑣′2     − 𝑣² ≥       0.
+                                               2𝐷′       2𝐷
+
+2.4.4       Recap
+
+                          We end this section with a summary of the conditions for ES, presented in Figure 2-2.
+
+                        D>D’                                     D<D’
+        (ego car has stronger deceleration)                      (ego car has weaker deceleration)
+                     [ical |                                     |                   need 37 — 3% > 0
+   need x2 0      need v2                                                            alsoneed x20
+   both cars                                         i
+            moving,        both care                         both cars moving,         both cars              i
+        vo                       14                  |            narrowing             moving,
+         widening gap, |                                 ||  we have0 showngap;           v<v’          — 35201
+                                                                 that                widening gap,   constant :
+   thus     collision      that                      14             acall      thus
+        no             xz0at                         H           times               no collision             i
+
+                                                                                       we can show that any
+                                                                                        initial condition
+                                                                                      satisfying x = 0 that
+                                                                                      takes this transition
+                                                                                     also initially satisfies
+        ego car stopped,                                       lead car stopped      ego car
+              safe                                           we have proven that        stopped,
+                                                             the ego car can stop        harmless to have
+                                                              before hitting ic          imposed the condition
+
+Figure 2-2:                          Flowchart illustrating different required initial conditions for different
+combinations of velocity and acceleration properties of ego and lead cars.                                Boxed
+                            components represent states of the scenario, and arrows indicate transition between
+states.
+
+                               An perhaps more intuitive way to think about these four cases is to think of the
+                         separation distance 𝑥 as a function 𝑥(𝑡). It is quadratic until one of the cars stops.
+If                              𝐷 > 𝐷′ (ego car has stronger deceleration), then either the separation distance
+                     decreases and then transitions to increasing (if 𝑣 > 𝑣′) or it only increases (if 𝑣 ≤ 𝑣′).
+
+                                                              21
+
+So 𝑥(𝑡) is concave up, and we either check the minimum is ≥ 0, or if we are past
+the minimum, check that the current value of 𝑥(𝑡) ≥ 0. If 𝐷 ≤ 𝐷′ (ego car has
+weaker deceleration), 𝑥(𝑡) is either only decreasing (if 𝑣 ≥ 𝑣′) or is increasing initially
+before hitting an inflection point and subsequently decreasing (if 𝑣 < 𝑣′). So 𝑥(𝑡) is
+concave down and we have to check both endpoints: (i) the first corresponds to the
+current separation distance, which we have to check is ≥ 0 and (ii) the second is the
+separation distance when the lead car stops, which also corresponds to the stopping
+distance the ego car will need.
+   To round off this section, we present the following theorem and corollary:
+
+Theorem 2.4.2 Assuming ES holds at time 0 and the ego car applies maximum
+deceleration from time 0 to 𝑡, then ES holds at time 𝑡.
+
+   This follows from the definition of ES which entails that the ego car can avoid
+collision if it applies maximum deceleration.
+
+Corollary 2.4.2.1 The ego car avoids collision with the lead car between time 0 and
+𝑡, because all cases of ES imply that 𝑥 ≥ 0.
+
+
+2.5 Deriving Conditions for Safe Separation
+
+We now account for the Interlock cycle time and actuator and sensor delays. Define
+a new kind of separation condition, safe separation SS, such that if this condition
+is satisfied when the Interlock starts running and the Interlock does not apply de-
+celeration, the Interlock can still react in the next cycle—i.e., the Interlock can still
+prevent a collision if it determines, in the next cycle, that the ego car needs to apply
+maximum deceleration.
+   Recalling variables 𝑇𝑖, 𝑇𝑎, 𝑇𝑠, and 𝑒 from Table 2.2, we define SS for a certain
+separation distance 𝑥, ego car velocity 𝑣, and lead car velocity 𝑣′ to be equivalent to
+the emergency separation ES for those same variables augmented to account for the
+
+
+
+
+    22
+
+delay and cycle times:
+
+        SS(𝑥, 𝑣, 𝑣′) = ES(𝑥 − 𝑣𝑒 − 𝐴𝑒² , 𝑣 + 𝐴𝑒, 𝑣′ − 𝐷′𝑒)
+        2
+
+Lemma 2.5.1 If SS(𝑥, 𝑣, 𝑣′), then for all 𝑡 ≤ 𝑒, ES(𝑥(𝑡), 𝑣(𝑡), 𝑣′(𝑡)) holds.
+
+   We prove this lemma by asserting that 𝑥(𝑡) ≥ 𝑥(0) − 𝑣𝑒 − 𝐴𝑒₂ 2 + 𝑣′𝑒 − 𝐷₂′𝑒² . This
+is true because in duration 𝑒, the largest distance that the ego car could have moved
+forward is 𝑣𝑒 + 𝐴𝑒₂ 2 (using Equation 2.3). Similarly, the smallest distance the “worst”
+case lead car (recall from Section 2.4 that this is the lead car that applies maximum
+deceleration) could have moved forward is 𝑣′𝑒 − 𝐷₂′𝑒² . So if the Interlock thinks that
+the separation distance at time 0 is 𝑥(0), then accounting for the maximum total
+time delay 𝑒, the actual separation distance may differ from 𝑥(0) by the amounts
+that both cars have moved by, and may be as small as 𝑥(0) − 𝑣𝑒 − 𝐴𝑒₂ 2 + 𝑣′𝑒 − 𝐷₂′𝑒² .
+(We care about how much smaller the actual separation distance may be than the
+separation distance known to the Interlock, because a smaller separation distance
+poses the threat of collision.) The actual separation distance is guaranteed to be at
+least that amount; furthermore, this holds true for all 𝑡 ≤ 𝑒, since 𝑒 represents the
+upper bound on the total time from one sensor reading to the actuation of the next
+Interlock cycle.
+   We also assert that 𝑣(𝑡) ≤ 𝑣+𝐴𝑒. This is because in the “worst” case—in which the
+actual separation distance differs maximally from (and is smaller than) the separation
+distance that the Interlock is aware of for the current timestep given the latest sensor
+readings—the ego car has applied maximum acceleration 𝐴 during the maximum
+duration of delay 𝑒. Then the actual velocity of the ego car at any timestep 𝑡 ≤ 𝑒,
+𝑣(𝑡), can be at most this increase in velocity (𝐴𝑒) added to the velocity that the
+Interlock is aware of from the most recent update from the system (𝑣).
+   Similarly, 𝑣′(𝑡) ≥ 𝑣′ − 𝐷′𝑒. Recall that the “worst” case lead car decelerates
+maximally (at 𝐷′). Then in the duration 𝑒, the lead car velocity would have reduced
+by at most 𝐷′𝑒. So if the Interlock’s last known reading of the lead car velocity is 𝑣′,
+then the actual lead car velocity at all timesteps 𝑡 ≤ 𝑒, 𝑣′(𝑡), is at least 𝑣′ − 𝐷′𝑒.
+
+        23
+
+    Finally, having made these assertions, consider two sets of {separation distance,
+ego car velocity, lead car velocity} readings: if ES(𝑥₁, 𝑣₁, 𝑣₁′ ) holds, then given another
+set (𝑥₂, 𝑣₂, 𝑣₂′ ) such that 𝑥₁ ≤ 𝑥₂, 𝑣₁ ≥ 𝑣₂, 𝑣′ ≤ 𝑣′ , we can see that ES(𝑥 , 𝑣 , 𝑣′ ) will
+        1 2 2 2 2
+also hold. The proof lies in the cases of ES, discussed in the previous section, but
+an intuitive proof is that if an ego car that is going at 𝑣₁ a distance of 𝑥₁ behind a
+lead car going at 𝑣₁′ is able to stop in time, then an ego car going at a slower velocity
+𝑣₂, with a larger distance 𝑥₂ from the lead car—which is also going faster at 𝑣₂′ —
+would definitely be able to stop without collision by applying the same maximum
+deceleration.
+
+
+2.6 Interlock Algorithm for Safe Separation
+
+Now we present an algorithm for the ego car to maintain safe separation SS when
+driving behind a lead car in a single, straight lane. For a given Interlock cycle which
+affects its own actuation point until the actuation point of the next Interlock cycle:
+
+   ∙ If SS is satisfied based on the currently available sensor readings, do not inter-
+      vene.
+
+   ∙ If SS is not satisfied, apply maximum deceleration 𝐷.
+
+   We make the claim that if ES is satisfied at one actuation point, then it is satisfied
+continuously until the next actuation point, and prove it so:
+
+   ∙ If the Interlock cycle corresponding to this actuation point decided to intervene,
+      then we have maximum deceleration 𝐷 until the next actuation point. By
+      Theorem 2.4.2, ES holds continuously until the next actuation point.
+
+   ∙ If the Interlock cycle corresponding to this actuation point decided not to inter-
+      vene, then SS holds at the time of sensor reading, so by Lemma 2.5.1, ES holds
+      continuously until the next actuation point, which occurs at time ≤ 𝑒 after the
+      sensor reading.
+
+
+
+    24
+
+Corollary 2.6.0.1 If ES is satisfied at the first actuation point of the Interlock cycle,
+then ES holds all the time (and there is no collision after the first actuation point).
+
+   As a final step to round off this chapter, we account for our initial treatment of
+both cars as points; it is trivial to factor in the car lengths, and we simply add half
+the length of the ego car and half the length of the lead car to the necessary safe
+separation distances calculated in the above sections.
+
+
+
+
+
+
+
+
+
+
+    25
+
+    Chapter 3
+
+    The Simulator
+
+
+
+In the previous chapter we established conditions for a safe separation distance that
+an ego car driving on a single, straight lane needs to maintain from a lead car driving
+ahead, in order to avoid collision should the latter decelerate to a stop. In each cycle,
+the Interlock checks if the safe separation distance to the lead car is violated based
+on the currently available sensor readings, and applies maximum deceleration in the
+ego car if this distance is violated.
+   We have developed a simulator to visualize a self-driving car acting under the con-
+trol of the Interlock for the ‘single lane, two cars’ scenario described in the previous
+chapter. This provides a form of visual confirmation, in addition to the formal verifi-
+cation presented in the previous chapter, that the Interlock will keep the car safe in
+that scenario. Furthermore, the simulator allows us to catch any unexpected behavior
+that might not be evident from formal verification and verification with SMT solvers
+like dReal. The usefulness of this will become apparent at the end of this chapter.
+   Because this simulator began with the goal of helping the team towards a verified
+implementation of an Interlock for different road scenarios, it was designed to include
+the versatility to represent a variety of road scenarios, such as roads with multiple
+lanes of traffic, obscured intersections, and the inclusion of pedestrians. The potential
+of the simulator to verify the Interlock in all these different scenarios is explored in
+Chapter 5.
+
+
+
+    26
+
+3.1 Development Environment
+
+The simulator was built in Processing and Processing.js. Processing is a Java-based
+programming language designed for coding visual applications such as digital artwork,
+interactive animations, and data visualizations, making it well-suited for creating an
+interactive simulator [10]. Processing.js allows code written in Processing to run in
+HTML5-compatible browsers, which enables the simulator to work as a web page in
+most browsers without requiring additional plug-ins or software to be downloaded
+[11].
+   Most of the development work presented here was done in macOS version 10.13.6,
+on a mid-2014 MacBook Pro.
+
+
+3.2 A Quick Demo
+
+The simulator is launched via command line arguments in the terminal; an expla-
+nation of this is given in Subsection 3.2.2. The simulation opens in a new window.
+Figure 3-1 shows what the user sees in the new window (after a few seconds have
+passed, to account for the time to take the screenshot) when the following command
+is entered in the terminal:
+
+
+p r o c e s s i n g −j a v a −−s k e t c h =‘/ U s e r s / a n g e l a l e o n g /Documents/
+   I n t e r l o c k / i n t e r l o c k _ s i m u l a t o r _ p j s / car_sim ’ −−run −r 1 1 −90
+    0 90 0 5 ego 0 10 20 0 s1 0 50 10 0
+
+
+3.2.1 Visual Interface
+
+The simulator presents a bird’s-eye view of a 2D world, and supports adding multiple
+cars at different starting positions and velocities. Roads can be created with a user-
+specified number of lanes, lane width, and orientation. Cars on these roads behave
+like they are traveling on rails, following the trajectory of the road.
+
+
+    27
+
+C7
+
+
+
+
+
+
+
+    0
+
+
+    NC mr
+
+
+
+
+
+
+
+Figure 3-1: Visual interface of simulator modeling the ‘single lane, two cars’ scenario.
+
+   Figure 3-1 illustrates the following user interface/user experience (UI/UX) fea-
+tures:
+
+   ∙ visual feedback to the user about both cars’ velocity and acceleration properties,
+      in boxes that move with each car. Note: the ego car is green and the lead car
+      is red.
+
+   ∙ visual feedback to the user about the safe separation distance given the current
+      velocities of the ego and lead cars, represented by the black circle around the
+      ego car. The user will see the ego car respond the moment the lead car starts
+      to come within this black circle.
+
+   ∙ visual feedback to the user about the ego car’s LiDAR range, represented by
+      the gray circle. This will be discussed further in Subsection 3.3.5.
+
+   ∙ a button in the lower-right corner for pausing/resuming the animation. By
+      default, the animation immediately begins running upon being launched, so
+      clicking the button shown in the figure would pause the animation. We show
+
+        28
+
+ee
+ee
+
+
+
+
+
+
+
+
+
+
+    0
+
+
+
+
+
+
+
+        Figure 3-2: A paused view of the same simulation from Figure 3-1.
+
+      in Figure 3-2 the animation paused at the moment safe separation distance is
+      violated. Notice the icon in the button has changed accordingly; further, the
+      button in both paused/unpaused states takes on the lighter color scheme shown
+      in Figure 3-2 when the mouse is hovering over it.
+
+   Figure 3-2 illustrates yet another visual feedback to the user about the state of
+the ego car: the black outline around the ego car indicates that its acceleration is
+currently ≤ 0, which in this case implies that it is currently braking (decelerating).
+This has happened because the ego car has gotten too close to the lead car; notice how
+the black circle representing the safe separation distance is in contact with the lead
+car. The Interlock algorithm described in Chapter 2 kicks in and applies maximum
+deceleration in the ego car.
+   Additionally, not evident from the figures are these ways in which the user can
+interact with the animation while it is running:
+
+   ∙ click anywhere outside of the button to restart the animation
+
+   ∙ press ‘+’/‘-’ to zoom in/out
+
+        29
+
+   ∙ press ‘l’ (as in the key for the first character of LiDAR) to toggle the gray
+      circular representation of the ego car’s LiDAR range
+
+   ∙ keyboard steering using ‘a’/‘d’ to steer left/right; the value of this becomes
+      clearer in Chapter 5
+
+   ∙ keyboard acceleration using ‘w’/‘s’ to accelerate/decelerate by a fixed value of
+      10 𝑚/𝑠²; this hard-coded value is admittedly a possible limitation
+
+   Additional UI/UX features will be introduced as the rest of this thesis dives deeper
+into the simulator.
+
+3.2.2 Launching Simulator from Command Line
+
+Since 2014, command line support has been available for Processing in Windows,
+Linux, and Mac OS X. The latest documentation for this feature [12] provides these
+instructions (copied verbatim):
+
+   ∙ On Windows and Linux, use the processing-java program that’s in the download.
+
+   ∙ On Mac OS X, there’s an option in the Tools menu to install the command line
+      tool.
+
+
+  command line tool
+program in Processing  specify path to folder containing the sketch of interest
+
+
+
+
+        :                       arguments for the first
+    arguments for  arguments for    road 1; required
+     the ego car;  the other car; optionally define more
+       required     not required roads and/or cars
+
+    Figure 3-3: Labeled structure of command line arguments to launch the simulator
+    from the terminal.
+
+        30
+
+   Figure 3-3 is a copy of the command from the beginning of this section, with each
+core component of the command broken down as follows:
+
+   ∙ processing-java is the command line tool program.
+
+   ∙ −−sketch specifies the sketch folder. It is required. Here ‘/Users/angelaleong/-
+      Documents/Interlock/interlock_simulator_pjs/car_sim’ is the complete path
+      to the folder containing all of the files that make up this sketch. Section 3.3
+      which follows this subsection explains what these “files that make up this sketch”
+      are. A user who downloads this code from its Github repository [13] should re-
+      place this portion of the command like so: ‘–sketch=<complete path to folder
+      where user has placed all files of this sketch>’.
+
+   ∙ −−run is the argument that triggers this tool to preprocess, compile, and run
+      a sketch; this is required and must be the final parameter passed to Processing.
+
+Arguments passed after −−run are passed through to the sketch itself, and available
+to the sketch via the ’args’ field. The main method in the entry point of the sketch
+is designed to parse these subsequent arguments to create roads and cars with highly
+customizable configurations and initial conditions:
+
+   ∙ -r1 2 -90 0 90 0 5 represents the first road. Going through the list of arguments
+      one by one,
+
+        1. -r1 is the name of the road and must begin with ‘-r’ to signal to the program
+        that this is a road. Because the number of parameters to define a road and a
+        car is different, it is critical that the program knows whether it is currently
+        parsing arguments for a road or a car. Conversely, there is no restriction
+        on the name that follows ‘-r’; indeed, in the current implementation of
+        the simulator, the rest of this argument is not used and can be left blank.
+        Perhaps this will come in handy if a future iteration of the simulator wants
+        to keep track of each road and display visual feedback to the user about
+        the properties of each road.
+
+
+    31
+
+  2.             1 is the number of lanes this road will have.
+
+  3.             -90 can be thought of as the x-coordinate of the start point of this road;
+                 traffic on a road is directed from its start point to its end point. The x-
+                 coordinate is 0 at the center of the window, and one can see that -90 puts
+                 us at approximately the far left of the window.
+
+  4.             0 is the y-coordinate of the start point of this road; the y-coordinate is 0
+                 at the center of the window.
+
+  5.             90 is the x-coordinate of the end point of this road.
+
+    6. 0 is the y-coordinate of the end point. The last 4 arguments (including
+    this one) enable the user to create roads of various lengths and orientations
+    on the screen by specifying the start and end coordinates. Something that
+    may be important to clarify since the roads have a width: these coordinates
+    indicate the center of the road (see Figure 3-4). For roads with an odd
+    number of lanes, this center falls in the center of the middle lane; for roads
+    with an even number of lanes the center falls exactly between the middle
+    lanes.
+
+                                                         lane indices
+                                                            lane width        start point
+                                                     end point =
+                                                     {90,-10}        3  2      0
+  lane indices        lane width =5 m
+
+ 0
+ T
+ 2start point     direction of                       direction
+
+  10                                                 of travel                end point
+  command line arguments for this road: 3    -90 10  90 -10   5  40-30  0  20  10
+
+   Figure 3-4: Two example roads created in the simulator to show how a road is specified
+         by command line arguments. Note how the direction of travel is determined by the
+      start and end points. Also note that the size of the ego car is same on both roads,
+for scale.    The lighter-colored lane indicates the current lane of the ego car; this is
+discussed in Chapter 5.
+
+
+                 32
+
+    7. 5 specifies the width of a lane; for a single-lane road, the width of the road
+       is equivalent to the width of its sole lane. Roads with multiple lanes are
+       explored in Chapter 5.
+
+∙ ego 0 10 20 0 specifies the ego car. The ego car represents the car programmed
+  with the Interlock algorithm and is the only car in the simulation that receives
+  keyboard acceleration and steering commands from the user. A few specifica-
+  tions guide the creation of the ego car: (i) There must and can only be one
+  ego car in a simulation, (ii) arguments for this car immediately follow the ar-
+  guments for the first road—which also imposes a restriction that the first road
+  to be specified must be the road on which the ego car is placed (this is not an
+  issue here since the single lane scenario only involves a single road, but will be
+  important if the user wishes to explore configurations with multiple roads), and
+  (iii) the first argument in this component must be ‘ego’ if we do not want to
+  produce an output text file capturing the acceleration and orientation of the car
+  every time 𝑑𝑟𝑎𝑤() runs—the purpose of this is to record and replay arbitrary
+  trajectories, which we present in Chapter 5, so we postpone discussion of this
+  specification until then. The subsequent arguments, in order, are:
+
+    1. 0 indicates which (zeroth-indexed) lane of the road the car should be placed
+       in when the simulation launches. Again, in the single lane scenario, this
+       argument can only be 0, but for multi-lane roads which the simulator is
+       capable of creating, the lanes are indexed incrementally starting from the
+       smallest/most-negative offset from the center of the road (this is better
+       illustrated in Figure 3-4).
+
+    2. 10 indicates the offset, in meters, of the car from the beginning of the road,
+       i.e. the perpendicular distance between the starting edge of the road and
+       the midpoint of the car.
+
+    3. 20 initializes the car with this velocity in meters per second (𝑚/𝑠). More
+       technically, this argument specifies the initial speed; the initial direction
+       of the car is determined by the direction of the road it is placed on.
+
+        33
+
+        4.  0 initializes the car with this acceleration in meters per second squared
+           (𝑚/𝑠²), which can be a negative value that would imply that the car begins
+            decelerating the moment the simulation starts. As with the velocity, this
+         specifies the magnitude of the acceleration (or deceleration). The direction
+        is determined by the direction of the road.
+
+      ∙ s1 0 50 10 0 specifies the lead car. The arguments follow a pattern identical
+       to those for the ego car; to quickly summarize, the lead car s1 is initialized
+       in the zeroth-indexed lane (of road -r1), offset by 50 𝑚 from the start of the
+       road, with an initial velocity and acceleration of 10 𝑚/𝑠 and 0 𝑚/𝑠². The only
+         restrictions on the name of the lead car (or indeed any other car added to a
+     simulation) are (i) it cannot be ‘ego’, and (ii) it cannot be named like a road,
+      i.e. beginning with ‘-r’, or the program will interpret it to be a new road and
+        crash upon encountering a different number of arguments following it.
+
+        This command accepts additional arguments and is able to parse them to create
+  multiple roads and cars. We briefly summarize the arguments for a road and a car in
+Tables 3.1 and 3.2. The discussion up to now suffices for the purposes of the ‘single
+lane, two cars’ scenario; further potential of this command is explored in Chapter 5.
+
+              Table 3.1: Command line arguments to define a road
+
+    -r1    1          -90           0             90          0              5
+  name of number x -coord. of y -coord. of x -coord. of y -coord. of lane
+    road   of lanes   start point   start point   end point   end point      width
+
+
+
+               Table 3.2: Command line arguments to define a car
+
+    ego           0               10              20         0
+    name of car   index of lane   offset from     initial    initial
+                                  start of road   velocity   acceleration
+
+
+
+
+
+                                    34
+
+3.3 Structure of Simulator Program
+
+This section dives into the files that make up this sketch. A “sketch” is what Processing
+calls a computer program, and sketches in Processing have the capability to draw
+two- and three-dimensional graphics [14]. This simulator draws and displays two-
+dimensional graphics.
+   Every sketch has its own folder, and the main file for a sketch resides in that folder
+and has the same name as the folder, with the file extension ‘.pde’ (an acronym for
+Processing Development Environment). In the demo at the beginning of this chapter,
+the sketch that constitutes this simulation program sits in the folder ‘car_sim’ and
+the main file, which is the entry point of the program, is car_sim.pde.
+   Figure 3-5 shows how the simulator program is composed of multiple files cor-
+responding to different layers with their own functions. Each of those files, with
+the exception of car_sim, is also a Java class of the same name, hence we omit the
+.pde extension in the figure. The next subsections elaborate on car_sim.pde and the
+World, Car, Lidar, and Car_Info classes; the remaining classes in the gray section
+are left to Chapter 5.
+
+
+    of program
+
+    sets up
+
+
+
+     has knowledge                  returned to and used by
+     ofall                          Interlock of ego
+    Car           activated in  ego  Lidar       scans World for any
+                                                 Car within range and obtains
+
+     is  a subclass of
+
+    RailroadCar   drives        Road acomprises     Lane     defines a      Path
+                                    group of
+
+    Figure 3-5: Structure of simulator showing the relationship between different files/
+    classes in our sketch folder.
+
+                                    35
+
+3.3.1 Entry Point of Program
+
+car_sim.pde is the main file of the simulation sketch. It renders what the user sees
+in the window using Processing’s 𝑠𝑒𝑡𝑢𝑝() API call [15]. 𝑠𝑒𝑡𝑢𝑝() is run once when the
+sketch starts and never again after its initial execution, and each sketch can have only
+one 𝑠𝑒𝑡𝑢𝑝() function. It is used to define initial environment properties such as screen
+size, and for the simulator it also sets up UI/UX components like the play/pause
+button in the lower right.
+   The simulator enables the UI/UX features described in Subsection 3.2.1 by using
+the 𝑚𝑜𝑢𝑠𝑒𝑃 𝑟𝑒𝑠𝑠𝑒𝑑(), 𝑘𝑒𝑦𝑃 𝑟𝑒𝑠𝑠𝑒𝑑() and 𝑘𝑒𝑦𝑅𝑒𝑙𝑒𝑎𝑠𝑒𝑑() API calls in Processing to
+capture user input from the mouse and keyboard.
+   It parses arguments that are passed after −−run when the simulation is launched
+from the command line (see previous section), and uses those arguments to populate
+(i) a list of Road objects with the user-defined position, length, orientation, number
+of lanes, and lane width, and (ii) a list of Car objects initialized at the user-defined
+positions on their respective roads and with user-specified initial velocities and accel-
+erations. It also creates a World object that has knowledge of all the Cars in the
+simulation and tracks their positions at every timestep. The following subsections
+further describe these objects.
+   The program achieves animation using the 𝑑𝑟𝑎𝑤() API call [16], which continu-
+ously executes the lines of code within the function to regenerate what the user sees in
+the window, at a certain frame rate (which can be specified; here we use default frame
+rate in Processing). As with 𝑠𝑒𝑡𝑢𝑝(), each sketch can only have one 𝑑𝑟𝑎𝑤() function.
+Moreover, it must exist for the code to run continuously and to process events such
+as 𝑚𝑜𝑢𝑠𝑒𝑃 𝑟𝑒𝑠𝑠𝑒𝑑() that enable the UI/UX features. The simulator is implemented
+such that every time 𝑑𝑟𝑎𝑤() runs to regenerate the window, it (i) renders the static
+UI/UX components and Roads, and (ii) redraws the moving Cars in their latest
+positions on the screen.
+
+
+
+
+
+
+    36
+
+   Two variables in this file define the animation:
+
+f l o a t seconds_per_frame = 1 / 9 0 . 0 ;
+f l o a t pixels_per_meter = 6 . 7 0 5 ;
+
+   pixels_per_meter, as its names suggests, dictates how many pixels represent a
+meter in the world of our simulation. It allows us to think in terms of meters rather
+than pixels when specifying dimensions and position for the Road and Car objects,
+without having to worry about how those figures in meters will be proportionally
+rendered onto the screen. The functionality to zoom in/out on the simulation is also
+achieved by incrementing/decrementing the value of this variable.
+   seconds_per_frame controls the ratio between the “frame rate” of the simulation
+and the frame rate of the 𝑑𝑟𝑎𝑤() function. The default of 1/90.0 means that every
+time 𝑑𝑟𝑎𝑤() runs to generate a new frame, 1/90.0 seconds has passed in the world of
+the simulation. This value is passed to the World object which then passes it to all
+the Car objects; we update the position of each Car in the next frame by computing
+its displacement from its current position in the next 1/90.0 seconds.
+
+3.3.2 The World Object
+
+A simulation has only one World object; it represents the state of the world of
+our simulation. car_sim.pde passes the list of all Cars to this object when it is
+first initialized, and the World acts as a layer in the program that (i) continuously
+tracks the position of every Car in the simulation, and (ii) moves each Car to its
+new position in the next frame if the animation is unpaused. It does the latter
+by tracking a boolean variable called halt that indicates whether the animation is
+currently paused. If so, World does not trigger any update to the positions of the
+Cars that it tracks, so a frozen view of this world is returned until the user resumes
+the animation.
+   The World object has the following two-dimensional integer array variable
+
+int [ ] [ ] occupancy_grid
+
+
+
+    37
+
+that represents the global occupancy grid. The dimensions of the 2D array correspond
+to the size of the display window measured in pixels, and a 0 in a cell indicates that
+the pixel at the same location on the screen is unoccupied. Where there is a car, the
+pixels that the car occupies correspond to 1’s in the cells representing these pixels in
+the occupancy_grid array.
+   If the animation is not paused, then World checks, for each Car, whether its
+current position has any overlap with occupied pixels in the occupancy grid—this
+constitutes a collision—and updates the position of the car in the next frame by
+adding its displacement in the next 𝑠𝑒𝑐𝑜𝑛𝑑𝑠_𝑝𝑒𝑟_𝑓 𝑟𝑎𝑚𝑒. Subsection 3.3.4 discus-
+sions collision checking in more detail.
+
+3.3.3 The Car Object
+
+The Car object is the representation of a car in the world of our simulator, and is
+the program layer that:
+
+   ∙ implements methods to initialize the position, velocity, and acceleration of the
+      car given user input passed to car_sim.pde from the command line
+
+   ∙ implements methods to allow the user to manually steer the car and acceler-
+      ate/decelerate using the keyboard while the animation is running
+
+   ∙ renders visual feedback of the data gathered by the car’s sensors, such as the
+      range of the car’s LiDAR represented as a gray circle in the demo
+
+   ∙ performs collision checking by tracking an array of PVectors (a class in Pro-
+      cessing that describes a Euclidean/geometric vector [17]) in the variable cur-
+      rent_occupancy which represents the coordinates occupied by this car, and
+      implementing a check_collision() method (see Subsection 3.3.4)
+
+   ∙ implements the Interlock algorithm that acts in the ego car to keep it safe (see
+      Section 3.4)
+
+   This Car object represents the most general type of car and implements the most
+general methods to adequately model a real car in the road scenarios we want to
+
+        38
+
+ explore. It can be sub-classed into numerous kinds of more specialized car types. In
+    fact, both cars in the demo shown at the beginning of this chapter are types of a
+ sub-class called     RailroadCar that follows a road as though the car is running on
+   rails. Chapter 5 discusses this RailroadCar object and the implementation of roads
+ in this simulator in greater detail.
+
+ 3.3.4 Collision Checking
+
+       The World and Car objects work together to check for collisions at every frame
+      using the World’s occupancy grid. Having discussed both objects, we now present
+ the algorithm for collision checking:
+
+     1. In car_sim.pde with World w , 𝑑𝑟𝑎𝑤() runs continuously and each time it runs,
+    it calls w .𝑡𝑖𝑚𝑒𝑠𝑡𝑒𝑝(𝑠𝑒𝑐𝑜𝑛𝑑𝑠_𝑝𝑒𝑟_𝑓 𝑟𝑎𝑚𝑒).
+
+2. w .𝑡𝑖𝑚𝑒𝑠𝑡𝑒𝑝(𝑑𝑡) takes in an integer argument dt and checks if halt is true. If
+   so, the animation is paused and this method returns the current w ; else, this
+   method does
+
+    for  Car     c i n L i s t <Car>  a l l C a r s I n W o r l d :
+         i f     c . c o l l i s i o n :
+             c o l l i s i o n     d e t e c t e d
+         c . t i m e s t e p ( dt )
+
+ 3.  c.collision is a boolean variable that indicates whether this Car c has collided
+    with another car. This variable is updated by the method c.check_collision(),
+    which
+
+    (a) deoccupies the previous position of c in w ’s occupancy_grid by looping
+     over the PVectors in c’s current_occupancy and decrementing the integer
+     values at those coordinates in w ’s occupancy_grid, and then
+
+     (b) loops over all coordinates of c’s new position to populate c’s current_occup
+              ancy and update w ’s occupancy_grid accordingly. During this, we detect
+
+             39
+
+        collision by checking if the integer value at any cell in w ’s occupancy_grid
+        is > 1, which indicates that another car already occupies this coordinate.
+
+   Figure 3-6 shows the visual feedback we provide to the user to indicate that a Car
+has collided.
+
+
+
+
+
+
+
+
+
+
+    Figure 3-6: A Car that has collided with another Car in the current frame is indicated
+    by a ‘X’ over it.
+
+
+
+3.3.5 Simulation of LiDAR
+
+In the ‘single lane, two cars’ scenario, a perfect LiDAR reading for the separation
+distance can simply be calculated from the difference between the positions of the
+ego and lead cars (minus half the lengths of each car), which the World object
+has knowledge of. Since the simulator began as a project to visualize different road
+scenarios, the LiDAR was designed to be more extensible and applicable to other
+scenarios as well. Thus, LiDAR is actually implemented as its own class in the
+Lidar.pde file, and the Car object has an associated Lidar object that is initialized
+to null.
+   When car_sim.pde initializes the list of all Cars in this world, it “activates” LiDAR
+in the Car representing the ego car. This is done using Car’s 𝑠𝑒𝑡_𝑙𝑖𝑑𝑎𝑟() method,
+which sets the ego Car’s Lidar object to:
+
+        40
+
+l i d a r = new L i d a r ( 5 0 , −2*PI / 3 . 0 , 2* PI / 3 . 0 , world , t h i s ) ;
+
+    The Lidar object’s constructor method takes in the following arguments:
+
+L i d a r ( f l o a t range_ , f l o a t min_angle_ , f l o a t max_angle_ , World
+     world_ , Car car_ ) {
+      [ . . . ]
+}
+
+The last two arguments associate the Lidar with these specific World and Car
+objects. The first three arguments define the range of this Lidar and are better
+illustrated in Figure 3-7.
+
+
+
+
+
+       min_angle_
+in Lidar’s constructor;
+pictured here as -21/3,
+    should be between 0 and -m
+
+radius of Lidar’s range,
+    defined by range
+ in Lidar’s constructor
+
+
+
+       max_angle_
+in Lidar’s constructor;
+ pictured here as 27/3,
+    shouldbe between 0and
+
+
+
+Figure 3-7: Range of LiDAR as defined by a range magnitude and minimum and
+maximum angles. In this case the lead (red) car is within range of the ego (green)
+car’s LiDAR. (Note that the ego car is driving from left to right.)
+
+   We want to model LiDAR realistically in our simulator, so if another car is outside
+of the range of the ego car’s LiDAR then the ego car will not be aware of it until it
+comes within range. Furthermore, if there is an obstacle in the way such that the
+
+        41
+
+LiDAR does not have an uninterrupted line of sight to the other car, the LiDAR will
+not be able to detect the car. This pseudocode shows how the Lidar class implements
+the 𝑠𝑐𝑎𝑛() method—called by the associated Car object—to support this:
+
+List<Car_Info> scan(boolean show) {
+ List<Car_Info> visible_cars <− new List
+ for Car c in this World w:
+      // first check
+      if distance from ego car to c is within Lidar range:
+      for PVector loc in c.current_occupancy:
+       boolean valid = true
+       // second check
+       if distance from ego car to loc is within Lidar range:
+        List<PVector> points <− // populate with coordinates
+            representing straight line between ego car position and loc¹
+        for PVector p in points:
+            if w.occupancy_grid[p.x_coord][p.y_coord] is occupied:
+                    valid = false
+                    break
+       else:
+        valid = false
+       if (valid):
+       // we have found an uninterrupted line from the ego car to c
+        visible_cars.add(new Car_Info(c...));
+ [...]
+ return visible_cars
+}
+
+ 1Approximated using Bresenham’s line drawing algorithm, which is used to selects points of a
+raster grid so as to closely approximate a straight line between two points [18]. Implemented in a
+separate file in the sketch folder called bresenham.pde.
+
+
+
+                    42
+
+𝑠𝑐𝑎𝑛() returns a list of Car_Info—this is the class that captures information on
+the position, orientation, and dimensions (width and length) of a car detected by
+the ego car’s LiDAR. The current implementation simply populates those fields with
+the World’s knowledge of the other car’s properties, so this essentially simulates a
+perfectly accurate LiDAR. Car_Info provides a separate layer to model that fact
+that the ego car’s Interlock only knows what its sensors know; to account for LiDAR
+inaccuracies in future, we can modify the Lidar code such that the Car_Info it
+obtains of the other car differs from the actual properties of that car.
+   The boolean argument show passed into the 𝑠𝑐𝑎𝑛() method is what enables the
+toggling of visual feedback to the user in the form of a gray circle around the car.
+Simply, if this argument is true, after 𝑠𝑐𝑎𝑛() exits the for-loop, the code (represented
+above by the ellipsis) draws the gray circle. To respond to the user pressing the ‘l’
+key, Car implements a toggle_lidar() method that responds to this keyboard event
+and toggles a boolean value that is passed to this Car’s Lidar object when the Car
+calls 𝑠𝑐𝑎𝑛().
+   A final note to round off this section: LiDAR is activated in car_sim.pde and
+only for the ego car; this suffices for the ‘single lane, two cars’ scenario that is the
+focus of this thesis. Should the team wish to explore other designs for Interlock in
+future, such as a scenario where multiple cars are running LiDAR and Interlock, the
+code that parses the command line arguments in car_sim.pde can quite readily be
+modified to take in user input to initialize LiDAR for any car in the simulation.
+
+
+3.4 Simulating and Verifying the Interlock Algorithm
+
+Recall that updates to a Car’s position (as well as velocity and acceleration) for the
+next frame of the animation are triggered by the World object calling 𝑡𝑖𝑚𝑒𝑠𝑡𝑒𝑝(
+𝑠𝑒𝑐𝑜𝑛𝑑𝑠_𝑝𝑒𝑟_𝑓 𝑟𝑎𝑚𝑒) in the Car. The Interlock algorithm for the ‘single lane, two
+cars’ scenario intervenes in this 𝑡𝑖𝑚𝑒𝑠𝑡𝑒𝑝() method to control the next acceleration
+input sent to the car if it is the ego car:
+
+
+
+    43
+
+Car timestep(float dt) {
+List<Car_Info> cars <− new List
+if lidar is not null: // this is the ego car which is running LiDAR
+cars = lidar.scan(show_lidar)
+if Interlock is running:
+acceleration = interlock(dt, original_acceleration_input, cars) // we explore
+    this method below
+else:
+acceleration = original_acceleration_input
+
+
+// update speed
+if speed + acceleration * dt > 0:
+speed += acceleration * dt
+else:
+speed = 0 // do not simulate driving in reverse
+
+
+  [...] // perform steering step
+  check_collision()
+  return this
+}
+
+ The 𝑖𝑛𝑡𝑒𝑟𝑙𝑜𝑐𝑘() method simply computes the safe separation distance at the cur-
+rent timestep using the equations verified in Chapter 2, based on:
+
+ ∙ 𝑣, the ego Car’s current velocity, which is known
+
+ ∙ 𝐷, the ego Car’s maximum deceleration, which is a fixed value that the car is
+  initialized with
+
+ ∙ 𝑣′, the lead Car’s current velocity, which the ego car obtains from its Lidar
+  readings as described in the previous section
+
+ ∙ 𝐷′, the lead Car’s maximum deceleration, which we assume is known to the
+
+      44
+
+           ego Car
+
+                       ∙ 𝑥, the current separation distance, again obtained from the ego Car’s Lidar
+           readings
+
+   As an example, we simulate the case where both ego and lead cars have the same
+maximum deceleration, i.e. 𝐷 = 𝐷′ = 𝑀 𝐴𝑋 _𝐷𝐸𝐶𝐸𝐿. To simplify the example,
+we omit consideration of sensor and actuator delays and the Interlock cycle time.
+Recall from Chapter 2 that the safe separation condition in this case is 𝑥 + 𝑣′2 −
+        2𝐷′
+    2𝐷𝑣2 = 𝑥 + 2·𝑀 𝐴𝑋𝑣′2 − 𝑣2      ≥ 0.                    (There is an additional condition
+        _𝐷𝐸𝐶𝐸𝐿 2·𝑀 𝐴𝑋_𝐷𝐸𝐶𝐸𝐿
+𝑥 ≥ 0 if 𝑣 < 𝑣′, but this is trivially satisfied; if it is not it implies that a collision
+has already occurred at this timestep). Rearranging, it means that we need 𝑥 ≥
+    2·𝑀 𝐴𝑋_𝐷𝐸𝐶𝐸𝐿𝑣2  − 2·𝑀 𝐴𝑋𝑣′2 . Since 𝑥 is measured from the centers of both cars, we
+               _𝐷𝐸𝐶𝐸𝐿
+               must also subtract half the length of the ego car and half the length of the lead car
+                 so that we’re not modeling the cars as points. Again, to keep things simple, we let
+                      the lengths of both cars be equal to some 𝐿𝐸𝑁 𝐺𝑇 𝐻. Then we obtain the minimum
+    safe separation distance to be 2·𝑀 𝐴𝑋_𝐷𝐸𝐶𝐸𝐿𝑣² − 2·𝑀 𝐴𝑋𝑣′2   + 𝐿𝐸𝑁 𝐺𝑇 𝐻 + 𝐿𝐸𝑁 𝐺𝑇 𝐻 =
+               _𝐷𝐸𝐶𝐸𝐿     2      2
+    2·𝑀 𝐴𝑋_𝐷𝐸𝐶𝐸𝐿𝑣2  − 2·𝑀 𝐴𝑋𝑣′2 + 𝐿𝐸𝑁 𝐺𝑇 𝐻.
+               _𝐷𝐸𝐶𝐸𝐿
+        The 𝑖𝑛𝑡𝑒𝑟𝑙𝑜𝑐𝑘() method takes three arguments as inputs:
+
+                   ∙ dt, a float corresponding to the duration of a time step; this is equivalent to
+                       the seconds_per_frame variable in car_sim.pde, passed all the way to this Car
+           through the World object
+
+                    ∙ original_acceleration_input, a float representing the magnitude of the current
+                 acceleration instruction this Car is receiving, either from the acceleration it was
+                      initialized with or from user input through the keyboard during the simulation
+
+                  ∙ cars, a list of Car_Infos representing the readings that this Car’s Lidar object
+                      was able to obtain on the other cars in this World that were within its range,
+           as described in Subsection 3.3.5
+
+    and vetoes the original_acceleration_input                after comparing the Lidar’s reading of
+                   the current distance to the lead car to the computed safe separation distance, as
+
+               45
+
+    follows:
+
+    float interlock(float dt, float original_acceleration_input, List<Car_Info> cars)
+     {
+     PVector lead_car_curr_pos = new PVector(cars.get(0).x,
+     cars.get(0).y) // obtain position of lead car from cars
+     float safe_sep = max((ego_car_v*ego_car_v − lead_car_v*lead_car_v)
+            /(2.0*MAX_DECEL)+LENGTH, LENGTH);
+     boolean safe = PVector.sub(ego_car_curr_pos, lead_car_curr_pos).mag() −
+             LENGTH >= safe_sep;
+     if safe:
+            return original_acceleration_input
+     else:
+            return −MAX_DECEL
+    }
+
+     We visually verified that Interlock indeed keeps the ego car safe in the ‘single
+    lane, two cars’ scenario with different possible velocity and acceleration properties in
+    the two cars, by launching the simulation with sets of different initial conditions and
+    checking that no collision occurs: if the lead car decelerates and continues driving at
+    a slower speed, the ego car slows down before rear-ending the lead car and follows at
+    a safe distance and with a slower speed than before; if the lead car decelerates to a
+    stop, the ego car is able to safely stop before collision given the current separation
+    distance.
+
+
+3.5 Uncovering the Jittering Problem
+
+The “jittering” problem became apparent from observing the behavior of the ego car
+in multiple simulations as Interlock kicks in to maintain safe separation distance to
+the lead car. It is clearer in animation, but we do our best in Figure 3-8 to show what
+we mean by “jittering”: the ego car continuously alternates between decelerating
+and accelerating as it re-establishes safe separation distance. This is evident from
+
+        46
+
+observing the black outline repeatedly and rapidly appearing and disappearing around
+the ego car.
+   Jittering is not conducive for driver comfort, and worse, poses a safety concern.
+The next chapter explores ways of tackling this problem.
+   More broadly, this is an example of issues we hope to catch using the simulator
+that may not be apparent in formal verification, owing to the visual and interactive
+nature of the simulator. It also raises the question of what “keeping the car safe”
+should look like: is preventing collision the only or the most important aspect of
+safety? Is it safer to brake at maximum deceleration in order to completely avoid
+a collision, or to brake with a weaker deceleration that doesn’t avoid collision but
+reduces the impact of collision while being more comfortable for the passenger? Even
+in the single lane scenario, in the real world the ego car would have some leeway
+to swerve to avoid rear-ending the lead car head-on—is it then safer for the ego car
+to brake with weaker deceleration but also swerve slightly? The simulator currently
+does not capture more complex driving behavior like that. In the following section,
+we discuss other limitations of the simulator.
+
+
+
+
+
+
+
+
+
+
+    47
+
+    ration: 5.00m/sA2
+
+    JANA
+
+
+
+    //    velocity: 21.78 m/s
+
+
+    =]
+
+    celeration: 5.00m/sA2
+
+
+
+    Na
+
+
+    ration:
+
+
+
+
+
+
+    /    acceleration: 5.00m/sA2
+
+
+
+
+Figure 3-8: (from top to bottom) Sequence of repeated deceleration and acceleration
+in the ego (green) car as it gets too close to the lead (red) car, applies maximum
+deceleration because of the Interlock, regains safe separation distance, accelerates,
+and consequently gets too close again. Note the short span of time in which the car
+cycles between deceleration and acceleration, as indicated by the multiple appearances
+and disappearances of the black outline within a few frames.
+
+
+
+    48
+
+3.6 Limitations of the Simulator
+
+   ∙ Many values are hard-coded in the current implementation of the simulator,
+      including: the magnitude of acceleration/deceleration applied to the ego car
+      when the user presses the ‘w’/‘s’ keys, the dimensions (length and width) of
+      the cars, and the maximum deceleration of the cars. We decided that these
+      factors did not need to be very customizable for the current purposes of the
+      simulator, and have chosen sensible values for them. Nevertheless, it is possible
+      to (i) modify how the simulator parses command line arguments to allow these
+      variables to be customized, or (ii) implement a front-end UI to ingest user input
+      to customize these variables.
+
+   ∙ In Processing, the simulation can be launched from the terminal, allowing us
+      to design to a highly customizable degree how command line arguments are
+      parsed to generate creative road scenarios in the simulator. However, this loses
+      the versatility of Processing.js which can be run in a browser without needing
+      anything to be installed. A way to remedy this is to implement front-end
+      components to take in user input, but this will require some work.
+
+   ∙ The present implementation of collision-checking means that every time draw()
+      runs, we call check_collision() for every Car in the World. For each Car,
+      check_collision() first loops over all the PVectors representing the space this
+      Car previously occupied in the World and then updates the World’s knowl-
+      edge of the current space occupied by this Car, checking for collision during
+      this process. This is not the most computationally efficient algorithm, and there
+      is an unverified risk that this could slow the simulation down when more cars
+      are added. We have not observed this to be a problem for this scenario that
+      involves just two cars, nor for some other experimental scenarios we have simu-
+      lated that involved more (but still fewer than ten) cars, but it might be of value
+      to redesign the collision-checking algorithm to be more efficient.
+
+   ∙ The present implementation of Lidar is not very extensible to scenarios in-
+
+        49
+
+  volving more than one car, since we assume that the Car_Info at the front
+  of list of Car_Infos returned by the ego car’s Lidar scan represents the lead
+  car. This works for the ‘single lane, two cars’ scenario, but results in errors
+  when there are multiple other cars and the relative positions of the other cars
+  to the ego car can change. A more sound method for determining which of the
+  other cars is currently closest to the ego car (whether directly ahead or in any
+  direction around the ego car) will be necessary for analyzing more complicated
+  road scenarios in future, such as those involving lane changing which we shall
+  explore in Chapter 5.
+
+∙ The simulator works well as a visual aid for animating some user-created road
+  scenario given certain initial conditions. It works less well when we attempt
+  to extend it to any sort of more statistical function. For instance, it is not
+  easy to automate the running of massive numbers of simulations of the ‘single
+  lane, two cars’ scenario with randomly generated initial velocity and acceler-
+  ation conditions to verify that the Interlock algorithm indeed guarantees no
+  collision. Processing will launch a window for every simulation and run every
+  simulation until a collision occurs (or, if no collision occurs, we need to impose
+  some other stopping condition that indicates that the ego car remained safe for
+  this simulation, such as exiting the simulation once the cars have traveled a
+  certain distance). We could improve the computational efficiency by avoiding
+  drawing the roads and cars if we just want the aggregate result of many sim-
+  ulations, but clearly this illustrates that our simulator is geared more towards
+  visual verification.
+
+
+
+
+
+
+
+
+
+
+    50
+
+    Chapter 4
+
+    Addressing Jittering
+
+
+
+At the end of the previous chapter, we surfaced the problem of jittering in the ‘single
+lane, two cars’ scenario. Jittering occurs because the ego car brakes upon getting too
+close to the lead car, but then starts accepting original acceleration inputs (either
+from the initial acceleration argument in the command to launch the simulation,
+or from user input through keyboard commands while the animation is running)
+immediately after regaining safe separation distance. This causes it to quickly violate
+the safe separation distance again in the next few timesteps/frames, which triggers
+the Interlock to cause the car to brake.
+   This chapter explores options to prevent this unstable and potentially unsafe be-
+havior.
+
+
+    4.1   Initial Exploration
+
+    Since jittering arises due to the ego car applying positive acceleration “too soon” after
+    the Interlock has just kicked in to decelerate the car, we reason that a logical initial
+    approach is to prevent the ego car from accepting any acceleration inputs from the
+    moment the Interlock is triggered, until a “safe point”. What should this safe point be?
+    Some ideas are for the ego car to resume accepting and applying positive acceleration
+    after:
+
+    ∙ a certain duration has elapsed, or
+
+        51
+
+   ∙ the ego car has moved a certain distance, or
+
+   ∙ a certain separation distance has been established between the ego and lead
+      cars, or
+
+   ∙ the ego car’s velocity has decreased to a certain velocity, or
+
+   ∙ some combination thereof.
+
+   Considering the first option, we argue that we care about duration ultimately
+because that translates to the change in the displacement of the ego car and the
+resultant change in the separation distance, if the ego car continues accelerating in
+that period of time. We know from the kinematics equations at the beginning of
+Chapter 2 that this displacement is heavily dependent on the actual velocity and
+acceleration of the ego car.
+   So we skip to the second-to-last option that considers velocity. How do we de-
+termine a safe point value that the ego car’s velocity should decrease to? We reason
+that this has to be related in some way to the velocities of the ego and/or lead car,
+or perhaps their relative velocities, at the moment the Interlock is triggered or poten-
+tially some time before. If the ego car is traveling at 30 𝑚/𝑠 when it violates the safe
+separation distance, we probably want it to slow down to a different safe point value
+than if it were traveling at 5 𝑚/𝑠 when it violates the safe separation distance. We
+imagine that we will want Interlock to decelerate the car (and block it from acceler-
+ating) for a longer duration and to block the car from accelerating in that time if the
+car’s velocity was higher at the moment it violated safe separation distance, or if the
+acceleration input that we are blocking it from is higher. A feasible initial choice for
+the safe point velocity is some value that is proportional to the velocity of the ego
+car at the moment Interlock is triggered, so we present our exploration of that in the
+following section.
+   Since jittering is the phenomenon of the ego car repeatedly violating and re-
+establishing safe separation, the option of blocking the ego car from accelerating until
+a certain separation distance has been regained also looks promising. This may be the
+
+        52
+
+simplest option to test in our simulator: as with the choice of the safe point velocity,
+we choose the safe point separation distance to be proportional to the safe separation
+distance at the moment it is violated.
+   To explore how we can define a safe point based on the re-establishment of a
+certain separation distance and/or the reduction of the ego car’s velocity to some
+value, we implemented a method in the simulator that allowed us to experiment with
+different proportional values and observe the car’s resulting behavior. We discuss this
+next.
+
+
+4.2 Experiments
+
+The ego car is susceptible to jittering if the Interlock has recently intervened and
+the car is currently very close to the border of the safe separation distance. So we
+first augment the interlock() method in the Car class to track whether the Inter-
+lock has intervened at a previous timestep. We do so using a global boolean inter-
+lock_intervened ; on top of that we track the safe separation distance and the velocity
+of the ego car at the moment the Interlock most recently intervened, in the variables
+intervention_sep and intervention_vel respectively. Finally, we add sep_mult and
+vel_mult, proportional variables that we can tune to set the safe point separation
+distance and/or velocity to multiples of (respectively) the safe separation distance
+and/or the ego car’s velocity at last Interlock intervention. To summarize, we aug-
+ment Car with these variables:
+
+
+    boolean     i n t e r l o c k _ i n t e r v e n e d = f a l s e ;
+    f l o a t   i n t e r v e n t i o n _ s e p   = 0 ;
+    f l o a t   i n t e r v e n t i o n _ v e l   = 0 ;
+    f l o a t   sep_mult =  1 . 2 ;
+    f l o a t   vel_mult =  0 . 7 5 ;
+
+    Next we modify the implementation of 𝑖𝑛𝑡𝑒𝑟𝑙𝑜𝑐𝑘(), which we presented in Chapter
+    3, as follows:
+
+                                                      53
+
+float interlock(float dt, float original_acceleration_input, List<Car_Info> cars)
+{
+PVector lead_car_curr_pos = new PVector(cars.get(0).x,
+cars.get(0).y) // obtain position of lead car from cars
+
+
+ // modified below
+ if not interlock_intervened: // check safe separation as before
+  float safe_sep = max((ego_car_v*ego_car_v − lead_car_v*lead_car_v
+   )/(2.0*MAX_DECEL)+LENGTH, LENGTH);
+  boolean safe = PVector.sub(ego_car_curr_pos, lead_car_curr_pos).mag
+   () − LENGTH >= safe_sep;
+  if safe:
+   return original_acceleration_input
+  else:
+   interlock_intervened = true
+   intervention_sep = safe_sep
+   intervention_vel = ego_car_v
+   return −MAX_DECEL
+ else: // Interlock intervened recently
+  if prevent_jitter():
+   return −MAX_DECEL
+  else:
+   interlock_intervened = false
+   return original_acceleration_input
+}
+
+If the Interlock has not previously intervened, or the last time it intervened was
+sufficiently long ago that the car is no longer susceptible to jittering, we perform the
+same steps to check for safe separation as in Chapter 3— with the exception that
+if the Interlock determines that it needs to intervene, we take additional steps to
+update the variables that we began tracking as discussed earlier. Let’s dive into the
+
+       54
+
+case where the car is susceptible to jittering given how recently Interlock intervened:
+we implement a method 𝑝𝑟𝑒𝑣𝑒𝑛𝑡_𝑗𝑖𝑡𝑡𝑒𝑟() which returns a boolean; if this boolean
+is true the Interlock continues decelerating the car to maximally, if not we allow
+the car to resume accepting positive acceleration inputs. In the latter case, we are
+saying that the ego car has reached the safe point that we defined, and the last
+Interlock intervention occurred enough timesteps/frames ago that the car is no longer
+susceptible to jittering—hence we also reset the interlock_intervened variable to false.
+   The 𝑝𝑟𝑒𝑣𝑒𝑛𝑡_𝑗𝑖𝑡𝑡𝑒𝑟() method is where we can exercise our creativity in designing
+what constitutes a safe point for the ego car. We have implemented this method as
+such to test what we proposed at the end of Section 4.1.
+
+ boolean p r e v e n t _ j i t t e r ( ) {
+      i f curr_sep < i n t e r v e n t i o n _ s e p * sep_mult :
+        return true
+      i f ego_car_curr_vel > i n t e r v e n t i o n _ v e l * vel_mult :
+        return true
+     return f a l s e
+   }
+
+If the current separation distance is less than the safe separation distance that the
+Interlock computed when it most recently intervened—scaled by our chosen multiplier
+sep_mult —then we deem the ego car still susceptible to jittering (and continue to
+apply maximum deceleration). Similarly, if the ego car’s current velocity is greater
+than its velocity at the last Interlock intervention, multiplied by our chosen factor
+vel_mult, we also continue to block the ego car from accelerating. The code as
+shown thus implements the last option discussed in Section 4.1: a combination of a
+certain separation distance and a certain ego car velocity to define the safe point.
+We have experimented with different values for explored each option individually by
+commenting out the corresponding lines of code, and also experimented with tuning
+the multipler values (sep_mult and vel_mult ).
+   We have verified visually that blocking the ego car from accelerating until it
+
+
+    55
+
+reaches some safe point resolves the jittering problem. As we cannot effectively show
+the animation here, the reader is invited to download this code [13] and perform their
+own experiments. The following command launches the jittering scenario shown in
+Figure 3-8 at the end of the last chapter; without the jittering prevention implemented
+here, the ego car catches up to the lead car very early on and jitters quite violently,
+braking and accelerating on the order of dozens of times throughout the simulation.
+
+
+p r o c e s s i n g −j a v a −−s k e t c h =‘/ U s e r s / a n g e l a l e o n g /Documents/
+    I n t e r l o c k / i n t e r l o c k _ s i m u l a t o r _ p j s / car_sim ’ −−run −r 1 1 −90
+     0 90 0 5 ego 0 0 20 5 s1 0 30 20 0
+
+   Figure 4-1 shows the same scenario, with the 𝑝𝑟𝑒𝑣𝑒𝑛𝑡𝑗 𝑖𝑡𝑡𝑒𝑟() method implemented
+as shown above, and sep_mult = 1.2 and vel_mult = 0.75. This time, the ego car
+brakes only once throughout the simulation, and accelerates only after the lead car
+has widened the distance sufficiently, making for a much smoother drive.
+
+
+4.3 Further Exploration
+
+We have presented an approach of defining a safe point using the separation distance
+and the ego car’s velocity at the moment of Interlock intervention, such that jittering
+is prevented by blocking any acceleration and continuing to apply maximum decel-
+eration in the ego car until it reaches the safe point. Some immediate extensions
+include:
+
+   ∙ defining the safe point using other parameters listed in Section 4.1
+
+   ∙ exploring those parameters but not at the moment of Interlock intervention
+
+   ∙ maintaining the ego car’s acceleration at zero instead of continuing to apply
+      maximum deceleration until it reaches the safe point
+
+   Going further, there are almost certainly other ways of preventing jittering beyond
+our discussion of safe points and those listed parameters; this could be an area to look
+into for further fruitful exploration.
+
+        56
+
+\    \
+    5 mis    \
+
+
+
+/
+
+
+
+\
+
+
+
+
+/    /
+
+
+         \
+[             \     \
+|             \     \
+
+|             /     |
+
+     \    /        0 Gomis
+
+
+
+     :
+
+      an
+
+
+
+         \/             =
+
+Figure 4-1: Same simulation from Figure 3-8 with jittering prevention implemented;
+the ego car brakes only once and allows the distance to the lead car to widen, instead
+of following close behind and jittering.
+
+
+
+
+
+
+     57
+
+    Chapter 5
+
+    Other Functionalities in the Simulator
+
+
+
+Chapter 3 presented the simulator in the context of the ‘single lane, two cars’ scenario
+that is the focus of this thesis. However, the simulator has the potential to model a
+range of other kinds of road scenarios. We explore this potential in this chapter.
+
+
+5.1 Lane Changing
+
+Lane changing is irrelevant in a single lane road scenario, but many roads comprise
+multiple lanes, e.g. multi-lane freeways. In Chapter 3 we presented the structure of
+the command line arguments for launching the simulation, and one parameter that
+the user is able to specify is the number of lanes for a road she wants to create. When
+she creates the cars on this road, she is also able to specify which lane each car is
+initialized in. Figure 5-1 shows a car initialized in the first lane of a four-lane road.
+By pressing the number on the keyboard corresponding to the lane she wants the car
+to switch to, the user can trigger the car to change lanes.
+
+5.1.1 Implementation
+
+Figure 5-2 shows the relationship between the files that together define a multi-
+lane Road and a Car that drives on this Road, and among which we separate
+responsibilities for modeling lane changing.
+
+
+    58
+
+    Ss
+    ae
+      00 0  econ
+
+
+
+Figure 5-1: Composite of screenshots taken during lane changing: when the user
+presses ‘4’ on the keyboard, the car, originally in the first (top in figure) lane, performs
+a smooth lane change to the fourth (bottom in figure) lane.
+
+
+
+         is a subclass of
+     RailroadCar   drives                          2comprises       Lane              definesa    Path
+                                                    group of
+                             defined by:                       defined by:                   defined by:
+                                                                        start point           -   PVector
+                              -   int number                                                          start point
+                                  PVector   of lanes            -   PVector
+                              -       start point               -   PVector end point         -   float orientation
+                              -   PVector end point             -   float lane width
+                              -   float lane width              -   int index of this Lane in
+                                                                    the Road it belongs to
+     purpose:                purpose:                          purpose:
+     implements              defines a   group of  Lanes       provides visual feedback to   purpose:   the     dist_to_path()
+                                                                                             implements
+     PID controller          that a RailroadCar                the user about the current    ‘method that computes the
+     to change lanes         initialized on this Road          lane the ego caris driving   ~~ error used by RailroadCar’s
+                             can drive between                 on/changing to                PID controller to change lanes
+
+    Figure 5-2: The classes that together define and enable the simulator to model lane-
+    changing on a multi-lane road.                                            Each class is in its own file with the same name
+    followed by the ‘.pde’        extension.
+
+    The RailroadCar Class
+
+    The RailroadCar class extends the Car class and is associated with (i) a specific
+    Road object and (ii) a Lane object that belongs to this Road and represents the
+    current lane that this Car occupies.                                            A RailroadCar models a car as though it is
+    driving on rails.                                           The Cars shown in the demos in Chapter 3 are of this subclass.
+    They are capable of changing lanes, but as this feature is not necessary in a single
+    lane scenario we have left the demonstration and discussion of this functionality for
+    this chapter.
+                                                  RailroadCar implements a PID controller as shown in the following pseudocode
+
+
+                                                   59
+
+        to achieve lane changing. A PID controller continuously computes an error term from
+      the difference between a desired setpoint and a measured process variable, and allows
+          us to tune proportional, integral, and derivative components (denoted P, I, and D
+           respectively—hence the name) that apply a correction to the system based on this
+    error term [19].
+
+Rai lroad Car path_follow ( f l o a t p , f l o a t d , f l o a t i ) {
+      f l o a t e r r o r = cur_lane . path . dist_to_path ( p o s i t i o n ) ;
+      steering_command = p* e r r o r − d * ( l a s t _ e r r o r −e r r o r ) ;
+      l a s t _ e r r o r = e r r o r ;
+     return t h i s ;
+   }
+
+         The values the simulator is using in the lane changing shown in Figure 5-1 are P =
+    0.05, D = 3, and I (which is unused here) = 0.
+
+    The Road Class
+
+    A Road is defined by
+
+   ∙ a list of Lanes. A RailroadCar is constrained to the Road it is initialized
+      on but is free to move between lanes on this Road. So the Road class makes
+      sense as a layer that sits between a RailroadCar and the Lane it currently
+      occupies.
+
+     ∙ start- and end-points.           These are 2D coordinates specified by the user when
+                launching the simulator from the command line, and Processing converts them
+      to PVectors that determine the two points in the window that this                Road
+         stretches between; all Lanes of this road are further defined by these two points,
+      with the direction of traffic going from the start-point to the end-point.
+
+    The Lane Class
+
+            A Lane is defined by start and end PVectors, calculated when the Road object to
+    which this Lane belongs is initialized. This class provides visual feedback to the user
+
+                            60
+
+regarding the ego car’s current lane; this is perhaps obvious when the car remains in
+its lane, but the moment the car receives instructions to change lanes, the simulator
+highlights the new lane so that it is clear to the user throughout the lane-changing
+process which lane the car is navigating to. This comes in handy in these potential
+future use cases:
+
+   ∙ We are simulating a multi-lane road scenario with multiple cars, and the ego
+      car collides into another car or obstacle while changing lanes. We can pause the
+      simulation at the moment of the crash to analyze it; the lane that the car was
+      changing to remains highlighted as a reminder to us.
+
+   ∙ The car is capable of handling a quick succession of inputs to change lanes, and
+      can begin changing to another lane without completing a previous lane change.
+      (This could be useful for modeling an aborted lane change, e.g. we can “cancel”
+      the lane change in Figure 5-1 by pressing ‘1’.) Without the visual feedback
+      it can be confusing to track the current lane the car is navigating to if these
+      switches keep happening in the midst of the current lane change.
+
+The Path Class
+
+Every Lane in turn defines a Path with a start-point equivalent to the Lane’s and an
+orientation computed from the Lane’s start- and end-points. This class implements
+the 𝑑𝑖𝑠𝑡_𝑡𝑜_𝑝𝑎𝑡ℎ() method that returns the error that the PID controller method in
+the RailroadCar uses to steer the car to change lanes.
+
+5.1.2 Applications
+
+In the single lane scenario, the car has no choice but to slow down to avoid a collision,
+but when there are more lanes the situation quickly becomes more interesting: is it
+safer for the ego car to slow down, or to change lanes? If the car has alternatives
+besides slowing down, we may be able to relax the bounds on the minimum safe
+separation distance. At the same time, lane changing introduces the risk of colliding
+with cars in the other lanes, especially a car that is currently behind the ego car in an
+
+        61
+
+adjacent lane, and speeds up just as the ego car is changing to this adjacent lane. The
+Interlock will have to compute and deal with these risks if we extend the simulator
+to modeling multi-lane road scenarios.
+
+5.1.3 Improvements
+
+The PID controller implemented by the RailroadCar to change lanes currently uses
+a P value of 0.05 and a D value of 3 (and does not use the integral term at all), which
+produces a smooth lane change for a RailroadCar traveling at 30 𝑚/𝑠 as in our
+demo in Figure 5-1. However, those PID values when combined with other velocities
+can produce unsteady swerving behavior, as shown in Figure 5-3. It may be worth
+looking further into this or exploring alternative methods of modeling lane changing.
+Alternatively, there might be use cases for simulating odd swerving behavior, for
+instance in a car whose driver has lost control of it. The following section discusses
+recording arbitrary trajectories in the simulator to replay in later simulations, so it
+is possible to simulate an out-of-control car using other values for the PID controller
+and reusing this car in the simulator.
+
+        —
+
+
+
+
+        ~
+
+Figure 5-3: Composite of screenshots taken during lane changing with the same PID
+values as in Figure 5-1 but with an ego car velocity of 5 𝑚/𝑠, to demonstrate unsteady
+swerving behavior.
+
+   The Road class currently models unidirectional lanes; to create roads with bidi-
+rectional traffic, such as a road with two lanes of traffic going from left to right next
+to two lanes of traffic going from right to left, we would have to create two two-lane
+roads and carefully choose their start- and end-points so that they are aligned and
+positioned as neighbors. We show this in Figure 5-4. However, this achieves the kind
+of bidirectional road we want only in a visual sense; a car initialized on one road
+
+        62
+
+    would be unable to navigate to the other road so we cannot model the (dangerous)
+    scenario of a car swerving into lanes with traffic coming in the opposite direction.
+    in Figure 5-4, for instance, the ego car (in green) would not be able to drive to the
+    fourth (bottom-most in figure) lane.
+
+    acceleration: 0.00m/sA2
+
+        5/W 00°ST0
+
+
+
+
+
+
+        acceleration: 0.00m/sA2
+
+Figure 5-4: The closest model the simulator can currently achieve of a road with
+bidirectional traffic: traffic moves from left to right in the top two lanes, and from
+right to left in the bottom two lanes. (Note that velocity and acceleration information
+for the bottom two cars are displayed upside down; this issue does not feature when
+we model the ‘single lane, two cars’ scenario but should also be addressed in future
+if modeling other scenarios in which it becomes a problem.)
+
+   This brings us to the next limitation: a RailroadCar is constrained to a particular
+Road, which restricts the kinds of road scenario we can model. For instance, we
+cannot currently model a car switching roads at a cross-intersection or T-junction.
+Section 5.3 showcases a range of road layouts the simulator is currently able to model,
+including intersections. To realize the simulator’s full potential, it will be of value to
+address this limitation, as well as tackle another big area for improvement: modeling
+curved roads and lane changing on curved roads.
+
+
+5.2 Recording and Replaying Arbitrary Trajectories
+
+In Chapter 3 we described the restrictions we enforce on the command line arguments
+that define the ego car vs. other cars in the simulation. There are other specifications
+that we have held off until this section. If we enter the following command:
+
+
+    63
+
+p r o c e s s i n g −j a v a −−s k e t c h =‘/ U s e r s / a n g e l a l e o n g /Documents/
+     I n t e r l o c k / i n t e r l o c k _ s i m u l a t o r _ p j s / car_sim ’ −−run −r 1 1 −90
+      0 90 0 5 simple_stop 0 0 20 0
+
+                    The simulator window will open showing the ego car driving at 20 𝑚/𝑠 on a
+    single lane road. We slow the ego car down to a complete stop by holding the ‘s’ key
+    down. By specifying something other than ‘ego’ for the first argument following the
+    arguments for the road, we trigger the simulator to write (i) (the magnitude of) the
+    car’s velocity and (ii) the angle of the car’s steering command to an output text file
+    named ‘simple_stop.txt’ for every timestep, which corresponds to every time 𝑑𝑟𝑎𝑤()
+    in car_sim.pde runs. Figure 5-5 shows a section of the output text file; the first value,
+    the velocity reading, is shown to be decreasing from 20 𝑚/𝑠—this corresponds to the
+    moment we press the ‘s’ key to slow the car down from its initial velocity (the angle
+    value remains at 0 since the car is driving in a straight line for the entire simulation).
+
+     ®0 [ ]     simple_stop.txt
+     20.0 -0.0
+     20.0 -0.0
+     20.0 -0.0
+     20.0 -0.0
+     20.0 -0.0
+     19.88889  -0.0
+     19.777779  -0.0
+     19.666668
+     19.555557  -0.0
+     19.444447  -0.0
+     19.333336  -0.0
+     19.222225  -0.0
+     19.111115  -0.0
+     19.000004  -0.0
+     18.888893  -0.0
+     18.777782  -0.0
+     18.666672
+     18.555561
+     18.44445  -0.0
+     18.33334  -0.0
+     18.222229  -0.0
+     18.111118  -0.0
+     18.000008  -0.0
+     17.888897  -0.0
+     17.777786  -0.0
+
+    Figure 5-5: A section of an example output that is written to file when we record a
+    trajectory in the simulator. Every line captures the car’s (i) velocity and (ii) steering
+    command at that frame of the animation.
+
+           The simulator keeps writing to the output file until we press ‘e’. Make sure to do
+    this before exiting the simulator to ensure that the output file is made correctly. If we
+
+                    64
+
+now check the folder for this sketch—in this case ‘/Users/angelaleong/Documents/
+Interlock/interlock_simulator_pjs/car_sim’—we should see a text file named ‘sim-
+ple_stop.txt’. Then, we can create another car in a later simulation that replicates
+the same trajectory by entering the following command in the terminal:
+
+p r o c e s s i n g −j a v a −−s k e t c h =‘/ U s e r s / a n g e l a l e o n g /Documents/
+    I n t e r l o c k / i n t e r l o c k _ s i m u l a t o r _ p j s / car_sim ’ −−run −r 1 1 −90
+     0 90 0 5 ego 0 0 20 0 READ_simple_stop 0 10 0 0
+
+   The simulator window launches with two cars on a single-lane road: the ego car,
+initialized at the start of the road with a velocity of 20 𝑚/𝑠, and the other car,
+initialized 20 𝑚 from the start of the road. Prefixing the name of a non-ego car with
+‘READ_’ in the command line arguments signals to the simulator to look for a text
+file in the sketch folder whose name corresponds to the rest of that argument (with
+the ‘.txt’ extension), read a line from the file for every timestep, and translate the
+first value to the velocity of the car and the second value to its steering command at
+that timestep. This enables the non-ego car in this new simulation to replicate the
+exact trajectory of the car we controlled in the first simulation. Any initial velocity
+and acceleration values passed to this car through the command line arguments will
+be ignored.
+   The Interlock algorithm for the ‘single lane, two cars’ scenario will cause the ego
+car to slow down when it gets too close to the decelerating lead car, and stop before
+colliding with the lead car. We can record and replay more complicated trajectories
+such as a car repeatedly speeding up and slowing down, or even a car changing lanes
+on a multi-lane road. In the simulation shown in Figure 5-6, the lead car (in red) is
+replaying a trajectory from a previous simulation in which we changed lanes multiple
+times. This results in a collision when the lead car veers back into the path of the
+ego car (in green), since the Interlock in our simulator is currently equipped only to
+deal with the ‘single lane, two cars’ scenario.
+   This functionality was implemented with the 𝑐𝑟𝑒𝑎𝑡𝑒𝑅𝑒𝑎𝑑𝑒𝑟() and 𝑐𝑟𝑒𝑎𝑡𝑒𝑊 𝑟𝑖𝑡𝑒𝑟()
+API calls in Processing [20, 21].
+
+
+    65
+
+Figure 5-6: Composite of screenshots showing a lead car (in red) that is initialized 5
+𝑚 ahead of the ego car (in green) and replays a trajectory in which it changes to the
+bottom lane and then changes back to the top lane. This results in a collision with
+the ego car when it swerves into the ego car’s path during this lane changing.
+
+5.2.1 Applications
+
+There is great value in being able to simulate any trajectory to test how the ego car
+responds. This is perhaps less evident in the ‘single lane, two cars’ scenario, where we
+can already simulate a variety of scenarios involving different combinations of initial
+velocities and accelerations in the ego and lead cars just from the command line. But
+even for that scenario, we just saw demos in which users have finer control over the
+trajectory of the lead car, and can then replay that trajectory and confirm that the
+Interlock keeps the ego car safe in reaction to any user-generated trajectory in the
+lead car.
+   If we want to simulate more complicated patterns of acceleration/deceleration in
+the lead car for this scenario, this feature enables us to intuitively generate the pattern
+simply by pressing keys to control the car, and to do this only once and then be able
+to replay the exact trajectory any number of times in future simulations. We can
+build a library of “templates” of common trajectories that we are likely to frequently
+model.
+   Beyond the ‘single lane, two cars’ scenario, more complicated scenarios may ne-
+cessitate using this feature to model how other cars may behave. For instance, if we
+want to verify an Interlock algorithm that enables the ego car to safely react to a
+car in an adjacent lane that suddenly switches to its lane, an option is to create the
+lane-changing trajectory in a previous simulation and program the other car with this
+
+        66
+
+trajectory when launching this simulation. Another option is to design the simulator
+to ingest user input to control the other car while the animation is running— but
+what happens if there are multiple other cars? This alternative may quickly become
+unwieldy if we want to extend the simulator to scenarios with multiple other cars: it
+will be difficult for us to design and implement, and it may require the user to follow
+more specifications to select which of the other cars they are trying to control.
+   With this record-and-replay functionality, however, there is virtually no limit to
+how creative we can get with the trajectories of all of the other cars in a simulation.
+We can record a variety of trajectories beforehand, and when we launch the current
+simulation, read all these trajectories from their respective files for the other cars
+that we want to create; additionally, we can still initialize any car in any lane and at
+any offset from the start of the lane— so the trajectory need not begin at the same
+place as it started from when we recorded it. Furthermore, the other cars can be a
+mix of replays of previously recorded trajectories as well as standard RailroadCars
+initialized with a user-specificed velocity and acceleration.
+
+
+    5.3   Experimenting with Road Configurations
+
+    Given the functionalities demonstrated in the previous two sections, if we expand
+    our creativity we can easily create a multitude of different road configurations that
+    the self-driving car can be placed into to observe how it behaves and to test future
+    Interlock algorithms to keep the car safe in those road scenarios. In the following
+    section we present some of these configurations and the command line arguments
+    used to create them.
+
+    5.3.1 Examples
+
+    Intersections and Junctions
+
+    The following command models a collision at a T-junction:
+
+
+
+
+    67
+
+p r o c e s s i n g −j a v a −−s k e t c h =‘/ U s e r s / a n g e l a l e o n g /Documents/
+    I n t e r l o c k / i n t e r l o c k _ s i m u l a t o r _ p j s / car_sim ’ −−run −r 1 2 0
+   40 0 5 5 ego 0 5 20 0 −r 2 2 −90 0 90 0 5 s1 0 20 20 15
+
+We create road -r1 with 2 lanes starting at coordinate {x = 0, y = 40} and ending
+at coordinate {x = 0, y = 5}, where each lane is 5 𝑚 wide. This renders the road
+vertical in the center of the window, beginning at the bottom and ending around the
+middle of the window. The ego car is initialized in the 0-th lane, 5 𝑚 from the start
+of this road, with an initial velocity of 20 𝑚/𝑠 and acceleration of 0 𝑚/𝑠². We then
+create a second road -r2 with 2 lanes starting at {x = -90, y = 0} and ending at {x =
+90, y = 0}, where each lane also is 5 𝑚 wide. The second road stretches from the left
+to the right of the window and is perpendicular to the first road. We create another
+car s1 in the 0-th lane of this road, 20 𝑚 from its start, with an initial velocity of
+20 𝑚/𝑠 and acceleration of 15 𝑚/𝑠². Figure 5-7 captures the moment of collision at
+the T-junction.
+
+
+
+
+
+
+
+
+
+
+    Figure 5-7: Simulating a collision at a T-junction.
+
+    Figure 5-8 shows the result of the following command:
+
+    68
+
+p r o c e s s i n g −j a v a −−s k e t c h ‘ / U s e r s / a n g e l a l e o n g /Documents/
+   I n t e r l o c k / i n t e r l o c k _ s i m u l a t o r _ p j s / car_sim ’ −−run −r 1 1 −90
+    40 0 0 5 ego 0 0 0 0 −r 2 1 −90 15 90 −15 5
+
+
+
+
+
+
+
+
+
+   —
+
+Figure 5-8: Intersection example created in the simulator that resembles an entrance
+ramp to a highway.
+
+   This set-up resembles an entrance ramp to a highway. The ego car is initialized
+at rest at the beginning of the entrance ramp, and we have used the ‘w’ key to
+accelerate it towards the highway. The figure depicts a zoomed-in view of the area of
+interest. Unfortunately, as mentioned earlier in this chapter at the end of Section 5.1,
+the simulator currently does not implement the functionality to allow cars to move
+between roads, hence we cannot actually model the ego car moving from the entrance
+ramp to the highway here.
+   Finally, this command
+
+p r o c e s s i n g −j a v a −−s k e t c h =‘/ U s e r s / a n g e l a l e o n g /Documents/
+    I n t e r l o c k / i n t e r l o c k _ s i m u l a t o r _ p j s / car_sim ’ −−run −r 1 1 −90
+    −40 90 40 5 ego 0 0 0 0 −r 2 1 −90 25 90 −25 5 s2 0 0 10 1
+
+
+    69
+
+    generates Figure 5-9.           We have two intersecting roads, on which another car s2 is
+    driving towards the intersection with an initial velocity of 10 𝑚/𝑠² and an acceleration
+    of      1 𝑚/𝑠². As in the previous example, we initialize the ego car at rest at the start
+    of the (other) road, and manually drive it towards the intersection using the ‘w’
+    key. Readers may wish to try controlling the ego car to drive it safely across the
+    intersection without colliding with the other car.
+
+        Veron
+        ce 24
+        (ly, 2,
+       Se
+        Is
+        er 1.0
+
+    Figure 5-9:           Another intersection example, which showcases the versatility of the
+    simulator in creating roads of any orientation and length.
+
+
+Pedestrians
+
+With the current classes and functionalities already implemented in the simulator,
+a quick and dirty way for us to model a pedestrian is as a RailroadCar object.
+We harness the record-and-replay functionality in the previous section to create the
+trajectory of a pedestrian crossing a road, and then create a scenario with cars waiting
+at an intersection and the “pedestrian” crossing in front of these cars.
+   This is the command we used to create Figure 5-10:
+
+
+    70
+
+p r o c e s s i n g −j a v a −−s k e t c h =‘/ U s e r s / a n g e l a l e o n g /Documents/
+    I n t e r l o c k / i n t e r l o c k _ s i m u l a t o r _ p j s / car_sim ’ −−run −r 1 2 0
+   −50 0 50 5 ego 1 4 2 . 5 0 0 s1 0 3 2 . 5 0 0 s2 0 3 7 . 5 0 0 s3 0
+     4 2 . 5 0 0 −r2 1 −7.5 −5 −7.5 5 5 READ_simple_stop 0 −2.5 0
+     0 −r3 2 −90 0 90 0 5 s4 0 7 2 . 5 0 0 s5 0 7 7 . 5 0 0 s6 1
+    7 7 . 5 0 0
+
+    -r1 and -r3 set up the two intersecting two-lane roads, with four and three cars
+    respectively. The “pedestrian” is the red car in the figure to the left of the green car,
+    and is simply a replay of the simple_stop trajectory we recorded in Section 5.2, in
+    which the car travels in straight line and slows to a stop. It is initialized on road -r2,
+    which is a short one-lane road hidden under the horizontal -r3, 2.5 𝑚 before the start
+    of the road.
+    An immediate improvement would be to create an actual Pedestrian class to
+    both functionally and visually distinguish Pedestrians from RailroadCar objects.
+
+
+
+
+
+
+
+
+
+
+Figure 5-10: A simulation of a “pedestrian”, modeled by the red car beside the green
+ego car, crossing the road at an intersection. The black outlines around the other cars
+indicate that they are stationary (acceleration ≤ 0). For simplicity we have turned
+off visual feedback on the velocity and acceleration of the cars and safe separation
+distance around the ego car.
+
+
+
+
+
+
+
+
+                71
+
+5.3.2 Improvements
+
+We have mentioned curved roads being a major area of improvement to realize the
+full potential of the simulator in modeling a variety of road scenarios. We reiterate
+this point: many roads in the real world have some curvature, including most actual
+entrance and exit ramps onto highways. Curved road configurations like roundabouts
+and winding mountain roads are currently impossible to create in the current simu-
+lator. Implementing the functionality to create curved roads would also require im-
+plementing lane changing on curved roads, either in the current RailroadCar class,
+or in a new subclass of the Car class (or even in a new subclass of the RailroadCar
+subclass).
+   We have also pointed out that the inability of RailroadCars to move between
+Roads is a major limitation. Visually the simulator is already capable of modeling
+scenarios involving multiple roads whose position and orientation the user is able to
+customize, but being able to actually have cars drive between roads would enable the
+simulator to functionally model more diverse scenarios such as a car making a left
+turn at a T-junction.
+
+
+
+
+
+
+
+
+
+
+    72
+
+    Chapter 6
+
+    Conclusion
+
+
+
+A new design architecture for self-driving cars, in which a small, trusted, indepen-
+dent module of code interacts with the main controller to keep the car safe, has the
+potential to enable far easier safety verification. The module of code, which we term
+the Interlock, can be independently verified using formal verification techniques as
+well as virtual and physical simulations. This is much more feasible than evaluating
+the entire complex system of a self-driving car using a statistical approach, which
+requires self-driving cars to have driven on the order of billions of miles to provide a
+convincing safety argument.
+   We have presented our evaluation of the ‘single lane, two cars’ scenario, and used
+formal verification to prove safety conditions that enable a self-driving car to stop in
+time to avoid collision with another car ahead if the latter suddenly brakes. We fully
+defined a safe separation distance for the ego car, based on all possible combinations
+of velocity and acceleration/deceleration properties of the self-driving car (the ‘ego’
+car) and the car ahead (the ‘lead’ car), accounting also for the cycle time of the
+Interlock and sensor and actuator delays.
+   We also developed a virtual simulator using the Processing programming language
+to provide further visual evidence that the Interlock keeps the car safe. While the
+simulator was intended to double-check the safety conditions verified by formal tech-
+niques, on top of that it actually revealed a problem in the ‘single lane, two cars’
+scenario that was not evident through formal verification. This issue—which we term
+
+        73
+
+jittering—arises because the ego car repeatedly slows down upon violating the safe
+separation distance, and then speeds up when it has just regained sufficient distance,
+only to promptly violate the safe separation distance again.
+   Jittering is an interesting problem to which we have envisioned multiple angles of
+approach; we have discussed these ideas and verified in our simulator that some of
+these ideas indeed prevent jittering. It is our hope that our work in Section 4.2 will
+provide a starting point to demonstrate how the simulator code can be modified for
+further experiments on resolving the jittering issue.
+   Because this simulator began with the goal of verifying safety in a range of road
+scenarios, it was designed to be highly customizable. We have shown how it may be
+extended beyond the ‘single lane, two cars’ scenario to model lane changing, arbitrary
+trajectories, and diverse road configurations.
+
+
+6.1 Improvements and Future Work
+
+At the same time, we have brought up limitations of the simulator, or they might
+have become apparent during the discussions in Chapter 3 and 5. Instead of simply
+rehashing these limitations, we make a couple of general remarks about overarching
+considerations in the pros and cons of the simulator’s design:
+
+   ∙ We have demonstrated the versatility of Processing in processing user input
+      from the command line, but this requires the user to download the Processing
+      program and the simulator code to their local machine in order to launch the
+      simulation from their terminal. This comes at a cost in terms of the portability
+      offered by Processing.js, which enables code written in Processing to run in
+      most browsers, so the user does not need to download any software—but she
+      also cannot interact with a Processing.js simulation from the command line.
+      This is a trade-off that must be made between the power of Processing and the
+      convenience of Processing.js. A workaround is to create UI/UX components
+      in the window to ingest user input before starting the simulation of the road
+      scenario, which leads us to the next point.
+
+        74
+
+   ∙ There is arguably no limit to how customizable we can make the simulator, in
+      terms of user input to initialize the road scenario, user input while the animation
+      is running, the degree of control the user has over every property of a road or
+      a car or any other class we may create, etc. We can also get wildly creative
+      with creating visual feedback for the user and adding UI/UX components in
+      the window to ingest user input. But the trade-off is that the code will quickly
+      become increasingly complex and difficult to maintain, so it is important to
+      consider how customizable a property really needs to be.
+
+   In light of making the simulator extensible to diverse road scenarios, we propose
+these immediate next steps to implement in the simulator:
+
+   ∙ curved roads,
+
+   ∙ modeling cars driving between roads, and
+
+   ∙ a scrolling feature: have the roads “scroll” in some way in the simulator so that
+      we can continue following the cars once they reach the end of the road (currently
+      they simply drive off-screen which does not work for longer trajectories).
+
+
+6.2 Tying Back to the Broader Context
+
+The goal of the Interlock is to be applicable to more road scenarios than the ‘sin-
+gle lane, two cars’ case, but establishing what constitutes a safe separation distance
+in that case is a critical foundation block on which to build more complex scenar-
+ios, and we have rigorously verified it here through both formal techniques and the
+development of a simulation program.
+   We have also raised the question of whether preventing collision is necessarily
+the most important safety concern. We formally verified the safe separation distance
+using the most conservative assumption of a “worst” possible lead car—one which
+applies maximum deceleration—and under the condition that the ego car also applies
+maximum deceleration. What if a more comfortable braking, with weaker deceler-
+ation, could actually be safer? Or what if we are willing to tolerate some risk of
+
+        75
+
+collision in order to get to our destination faster, especially if the actual probability
+of collision is low? For instance, Pierson et al. [22] described the idea of “risk level
+sets”: using a cost function that accounts for the density and motion of other cars on
+the road, the ego car plans its trajectory from the set of allowed maneuvers around
+the other cars, which is based on the level of risk that it is willing to accept. So an ego
+car with higher risk tolerance would change lanes more frequently instead of slowing
+down in its lane to follow the car ahead, despite the higher risk of a collision when
+changing lanes in dense traffic.
+   The Interlock’s current strategy of braking with maximum deceleration if the safe
+separation distance is violated is one algorithm that we have proven works, but it is
+just one possible strategy after all. It does not exclude consideration of other strategies
+for the same scenario, and it is likely that we will incorporate other dimensions into
+our consideration of “safety” as the project progresses, and this will challenge what
+the simulator and the ‘single lane, two cars’ analysis discussed in this thesis currently
+offer.
+   More generally, the simulator will likely need to be continually redesigned as the
+Interlock evolves. For instance, it is not readily extensible to a scenario in which
+multiple cars are running the Interlock—which is a potential design for the Interlock
+that we have discussed. In the context of the larger project, we should remember that
+the simulator is meant to serve as one of many verification tools, so as we broaden
+discussion of how the Interlock should handle different road scenarios, the simulator
+should first be evaluated for how suitable it is for modeling a particular Interlock
+algorithm for a particular road scenario, before we dive into any update or revamp of
+its design.
+
+
+
+
+
+
+
+
+
+
+    76
+
+    Bibliography
+
+
+
+ [1] Wakabayashi, Daisuke. “Self-Driving Uber Car Kills Pedestrian in Arizona,
+    Where Robots Roam.” The New York Times. March 20, 2018. https://www.ny
+    times.com/2018/03/19/technology/uber-driverless-fatalit y.html.
+
+ [2] Howard, Daniel, and Danielle Dai. “Public perceptions of self-driving cars:
+    The case of Berkeley, California.” Transportation Research Board 93rd Annual
+    Meeting. Vol. 14. No. 4502. 2014.
+
+ [3] Shalev-Shwartz, Shai, Shaked Shammah, and Amnon Shashua. “On a formal
+    model of safe and scalable self-driving cars.” arXiv preprint arXiv:1708.06374
+    (2017).
+
+ [4] McArdle, Megan. “Opinion | How Safe Are Driverless Cars? Unfortunately, It’s
+    Too Soon to Tell.” The Washington Post. March 20, 2018. https://www.washing
+    tonpost.com/opinions/no-driverless-cars-arent-far-safer-than-human-drivers/20
+    18/03/20/5dc77f42-2ba9-11e8-8ad6-fbc50284fce8_ story.html.
+
+ [5] Waymo Team. “Waymo Reaches 5 Million Self-Driven Miles.” Medium. March
+    21, 2019. https://medium.com/waymo/waymo-reaches-5-million-self-driven-mil
+    es-61fba590fafe.
+
+ [6] Clarke, Edmund M., and Jeannette M. Wing. “Formal methods: State of the art
+    and future directions.” ACM Computing Surveys (CSUR) 28.4 (1996): 626-643.
+
+ [7] Seshia, Sanjit A., Dorsa Sadigh, and S. Shankar Sastry. “Formal methods for
+    semi-autonomous driving.” Proceedings of the 52nd Annual Design Automation
+    Conference. ACM, 2015.
+
+ [8] Microsoft. “Z3Prover/z3.” GitHub. December 20, 2018. https://github.com/Z3
+    Prover/z3.
+
+ [9] dReal. “dReal.” dreal.github.io/.
+
+[10] Processing Foundation. “Processing.org.” processing.org/.
+
+[11] Processing Foundation. “Processing.js.” processingjs.org/.
+
+[12] Processing Foundation. “Processing/Processing/Command Line.” GitHub. htt
+    ps://github.com/processing/processing/wiki/Command-Line.
+
+        77
+
+    [13] MIT Software Design Group / Interlock Group. “sdg-interlock/processing-sim
+     ulator.” Github. https://github.mit.edu/sdg-interlock/processing-simulator.
+
+    [14] Processing Foundation. “Processing.org / Environment (IDE).” https://process
+     ing.org/reference/ environment/
+
+    [15] Processing Foundation. “Processing 3+ / Language(API) / setup().” https://pr
+     ocessing.org/reference/setup_.html
+
+    [16] Processing Foundation. “Processing 3+ / Language(API) / draw().” https://pro
+     cessing.org/reference/draw_.html
+
+    [17] Processing Foundation. “ Processing 3+ / Language(API) / PVector.” https://
+     processing.org/reference/PVector.html
+
+[18] Paul E. Black. “Bresenham’s algorithm.” Dictionary of Algorithms and Data
+    Structures [online]. January 21, 2020. https://www.nist.gov/dads/HTML/bres
+    enham.html.
+
+    [19] National Instruments. “PID Theory Explained.” March 5, 2019. https//www.ni
+     .com/white-paper/3782/en/.
+
+    [20] Processing Foundation.   “Processing 3+ / Language(API) / createReader().”
+     https://processing.org/reference/createReader_.html
+
+    [21] Processing Foundation.   “Processing 3+ / Language(API) / createWriter().”
+     https://processing.org/reference/createWriter_.html
+
+    [22] Pierson, Alyssa, et al. “Navigating Congested Environments with Risk Level
+     Sets.” 2018 IEEE International Conference on Robotics and Automation (ICRA).
+     IEEE, 2018.
+
+
+
+
+
+
+
+
+
+
+     78
+

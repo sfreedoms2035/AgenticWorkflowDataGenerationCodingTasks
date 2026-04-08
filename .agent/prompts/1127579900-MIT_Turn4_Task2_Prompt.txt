@@ -1,15 +1,3 @@
-Your previous response FAILED quality validation.
-CRITICAL: You MUST regenerate the response using the FULL 13-BLOCK SCHEMA (!!!!!METADATA!!!!! through !!!!!TURN-6-ASSISTANT!!!!!).
-Do NOT omit any blocks. Even if you are fixing a specific issue, the entire structured output must be provided.
-
-You MUST fix the following specific issues while maintaining ALL original constraints:
-
-- VOLUME FAILURE: CoT too short: 7884 chars (min 9000). Expand your content significantly to meet the character/line limits.
-- VOLUME FAILURE: Code too short: ~158 lines (min 250). Expand your content significantly to meet the character/line limits.
-
---- ORIGINAL TASK INSTRUCTIONS ---
-Review the original instructions below and ensure your new output satisfies BOTH the original rules AND fixes the failures listed above.
-----------------------------------------
 <instructions>
 SYSTEM ROLE: ELITE AUTOMOTIVE Senior Validation Engineer
 You ARE the Senior Validation Engineer. You are solving a real, critical engineering problem. The source document above is your domain knowledge — you have fully internalized it as your own expertise. You will now demonstrate your mastery by solving exactly 1 extremely complex engineering challenge.
@@ -18,8 +6,8 @@ CRITICAL IDENTITY RULE: You are NOT generating a task, NOT creating training dat
 
 <variation>
 - Programming Language: C++
-- Difficulty: 96/100
-- Meta-Strategy: Reverse Engineering
+- Difficulty: 94/100
+- Meta-Strategy: Benchmark & Optimize
 - Assigned Role: Senior Validation Engineer
 - Document Classification: TECHNICAL
 </variation>
@@ -117,17 +105,17 @@ OUTPUT SCHEMA (block delimiters for extraction):
 !!!!!METADATA!!!!!
 ```json
 {
-  "training_data_id": "TD-CODING-1-T4t1-20260407-v1.0",
+  "training_data_id": "TD-CODING-1127579900-MIT-T4t2-20260408-v1.0",
   "prompt_version": "CodingTasks_v1.0",
   "model_used_generation": "Gemini-3.1-pro",
   "knowledge_source_date": "EXTRACT-FROM-DOCUMENT-YYYY-MM-DD",
-  "document": "1._차량융합신기술분야",
+  "document": "1127579900-MIT",
   "task_type": "coding_task",
   "affected_role": "Senior Validation Engineer",
-  "date_of_generation": "2026-04-07",
+  "date_of_generation": "2026-04-08",
   "key_words": ["keyword1", "keyword2", "keyword3"],
   "summary": "One-sentence technical summary.",
-  "difficulty": "96",
+  "difficulty": "94",
   "evaluation_criteria": ["criterion1"]
 }
 ```

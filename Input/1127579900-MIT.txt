@@ -1,0 +1,1719 @@
+              Augmenting Anomaly Detection for Autonomous
+                      Vehicles With Symbolic Rules
+                                   by
+                              Tianye Chen
+   Submitted to the Department of Electrical Engineering and Computer
+                                Science
+      in partial fulfillment of the requirements for the degree of
+  Master of Engineering in Electrical Engineering and Computer Science
+                                 at the
+                 MASSACHUSETTS INSTITUTE OF TECHNOLOGY
+                               June 2019
+   c Tianye Chen, MMXIX. All rights reserved.
+   ○
+     The author hereby grants to MIT permission to reproduce and to
+distribute publicly paper and electronic copies of this thesis document
+   in whole or in part in any medium now known or hereafter created.
+
+
+
+
+    Author . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+                                                                             Department of Electrical Engineering and Computer Science
+                                                                                                                          May 24, 2019
+
+      Certified by . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+                                                                                                                          Lalana Kagal
+                                                                                                          Principal Research Scientist
+                                                                                                                     Thesis Supervisor
+
+    Accepted by . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+                                                                                                                       Katrina LaCurts
+                                                                                     Chairman, Masters of Engineering Thesis Committee
+
+2
+
+  Augmenting Anomaly Detection for Autonomous Vehicles
+        With Symbolic Rules
+        by
+        Tianye Chen
+
+   Submitted to the Department of Electrical Engineering and Computer Science
+        on May 24, 2019, in partial fulfillment of the
+        requirements for the degree of
+       Master of Engineering in Electrical Engineering and Computer Science
+
+Abstract
+   My research investigates the issues in anomaly detection as applied to autonomous
+driving created by the incompleteness of training data. I address these issues through
+the use of a commonsense knowledge base, a predefined set of rules regarding driving
+behavior, and a means of updating the base set of rules as anomalies are detected.
+In order to explore this problem I have built a hardware platform that was used to
+evaluate existing anomaly detection developed within the lab and that will serve as
+an evaluation platform for future work in this area. The platform is based on the
+open-source MIT RACECAR project that integrates the most basic aspect of an
+driving autonomous vehicle – lidar, camera, accelerometer, and computer – onto the
+frame of an RC car. We created a set of rules regarding traffic light color transitions
+to test the car’s ability to navigate cones (which represent traffic light colors) and
+detect anomalies in the traffic light transition order. Anomalies regularly occurred in
+the car’s driving environment and its driving rules were updated as a consequence of
+the logged anomalies. The car was able to successfully navigate the course and the
+rules (plausible traffic light color transitions) were updated when repeated anomalies
+were seen.
+
+Thesis Supervisor: Lalana Kagal
+Title: Principal Research Scientist
+
+
+
+
+
+
+
+
+
+
+    3
+
+4
+
+Acknowledgments
+
+   I would like to thank my advisor Lalana Kagal and PhD students Leilani Gilpin
+and Ben Yuan for their continued advice and support on this project.
+
+
+
+
+
+
+
+
+
+
+    5
+
+6
+
+ Contents
+
+
+
+
+ 1  Introduction               13
+
+ 2  Related Work               17
+2.1 Training data gap . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 17
+2.2 Association rule learning . . . . . . . . . . . . . . . . . . . . . . . . . 18
+2.3 Reinforcement learning . . . . . . . . . . . . . . . . . . . . . . . . . . 18
+2.4 Diagnostic systems . . . . . . . . . . . . . . . . . . . . . . . . . . . . 19
+2.5 Adversarial attacks and security applications . . . . . . . . . . . . . . 19
+2.6 Overview of related work . . . . . . . . . . . . . . . . . . . . . . . . . 21
+
+ 3  System Design        23
+3.1 RACECAR architecture . . . . . . . . . . . . . . . . . . . . . . . . . 24
+     3.1.1 Localization . . . . . . . . . . . . . . . . . . . . . . . . . . . . 24
+     3.1.2 Vision . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 24
+     3.1.3 Path planning . . . . . . . . . . . . . . . . . . . . . . . . . . . 25
+     3.1.4 Visualization . . . . . . . . . . . . . . . . . . . . . . . . . . . 27
+3.2 Commonsense monitor . . . . . . . . . . . . . . . . . . . . . . . . . . 28
+3.3 Driving rules . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 31
+3.4 Updating rules . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 32
+
+ 4  Evaluation and Results     35
+4.1 Testing setup . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 37
+4.2 Results . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 41
+
+        7
+
+    4.2.1 Anomaly detection . . . . . . . . . . . . . . . . . . . . . . . . 41
+
+ 5  Conclusion           43
+5.1 Future Work . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 43
+5.2 Summary . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 46
+
+ A Example Error Logs    49
+
+
+
+
+
+
+
+
+
+
+    8
+
+    List of Figures
+
+
+
+    2-1   Noise is generated for each pixel with respect to the underlying gradient
+          for the pixel in the model. The network believes the altered image is a
+          gibbon when it looks the same as the unaltered image to the human
+          eye [14] . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .  20
+
+2-2 Stop sign and its modifications [10] . . . . . . . . . . . . . . . . . . . 20
+
+3-1 The fully assembled RACECAR. . . . . . . . . . . . . . . . . . . . . 24
+
+    3-2   The map of a section of the basement of MIT’s Ray and Maria Stata
+          Center. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   25
+
+    3-3   We are looking for the horizontal angle that the cone makes with the
+          camera; we are looking for the angle 𝛽.             The distance between the
+          cone and the center of the image (𝑏) is averaged between the two left
+          and right images. The angle 𝛽 can be calculated by the following equation:
+
+           2𝑏
+          𝛽 = 𝑎𝑟𝑐𝑡𝑎𝑛( 𝑤𝑖𝑑𝑡ℎ𝑡𝑎𝑛(𝛼))
+
+          . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .   26
+
+    3-4   The distance the cone is from the car can be calculated by using parallax
+          property of the left and right images. we want to solve for the distance 𝑧.
+
+          𝑧 = 𝑥𝐵𝑓
+           − 𝑥′
+
+     The term 𝐵𝑓 was determined empirically through linear regression. . 27
+
+          9
+
+3-5 Waypoints picked around the basement connected with a straight line
+     path. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 28
+3-6 Cone path construction process. . . . . . . . . . . . . . . . . . . . . . 28
+3-7 Rviz shows that the lidar points matches the map (the rainbow points),
+     the location of the green cone seen, and the path planned around the
+     green cone. The set of red arrows show the estimation of the car’s pose. 29
+3-8 Symbolic breakdown of sentences of scene descriptions and their respec-
+     tive reasonableness [13] . . . . . . . . . . . . . . . . . . . . . . . . . . 30
+3-9 Computer architecture for autonomous driving [18] . . . . . . . . . . 31
+
+4-1 Cone setup in the basement of MIT’s Stata building . . . . . . . . . . 41
+
+
+
+
+
+
+
+
+
+
+    10
+
+    List of Tables
+
+
+
+4.1 The five chosen sequences of traffic lights without transition errors . . 38
+4.2 The five chosen sequences of traffic lights with some random transition
+     errors. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 39
+4.3 The five chosen sequences of traffic lights with repeating transition errors. 40
+
+
+
+
+
+
+
+
+
+
+    11
+
+12
+
+    Chapter 1
+
+    Introduction
+
+
+
+   The autonomous driving space has dramatically expanded over the last fifteen
+years. In 2004, the Defense Advanced Research Projects Agency (DARPA) announced
+the first Grand Challenge [6] where one million dollars would be awarded to the team
+that can build a car that could autonomously navigate a rugged desert course. None
+of the fifteen finalists could finish the course. Waymo, a leading self driving company
+that grew out of a team of engineers who participated in the original DARPA Grand
+Challenge, debuted its first self driving taxi service in Arizona [9] fourteen years later.
+   Two popular autonomous driving methods that are currently being explored are
+behavioral reflex and mediated perception. Behavioral reflex maps sensor data directly
+to a driving output [15] whereas mediated perception parses the entire scene into
+discrete components before making a driving decision [15]. Both approaches make
+use of machine learning techniques, which are opaque in their decision making, in the
+intermediary stages between input and output. Due to the uninterpretable nature of
+the space between the input and the output of the network, the decisions made by
+the network are often difficult to understand or explain.
+   Autonomous driving systems are not error free and decisions are usually made
+with models that were formed based on training data. Driving is a complex task,
+and corner cases lack the large volume of training data necessary for models to make
+the correct decision based on input. Instead of exhausting all possibilities for driving
+corner cases, I propose that the autonomous system can evaluate a new situation
+
+        13
+
+using two components - commonsense and a set of driving rules - and then explain
+its decision based on this information. Analogous to how humans approach a new
+situation, the autonomous vehicle would make a decision using prior knowledge and
+applicable driving rules. Those driving rules can then be updated as the car witnesses
+new situations.
+
+   It is common to use training data based models within self-driving solutions.
+Machine learning techniques lend themselves to identify and classify scenes and actions
+similar to ones they have already seen. Perception networks are trained to recognize
+familiar situations since the classifier itself is dependent on the training data used
+to create it. Pattern recognition and general classification can typically guide the
+car to a reasonable decision during normal driving situations. However, driving is
+a complex task and it is difficult to capture every single possible situation a driver
+may face when they are on the road. In unpredictable situations, a classification error
+made by a (neural network, machine learning agent, ...) can potentially cost a human
+life [7]. In Uber’s fatal accident with a pedestrian walking her bike across the street
+[7], the car had trouble classifying Elaine Herzberg as a pedestrian. The autonomous
+system initially classified her as a car, then a bicycle, before ultimately classifying her
+as a pedestrian too late [5]. The uncertainty in the classification could be detected as
+an anomaly by a commonsense rule base since it is not reasonable for an object to
+morph from a car to a bike to a human. The accident might have been avoided had
+there been a commonsense knowledge base in place to recognize that the situation
+was abnormal and could have alerted the car earlier to take the appropriate safety
+measures.
+
+   When the vehicle makes a decision on unfamiliar data based on previous data,
+the conclusion it reaches can often be unreasonable. For example, an AI recently
+interpreted a face on the side of a bus as a person jaywalking [1]. If a human were to
+see the bus crossing the intersection, it would not think that the advertisement on the
+side of the bus is breaking the law by jaywalking. The AI lacks the common sense
+that we humans have in discerning what is reasonable and what is not.
+
+   I propose that the information gap created by the incompleteness of anomalous
+
+        14
+
+training data can be supplemented by commonsense along with a set of rules regarding
+appropriate behavior.
+   My system, implemented as a monitor around the self driving unit, checks vehicle
+data and decisions for expected validity and reasonableness. The decision is reasonable
+if follows the rules set and commonsense knowledge base for the autonomous system.
+Similarly to how biologists are able to classify newly discovered species using a set
+of taxonomy rules, the set of driving rules can be applied to unforeseen situations
+that the system has never encountered before and make inferences about what driving
+actions are reasonable. As the autonomous vehicle encounters new situations, the set
+of driving rules can be updated to reflect acceptable behavior and expected encounters
+in the driving world.
+   In this thesis, I built a hardware platform based on the open-source MIT RACECAR
+[4] project to evaluate anomaly detection and rules updating on real world data as
+opposed to simulations and imaginary hard coded situations. I examined how a
+symbolic reasoner can most efficiently assist a real autonomous driving system in
+detecting anomalies and inconsistencies with driving rules. Along with Leilani Gilpin, I
+also developed a mechanism to learn new driving rules from the rate of and similarities
+between the anomalies seen.
+   The thesis is organized as follows. Chapter 2 compares and contrasts my work
+with related work. In Chapter 3, I detail the system design of the hardware platform I
+built to evaluate anomaly detection and rules updating on real world data. The results
+of hardware testing and the rule updater are detailed in Chapter 4. The hardware
+platform built for this thesis is capable of updating a more complicated rule base with
+the utilization of more of the data that is available to the autonomous machine. I
+conclude with a summary and future research directions in Chapter 5.
+
+
+
+
+
+
+
+
+
+
+    15
+
+16
+  16
+
+    Chapter 2
+
+    Related Work
+
+
+
+    In this chapter, I describe existing literature in the area of anomaly detection as
+    well as discuss other kinds of applications of anomaly detection.
+
+
+2.1 Training data gap
+
+   One of our goals is to tackle a limitation with current machine learning techniques,
+which is that the trained model can only act predictably on data similar to the data
+it was trained on.
+   A recent work by Ramakrishnan et. al tackles a similar problem with gaps in
+performance when models trained on simulator data is applied to real world scenarios
+[20]. The problem is that the training model never encounters some aspects of the
+real world in the simulation, such as emergency vehicles, so the the model learns to
+ignore aspects of the world that it has never seen. Ramakrishnan et. al’s approach
+aims to find blind spots before acting in the real world. The solution is to have the
+autonomous system hand off control to a human when it is not confident of the state.
+For example, if the autonomous agent has a noisy feature that can predict ambulances
+30% of the time, the model learn to transfer control a human when it reaches that
+state.
+   This approach is dependent on having a human in the loop and tries to anticipate
+the uncertainty before it happens whereas my approach aims to catch anomalies
+
+        17
+
+    as they appear in real time. As we move towards fully autonomous vehicles, it is
+    important to be able to detect anomalies and respond appropriately to new situations.
+
+
+2.2 Association rule learning
+
+    In the financial fraud space, there has also been work one in using rules to find
+find fraudulent financial transactions. Sarno et al. used a learned set of rules to
+detect fraud, which is parallel to finding anomalies in autonomous driving decisions
+[21]. Positive and negative association rules are applied to the data which makes each
+data entry positively or negatively associated with fraud. The association rules were
+generated using an apriori algorithm and expert verification of fraud cases.
+    This approach in finding fraud/anomalies in financial transaction data is similar to
+my approach in finding anomalies in driving data in which the data is filtered through
+a hard set of rules that deems if what autonomous vehicle observed is in accordance
+to the rules or not. However, the set of rules used by Sarno et al. is based on training
+data which still inherently has the issue of not being able to cover the corner cases of
+fraudulent behavior. By using strict driving rules that govern the correct behavior of
+vehicle action and govern the world around the car, my system does not rely solely on
+training data to detect anomalies. In addition, the set of rules in the fraud study is
+created by one set of training data and used on a different set of data to find fraudulent
+transactions. Unlike this thesis, the set of rules is ever updated after seeing a new set
+of data, where fraud could manifest itself in a different manner.
+
+
+2.3 Reinforcement learning
+
+   Since autonomous vehicles have been shown to be prone to error [7], it is necessary
+to consider safety measures for these autonomous counterparts. One way to make
+these systems safer is to have them learn from their mistakes. This yields the decision
+of many manufacturers and researchers to use reinforcement learning (RL). In RL,
+an autonomous agent is able to process an action, state, and a reward to learn an
+
+        18
+
+optimal policy for future decisions. Good actions receive positive rewards, and bad or
+erroneous actions receive negative rewards. This is similar to learning new rules from
+anomalous sightings; however, RL can also facilitate human interventions when the
+agent is behaving badly by training the model to alert a human in unsafe situations
+[22]. Most research and examples are limited to a gaming environment rather than a
+real world setting. It has also be shown to be useful in autonomous vehicle negotiation
+[23], but without being able to explain how and why they came to specific conclusion.
+
+
+2.4 Diagnostic systems
+
+   Diagnostic systems have also been explored as a way to mediate abnormal and
+critical situations in autonomous systems. This type of diagnostic system has been
+applied to underwater vehicles. In autonomous underwater vehicles, the state of the
+critical sensors is checked against a knowledge base of known critical situations and
+their critical sensor states [16]. The ontology consists of a set of situations each of
+which contains an antecedent that sets the conditions of situation execution and a
+consequent that sets the actions to be executed if the condition is true. In this case,
+the knowledge base and semantic net usage is used to check for proper handling of
+critical situations instead of anomaly detection.
+
+
+2.5 Adversarial attacks and security applications
+
+   An interesting application of anomaly detection, beyond catching mistakes made
+by neural networks, is finding unreasonable deductions caused by an adversary with
+malicious intent. Adversaries may induce the model to come to an inaccurate but
+precise answer.
+   Adversaries may be able to manipulate the image so that the neural network
+produces an incorrect result even when the image does not appear different to human
+eyes. Adding well crafted noise to the image can induce a trained network to give the
+wrong prediction [14] (fig. 2-1)
+
+        19
+
+        5
+        x +
+        &
+        “panda” “nematode” “gibbon™ 1
+        57.7% confidence 8.2% confidence 99.3 % confidence
+
+Figure 2-1: Noise is generated for each pixel with respect to the underlying gradient
+for the pixel in the model. The network believes the altered image is a gibbon when it
+looks the same as the unaltered image to the human eye [14]
+
+
+   One would want the car to come to the same conclusion when processing two
+different pictures that appear the same to the human eye. When the autonomous
+system comes to a different conclusion than the information presented in the scene,
+we would like the autonomous system to realize that its conclusion is unreasonable.
+In an automotive application, stop signs augmented with black and white patches
+that otherwise looks like graffiti caused the LISA-CNN, which has 91% test accuracy
+to misclassify stop signs as a speed limit 45mph sign [10] (Fig. 2-2). However, a
+system based on commonsense such as ours would have inferred that is is unlikely and
+unreasonable to see a speed limit 45mph sign in a residential intersection, which is
+where stop signs normally appear.
+
+
+Model Physical Dynamics by Sampling  8 3 o
+                               oO     *   45
+         from Distribution     le) Output
+    /    107  fo(z)                       =arget
+        p     Stationary + Drive-By Testing
+
+
+                                          ~
+    RP,           Perturbed Stop Sign Under
+    Input          Varying Distances/Angles
+
+Figure 2-2: Stop sign and its modifications [10]
+
+                       20
+
+   Another example is the research study published by Tencent Keen labs in regards
+to Tesla’s Autopilot system. Tencent placed three inconspicuous stickers on the road
+and Autopilot interpreted the stickers as a lane marking and directed the car to drive
+onto the opposing traffic lane [3]. For the Autopilot case, it is unreasonable to head
+into oncoming traffic, if you see cars approaching from the opposite direction. A
+commonsense approach would be to detect the action of heading into oncoming traffic
+as an anomaly.
+
+
+2.6 Overview of related work
+
+   In summary, current approaches to anomaly detection still rely on training data
+to create the rules or requires a human in the loop to handle cases when a potential
+anomaly occurs. Training data cannot encapsulate all possible cases, and thus the rules
+generated from training data cannot successfully classify all inputs. Our approach
+begins with a set of concrete rules (in this case, known knowledge of traffic light
+transitions) and a commonsense knowledge base and then flags anomalies when the
+data does not follow the set of concrete rules. When anomalous behavior is observed
+multiple times, the rules updater can then add new rules to the rule base as appropriate.
+
+
+
+
+
+
+
+
+
+
+    21
+
+22
+
+    Chapter 3
+
+    System Design
+
+
+
+   This chapter describes the design and architecture of the hardware and software
+components I developed.
+   The hardware platform I built is based on the open source MIT RACECAR [4]
+hardware platform. It has basic perception and motion planning capabilities that can
+provide realistic data for the reasonableness monitor and the rule updating component.
+The vehicle navigates itself in a clockwise loop around a collection of cones that
+represent traffic light colors. In a real world scenario, when we drive on the road
+and approach a traffic light, we expect a certain order of light transitions. Lights in
+the correct sequence appear in a cycle of green, yellow, then red. The RACECAR
+is given a set of rules that define the traffic light patterns and therefore expects the
+lights/cones to appear in a certain order. A group of cones represent a single traffic
+light pattern while each individual cone represents a color that a car would see at a
+traffic light. For example, a single green cone would mean that the car sees a green
+light and simply drives through. A group of red and green cones represents a car
+pulling into a stop light and then leaving when the light turns green.
+   I introduced anomalies in the traffic light patterns by changing the order in which
+lights appeared and evaluated whether the reasonableness monitor is able to detect
+them. I also used a rule updating framework to add new rules regarding light transition
+patterns in the car’s rules knowledge base on traffic light transition expectations and
+observed anomalies.
+
+        23
+
+3.1 RACECAR architecture
+
+A Traxxas Slash RC racing car is modified to include a JetsonTX2, a Hoyoku
+lidar, a ZED stereo camera, a inertial measurement unit (IMU), and a VESC based
+motor controller[8]. ROS Kinetic runs on the JetsonTX2 and is responsible for the
+computation and decision making of the car (Fig.3-1).
+
+
+
+
+-
+
+> 9
+ol
+   3
+
+   =
+
+
+
+
+
+
+
+Figure 3-1: The fully assembled RACECAR.
+
+
+3.1.1 Localization
+
+The vehicle is given a map of the area it will traverse (Fig.3-2) and localizes itself
+within the map using lidar and odometry data. A particle filter uses the Monte Carlo
+Localization (MCL) algorithm to utilize the data together with the motion and sensor
+model to localize itself within the map.
+
+3.1.2 Vision
+
+A stereo camera on board is used to detect cones and place them on the map
+accordingly. The car drives slowly, so the camera images are processed at a rate of
+5 Hz. Since the camera is only looking for cones straight ahead, I remove top and
+bottom third of the image, as cones could not possibly appear above the ground or be
+blocking the car.
+
+    24
+
+    =
+
+
+|
+
+
+    FE 4Va
+       A
+    x|
+
+
+
+
+
+
+Figure 3-2: The map of a section of the basement of MIT’s Ray and Maria Stata
+Center.
+
+   The image is converted to HSV values and masked using empirically tested red,
+green and yellow thresholds to find and locate the cones in the image. If a contour is
+found, the distance (fig.3-4) and angle (Fig.3-3)from the car is calculated using the
+left and right images of the car.
+   The angle, color and distance of the cone is published on a cone topic that the
+controller is subscribed to. The image processor always publishes the cone that it sees
+even if it has seen it before. It is up to the controller to decide whether the image
+processor is seeing a new cone or re-seeing the same old cone.
+
+
+3.1.3 Path planning
+
+   A Probabilistic Roadmap Method (PRM) path planner is used for path planning
+around the map. Initially, waypoints are manually placed on the map starting at
+the top left hand corner and proceeding in a clockwise fashion (Fig.3-5). PRM is
+used to plan a path from waypoint to waypoint. PRM first randomly generates nodes
+across the entire map. I seeded the map with 4000 nodes. Nodes that do not have
+
+        25
+
+    a=w/2       b   Image (width)
+    \
+    \               |
+        \
+
+        \
+
+        \          {
+
+        \
+        \       |
+
+        \    4
+        A      |
+
+        \     H
+        ac i  B
+
+              Camera
+
+
+    Figure 3-3: We are looking for the horizontal angle that the cone makes with the
+    camera; we are looking for the angle 𝛽. The distance between the cone and the center
+    of the image (𝑏) is averaged between the two left and right images. The angle 𝛽 can
+    be calculated by the following equation:
+                  2𝑏
+        𝛽 = 𝑎𝑟𝑐𝑡𝑎𝑛( 𝑤𝑖𝑑𝑡ℎ𝑡𝑎𝑛(𝛼))
+
+
+
+interference (i.e. their edge does not go through a wall) are connected if the Euclidean
+distance is less than a specified parameter. The web of connected nodes are generated
+once and saved. The saved web of connected nodes are loaded every time the ROS
+path service is re-started.
+
+   A path is created between the start and next goal point using Dijkstra’s search
+algorithm with Euclidean distance between nodes as weights.
+
+   The ROS path service uses the PRM path planner to plan a path from waypoint
+to waypoint.
+
+   When the car detects a cone, it must re-plan a path around the cone in the correct
+direction: right for green and, left for red and yellow). The planner constructs a
+
+        26
+
+    X
+
+
+
+
+        z
+
+        HX
+    f        f
+    Baseline     oO’
+       B
+
+    Figure 3-4: The distance the cone is from the car can be calculated by using parallax
+    property of the left and right images. we want to solve for the distance 𝑧.
+
+        𝑧 = 𝑥𝐵𝑓
+        − 𝑥′
+    The term 𝐵𝑓 was determined empirically through linear regression.
+
+    straight path to the correct side of the cone and re-plans a path from the current
+    point to one end point of the straight line and from the other end of the straight line
+    back onto the originally planned path.
+    To create the straight line to the side of the cone, a perpendicular line to the
+    original base path is constructed through the cone. Two concentric circles are drawn
+    around the cone and where the perpendicular line intersects the inner cone becomes
+    the midpoint of the straight path. The end points of the path are constructed by
+    drawing the straight line parallel to the base path and through the midpoint. (Fig.3-6)
+
+
+3.1.4 Visualization
+
+   I used rviz to visualize the information from the RACECAR and to monitor the
+status of the planner and the vision system. Rviz is used to make sure that the car
+is localizing, planning, and recognizing cones in the correct manner (Fig.3-7). Rviz
+is run on a laptop that is connected on the same network as the RACECAR and
+the ROS_MASTER_URI is set to the IP address of the RACECAR. Rviz is important in
+
+        27
+
+    y |        |
+          |
+
+          1     AL
+        we     3
+    1.        4 Pan
+
+       |110    J
+
+
+
+    Figure 3-5: Waypoints picked around the basement connected with a straight line
+    path.
+
+        ine
+        N    TY
+        en   NL %
+
+                 Figure 3-6: Cone path construction process.
+
+visualizing the RACECAR state and a powerful debugging tool.
+
+
+3.2 Commonsense monitor
+
+   One way to check for the anomalies in the scene is to understand what the
+scene parser believes to be in the scene and how those elements interact with each
+other. Translating the labeled scene into a human readable description can provide a
+structured way to parse the scene elements through natural language processing. The
+description of the scene (with objects as detected by perception) can be broken down
+into subject, object, and verb. [13] The system then constructs a Trans-frame from the
+description which represents the concepts in a language free way. Trans-frames work
+to represent concepts as complex combinations of language-free conceptual primitives
+
+        28
+
+    File Panels Help
+
+
+    lobat  opirs         ed]         views
+                                     Type:    orbit (vin)
+                                                  Zer0
+
+                                     Curren...
+            Light        307         Nea...   0.01
+    Frame Rate
+                                      ime
+    lana   Status  Ok                         edi
+    «arr    Frame        v             i      005
+       et                             Yaw     619179
+                                     Pitch    1.0698
+                                      Foc.    [13096;2.
+    Topic
+
+                         01
+    Keep   Tolerance
+    Shape                Soo
+                         v
+                         v
+                         v
+
+    Topic                Ja     J  |
+    Siem)                Flatᵛ     ol
+    Sle
+
+    Ah
+    Peston               X02
+    Color                Inte.
+
+                         ne
+    giro                 v
+    Min Color                I
+    Max Color                2
+                         6...
+
+                         hie
+    ara
+
+
+
+
+
+
+
+   da                                save Remove                                              Rename
+
+    TimeTime: 5312329425 ROS Elapsed: 136.70  Wall Times 155312325432 olElapsed: 13667  Experimental
+  ROS
+ Reset
+
+
+Figure 3-7: Rviz shows that the lidar points matches the map (the rainbow points),
+the location of the green cone seen, and the path planned around the green cone. The
+set of red arrows show the estimation of the car’s pose.
+
+
+
+
+
+
+
+
+
+
+                         29
+
+for an inner language ontology [13].The commonsense knowledge base is applied to
+the frame to evaluate the “reasonableness” of the frame (Fig.3-8)
+
+                              Single   Compound
+                             Primitive      Primitive       Subject  ||  Object  ||  Reason
+                                                            Anchor       Anchor    -able
+
+Monkey throws
+ Aflowerhitsananapple    | PROPEL | GRASP, PROPEL, MOVE ||  animal   |   object  ||  Yes
+Atree hits a carinaapple ||  PROPEL | GRASP.                plant    |   object       No
+Acar leaks gasstorm          PROPEL  PROPEL, MOVE           weather |    plant   |   Yes
+                              EXPEL     EXPEL                        |
+  A man breathes out         EXPEL      EXPEL               person   |    None   ||  Yes
+   A man eats food           INGEST     INGEST              person   |    None   |   Yes
+                                                            person       object      Yes
+A giraffe eatsa leaves       INGEST     INGEST              animal   |   plant       Yes
+     A'boat eats
+    plant                    INGEST     INGEST              vehicle  |   plant   |    No
+
+Figure 3-8: Symbolic breakdown of sentences of scene descriptions and their respective
+reasonableness [13]
+
+                This frame parsing and commonsense knowledge base can be used as a check on
+the reasonableness of objects in the vehicle’s range of sight. The monitor uses this
+approach and checks if the perceived action in the scene is plausible and fits within
+the commonsense framework.
+             Here is how the approach can determine the observation that “a mailbox crossed
+the street” is unreasonable. Firstly, the MOVE primitive requires that the actor role
+must be filled by an “animate” object that can make other objects move or change
+location. Here, the actor role is filled by “mailbox”. To determine whether it satisfies
+or violates the constraint on the actor role, the system attempts to anchor the mailbox
+concept to a concept in ConceptNet to determine if it is an animate object or not. In
+this case there is a path through ConceptNet’s graph between “mailbox” and “object”,
+the anchor for inanimate objects, and no path between “mailbox”and “animal,” the
+anchor for animate objects. So the system determines that “mailbox” is inanimate
+and flags a violation of the actor constraints for the MOVE primitive act [13].
+         The path planning stage is an alternative place in the autonomous driving pipeline
+where the common sense and validity of the decision in context with the scene can be
+checked. One application checks the commanded speed of the car with with a known
+knowledge base of speed limit data to give the car context awareness control of its
+speed [24]. If all the cars surrounding the current vehicle are all traveling below the
+
+                                  30
+
+    Sensing  Perception  Decision
+
+
+
+
+
+
+
+
+
+
+        Figure 3-9: Computer architecture for autonomous driving [18]
+
+speed limit due to an emergency vehicle or if the roads are particularly poor, the car
+still believes that the maximum speed limit posted when in working reality the limit is
+lower. Our system can observe the surrounding situation, see that the average speed
+of other vehicles are significantly below the speed limit, mark the phenomena as an
+anomaly, and then proceed to update the rules file to lower the speed limit if in the
+same situations again.
+
+
+    3.3     Driving rules
+
+          There are rules for passing each cones, just like there are rules for encountering
+    each color of traffic life when driving on real roads. The rules for passing each cone is
+    as such:
+
+     1. green cone: pass on the right
+
+     2. red cone: pass on the left
+
+     3. yellow cone: pass on the left
+
+            The driving rules are built into the controller that processes each cone that is
+    detected. The driving rule is currently represented with the boolean flag “right.” Since
+    the car passes a green cone on the right side, that boolean is set to be true when a
+
+         31
+
+green cone is detected. The controller subscribes to a cone channel that contains cone
+information, which then requests the path planner to plan around the cone accordingly.
+The car also has a set of rules regarding traffic light order, which is stored in a Python
+dictionary. Each cone color maps to a list of allowed preceding colors. After the
+car passes a cone, the car logs the cone location, car location, and time that it was
+recorded. The car also checks the color against the last color that it saw and checks if
+it was a valid transition. If the transition was not valid, the car logs the error, why it
+is an error, and what color it expected to see given the previous color.
+    After driving past a set of cones representing a single traffic light, the autonomous
+driving mode is paused to signal to the system that it is ready for the next set of
+traffic lights. After each set of traffic lights, the local history of colors seen is reset.
+The log is not reset and all of the cones/traffic lights seen are aggregated until the
+end of the test.
+
+
+3.4 Updating rules
+
+   The rule update system is a working system developed by Gilpin et al.[11]. The
+system is designed to incorporate new rules into the adaptable monitoring system[12].
+First, the rule update system reads in an error text file. It then processes errors
+to determine whether any of them occur multiple times. If there is more than one
+instance, then it uses the error information to create a new rule. Rule updating
+can also occur using sentiment analysis of explanations of the anomalous sighting.
+Sentiment analysis and adding explanations to each anomaly sighting is currently
+being explored as an expansion of this thesis.
+   A new rule is created by parsing the error log text. For example, when a green
+cone appears after a yellow cones several times, it creates a new rule that permits a
+green cone to appear after a yellow cone. This transition no longer triggers an error
+in the log text after the rule is updated.
+   The rule updating system looks for specific keywords in the error description, for
+example, “before,” “after,” “because,” etc. If it finds a that keyword, then it processes
+
+        32
+
+the text before and after that word for the rule binding. This creates a symbolic
+triple, composed of the text before the keyword, the keyword itself, and the text after
+the keyword. This triple is used in the new rule text, which is output into the AIR
+Web Policy Rule Language[2]. The end result is a new AIR rule, written in N3 that
+is appended to the existing rule file. The resulting new AIR rule is then read by a
+human and then manually added to the existing python dictionary as a new rule.
+The RACECAR then checks its sightings against this set of updated rules. In the
+future, the rules updating process can be automated. This would happen in two parts.
+Firstly, if a new rule is needed, it would be compared to the rules in the existing rules
+file. If there is a similar rule already present, then the new rule would not need to be
+added. Otherwise, the new rule would be automatically appended to the AIR rule file
+and applied in next iterations of the system.
+
+
+
+
+
+
+
+
+
+
+    33
+
+34
+34
+
+    Chapter 4
+
+    Evaluation and Results
+
+
+
+   I evaluated the reasonableness monitor and the rule updating system with various
+traffic light scenarios and this chapter provides an overview of my evaluation. The
+system was evaluated by navigating the RACECAR autonomously around up to 20
+small plastic cones that represent traffic light patterns. Each cone represents a specific
+traffic light color a car would see and each group of cones represents a single set of
+traffic light transitions a car would encounter at an intersection. Anomalies were
+introduced to the traffic light patterns, and I evaluated how the RACECAR detected
+the anomalies and the rules update process that followed.
+   There are four possible scenarios for traffic light transitions. Here are the possible
+transitions along with their explanations
+
+   1. green: car goes through green light
+
+   2. red → green: car stops at red light, leaves when light turns green
+
+   3. yellow → red → green: car approaches light while it is yellow, stops when it
+      turns red, leaves when it turns green
+
+   4. green → yellow → red → green: car approaches light when it turns from green
+      to yellow, stops when it turns red, leaves when it turns green
+
+   Since the project focuses on transitions, there are three transitions possible
+
+        35
+
+ 1. red → green
+
+ 2. yellow → red
+
+ 3. green → yellow
+
+  I limited each traffic light to have one erroneous transition. There are three possible
+erroneous transitions since for each color, there is only one color that can come after
+it that will make the transition erroneous. The other two colors are either correct or
+the same as the initial color. The three erroneous transitions are:
+
+ 1. red → yellow
+
+ 2. yellow → green
+
+ 3. green → red
+
+  Using these erroneous transitions, these are the possible traffic lights with a single
+erroneous transition with the error in bold.
+
+ 1.  red → yellow → red → green
+
+ 2.  yellow → green
+
+ 3.  green → red → green
+
+  In each test run, the car navigated five traffic lights, or five sets of cones.
+  I decided to run three different sets of tests. The first set involved no errors, the
+second set involved random errors, and the third set involved repeated errors. All
+three sets of tests are then evaluated with the rule updating system [11]. To avoid
+bias in choosing traffic light patterns and their placement, each pattern was given a
+number, and a random number generator was used to generate the sequence.
+  For the first set of tests with no transition errors, the traffic light pattern was
+a sequence of five randomly chosen subsequences. For the second set of tests with
+random errors, I randomly chose the number of errors, where in the sequence of the
+five lights the errors would appear, and which error would appear in each place. I
+
+         36
+
+randomly chose valid light sequences to fill the places in the sequence without an
+error. For the last set of tests with repeated errors, I randomly chose a single type
+of error and then randomly chose the number of times it would appear (a number
+between three to five) as well as where in the sequence the error would appear. Again,
+a randomly chosen valid light sequence was chosen to fill the places in the sequence
+without an error.
+
+   I generated five instances of each type of sequence and allowed the RACECAR to
+drive through the resulting course three times, which generates a sum total of 45 tests.
+
+
+
+
+
+    4.1 Testing setup
+
+
+   The cones were setup in the basement about four feet apart from each other to
+test the RACECAR’s ability to navigate through cones and detecting errors in the
+cone transitions (Fig.4-1
+
+   The car was required to navigate around all of the traffic cones until the end of
+the course. The log file was saved and the process repeated.
+
+   A total of 15 unique sequences were tested (Fig.4.1, Fig.4.2, Fig.4.3)
+
+   The RACECAR is connected to a game pad, and the R1 button gives control
+of the VESC motor controller to the autonomous system. When the button is not
+pressed, the joystick sends a command of 0 speed to the VESC. Joystick input always
+has priority over the autonomous navigation VESC commands as a safety feature.
+VESC executes commands from the navigation topic only when R1 is pressed. This
+is to ensure the safety of the car as the testing area is an active hallway with foot
+traffic. The car is in autonomous control when it navigates around cones. When it
+completes a set of cones representing a traffic light, the R1 button is released to signal
+to the system that it has completed a single traffic light and to reset its queue of light
+sightings for the next traffic light.
+
+        37
+
+sequence # light1   light2  light3 light4  light5
+1          green    green    red    green  yellow
+                            green   yellow  red
+                                     red   green
+                                    green
+2     green        yellow   yellow   red    red
+                     red     red    green  green
+                    green   green
+
+3          yellow    red    green   green  yellow
+            red     green           green   red
+           green                           green
+
+4          green   yellow   yellow  green   red
+                     red     red yellow    green
+                    green   green    red
+                                    green
+5          green     red     red    green  yellow
+           yellow   green   green           red
+            red             green          green
+           green
+
+Table 4.1: The five chosen sequences of traffic lights without transition errors
+
+
+
+
+
+
+
+
+
+
+                    38
+
+sequence # light1   light2  light3  light4  light5
+6          green    green   green   yellow  green
+           yellow                 green
+            red
+           green
+7          green     red    yellow yellow    red
+                    green    red  green     yellow
+                            green            red
+
+8          yellow   green   green    red    green
+           green     red     red    green
+                    green   green
+
+9          green   yellow    red    green   green
+            red     green   green    red    yellow
+           green                    green    red
+                                            green
+10         green   yellow   yellow  green   yellow
+                     red     red            green
+                    green   green
+
+
+Table 4.2: The five chosen sequences of traffic lights with some random transition
+errors.
+
+
+
+
+
+
+
+
+
+
+                    39
+
+sequence #  light1  light2  light3  light4  light5
+    11      yellow  yellow  yellow  yellow  yellow
+            green   green   green   green   green
+
+
+    12      green   green   green   green green
+             red     red     red     red
+            green   green   green   green
+
+    13      green   green   green   green   green
+             red     red     red     red     red
+            green   green   green   green   green
+
+    14      yellow  yellow  yellow  green   yellow
+            green green     green   yellow  green
+                                     red
+                                    green
+    15  green        red     red yellow      red
+        yellow              yellow   red    yellow
+                     red     red    green    red
+
+
+    Table 4.3: The five chosen sequences of traffic lights with repeating transition errors.
+
+
+
+
+
+
+
+
+
+
+    40
+
+    x
+    Q SA    2 Y     /
+
+        SAN           /
+        5   et  =F    A
+    ~      RE:   -    i
+    od        >
+                Ta
+
+        is     +
+
+
+
+
+    2
+    Zz
+
+
+
+
+
+
+
+
+
+
+        Figure 4-1: Cone setup in the basement of MIT’s Stata building
+
+4.2 Results
+
+   In this section, I discuss the results I obtained by autonomously navigating each of
+the 15 unique traffic light sequences three 3 each. The rules updater was used on each
+of the error logs to find repeated anomalies and to create new rules for valid traffic
+light transitions.
+
+
+4.2.1 Anomaly detection
+
+   The RACECAR was able to navigate through the cones successfully and detect
+errors as they occurred. Each cone detected was logged after the car had successfully
+passed the cone. At times the RACECAR erroneously detected a cone twice; however,
+that error did not significantly affect the experiment, as it is valid to see the same
+
+        41
+
+    traffic light color more than once. The error does not induce an unwanted transition
+    error. Example log files from each of the three differing groups of runs (no anomaly,
+    some anomalies, repeated anomalies) can be found in Appendix A.
+
+    Rules Update
+
+     The rule updating system reads in the error log (example listed in appendix A).
+    The system found an occurrence of a repeated transition errors (green after yellow)
+    and created a new rule that green can be expected to come after yellow. The output
+    of the updating system, which is a rule, is illustrated below. The rule updating system
+    was able to successfully detect the recurring light transition errors in each log and
+    update the rule base.         I evaluated one error log from each of the 15 unique cone
+    sequences using the rule updating system. The rule updating system generated new
+    rules for each log that had repeated transition anomalies.
+
+ 1   >>  python3    rule - learn . py       repeat1
+ 2   The  following     events    are       repeats and should                     be new rules
+ 3   ERROR  green            appeared after yellow
+ 4   Found  the     explanation   ERROR     green     appeared                     after yellow
+ 5   Found  triple
+ 6   [ ’ green ’ ,  ’ after ’ , ’ yellow ’]
+ 7
+ 8   : added - rule -1  a     air : Belief - rule ;
+ 9        rdfs : comment     " Trying this  out     .";
+10        air : if  {
+11          foo : green            ontology : after foo : yellow .                 };
+12        air : then [
+13                      air : description (" ERROR  green                    appeared after yellow ");
+14                                   air : assert [ air : statement { foo : cone   air : compliant - with : learned_policy .}]] ;
+15        air : else   [
+16                                   air : assert [ air : statement { foo : cone   air : non - compliant - with : learned_policy .}]] ;
+
+
+
+
+
+
+
+
+
+
+                                                                                   42
+
+    Chapter 5
+
+    Conclusion
+
+
+
+    In this chapter, I describe the many improvements functionally and evaluation-wise
+    that we hope to add to our project.
+
+
+5.1 Future Work
+
+   The work done for this thesis was focused on building and using the RACECAR
+platform to evaluate the performance of anomaly detection in autonomous vehicles
+based on symbolic rules/reasonableness. This was an initial study and the work can
+be expanded to include a richer set of data used in decision making, such as vehicle
+position, cone position, vehicle speed, information from potential other vehicles around
+the autonomous vehicle. A far more expansive set of rules can also be applied to
+the car’s behavior and observations. The set of rules should originate from a driving
+handbook, which details the literal rules set for the vehicles on the road. Additionally,
+given that autonomous vehicles interact with other vehicles and it would be interesting
+to apply the anomaly detection and adaptable monitoring system to an autonomous
+vehicle in the presence of other possibly non-autonomous vehicles.
+   Currently when a rule is violated, the error is logged along with the violated rule.
+The rule learning system currently performs the rules updating process by simply
+checking for repeating anomalies, and automatically adds the anomaly as a rule in
+the acceptable rule set. This process does not utilize the contextual information from
+
+        43
+
+the vehicle’s state and surroundings in making the decision as to whether or not to
+add the rule to the rule set. Adding context to each anomaly helps explain why the
+rule was broken. For example, one rule of the road states that vehicles shall not
+drive through red lights. However, if a car happens to observe multiple times that
+an emergency vehicle drives through a red light, it should not add to its own rule set
+that it should be able to drive through a red light. The context of the rule breaking
+situation, in this case it is an emergency vehicle that drove through the red light
+and not other vehicles, is an important factor in deciding whether to augment the
+given rule set based on observations. A natural next step is to add explanations to
+each observed anomaly to allow the rules updating system to base its updates on
+more than just repeated sightings of an anomaly within a short time frame. Context
+contributes to explanations. For example, the traffic lights could appear out of order
+because the light itself is physically broken, or because the car misinterpreted one
+color as another, among other possible reasons. Just because the car interprets the
+color incorrectly does not mean it should now automatically accept that the traffic
+lights go in a different order. Taking explanations into account when updating rules is
+important because there are certain circumstances and contexts that cannot simply be
+learned by querying data. Explanations are important for learning from few examples
+and learning in new contexts. For example, some situations with multiple plausible
+behaviors will not be well-represented in the training data, like flashing headlights or
+pothole maneuvers, because they are rare events or they change in different contexts.
+But the machine still has to learn to abstract from these examples, in order to explain
+the plausibility of their actions (to themselves). This is similar to the ways that
+humans learn.
+
+   Similar work by [19] looks at explaining individual predictions made by an LSTM
+without any modifications to the underlying model. This is similar to the reason-
+ableness monitoring work [12], except that this work also aims to learn from those
+explanations to make better decisions moving forward. This is similar to one-shot
+learning[17], which aims to learn information from just a few examples.
+
+   Learning behaviors and rules has largely been explored in the context of fraud
+
+        44
+
+detection and other contexts. Sarno et al. created financial fraud detection methods
+that aim to create a list of association rules to better detect malicious behaviors [21].
+Rule learning with monitoring, the ongoing work in this project, aims to learn from
+the explanations of a monitoring system to learn new rules and behaviors to aid in
+learning over future iterations.
+
+   The process we can apply to rule learning in the future is the following. First,
+we examine and process the explanation for its sentiment. Sentiment analysis is a
+well-studied area that aims to predict the polarity of a given text. For our use case of a
+self-driving car, this is important to deem whether the intended behavior is explained
+to be anomalous (or not). For example, when we learn to drive, when we perceive
+anomalous driving behavior, we explain it as so, saying for instance that the driver
+must be in a hurry or the vehicle is an emergency vehicle and therefore follow a different
+set of rules. Or, if we cannot conjure up an explanation, it means the situation must be
+anomalous. Other behaviors that should be covered by new rules will have a neutral or
+positive sentiment. Those explanations should be parsed, and automatically re-input
+into the system as new rules. These new rules could be strict driving rules, or best
+practices. For example, a vehicle may perceive several neighboring cars proceeding to
+turn right through a red light. After seeing the repeated action, the vehicle should
+reason that this is an accepted behavior because multiple cars have performed the
+action, thus a neutral sentiment explanation. In other instances, a vehicle may observe
+several cars driving extremely sporadically, which is accompanied with honking and
+yelling. This negative sentiment explanation; that vehicles are intersecting lanes
+aggressively, should not be learned as a new rule.
+
+   After the sentiment of the explanation is classified, the explanation is parsed into
+a rule format. The goal is to take a human readable explanation in plain text, and
+parse that into an "if this then that" format rule. Usually, this relies on looking for
+symbolic causal terms in the explanation, like "because" or time-varying symbolic
+terms like "before" and "after."
+
+   Another extension of the project is to implement the work by Gilpin et al.’s
+[13] work in regards to reasonable monitoring using scene parser and conceptual
+
+        45
+
+primitive decomposition. In place of the traffic light pattern rules, a set of rules
+derived from a driving handbook can offer a richer set of rules against which one can
+check reasonableness. To utilize the full set of rules also requires building a richer
+environment for the RACECAR to emulate a real-world driving situation.
+
+
+5.2 Summary
+
+   Current tools developed for anomaly detection use rule based systems that are
+generated using training data and humans-in-the-loop. There still remains the problem
+of edge case training data and the necessity of human intervention which prevents a
+vehicle from being truly autonomous. My work focuses on addressing these issues in
+anomaly detection by using a commonsense knowledge base, a predefined set of rules,
+and a means of updating the base set of rules as anomalies are found and classified.
+The hardware platform allows for the future development of the project and generates
+realistic data for evaluation.
+   In this thesis, I built and implemented a version of the open source MIT RACECAR
+project as a hardware platform to test the anomaly detection and rules updating
+framework. The experiments involved navigating the RACECAR around sets of cones
+that represent traffic light color orders that mimicked real life driving scenarios. The
+car contained driving rules on how to navigate each colored cone and also rules on
+valid traffic light transitions and checked each detected cone against the traffic light
+order rules. Anomalies were introduced to the traffic light color orders so some lights
+did not appear in the normal green-yellow-red order. The car navigated the course
+with no anomalies, some anomalies, and repeating anomalies. The car logged all cones
+that it saw and flagged unexpected traffic light color transitions. The rules updating
+framework was applied to the logs and was able to find the patterned irregularities.
+   This traffic light experiment is a simple example of how anomaly detection coupled
+with a rule updating framework could work together in real life to inform the car
+of unreasonable and strange sightings. Machine learning relies on training data and
+previously seen input. However, not all corner cases can be accounted for so it is
+
+        46
+
+impossible to include all scenarios that an autonomous systems might encounter. As
+autonomous machines become more complex, there are more ways that they can fail.
+Updating an existing set of rules from anomalies and new situations is a natural way
+to make these systems more robust.
+
+
+
+
+
+
+
+
+
+
+    47
+
+48
+  48
+
+    Appendix A
+
+    Example Error Logs
+
+
+
+
+    Listing A.1: Log file for traffic lights without transition errors: sequence 1 (Fig. 4.1)
+
+ 1 .. .. ... ... .. ... .. ... .
+ 2 saw green
+ 3 cone location [ -0.70446253 0.23700085]
+ 4 car location ( -0.12512813510112328 , 0.4072552633235104 , 1.8437552010002323)
+ 5 time : 1553038041.35
+ 6
+ 7 .. .. ... ... .. ... .. ... .
+ 8 saw green
+ 9 cone location [ -6.38526051 -1.70969481]
+10 car location ( -6.4912590232822875 , -1.0678897144438855 , -2.9804117470938833)
+11 time : 1553038064.36
+12
+13 .. .. ... ... .. ... .. ... .
+14 saw red
+15 cone location [ -11.50563859 -1.73875663]
+16 car location ( -11.456451314827829 , -2.315995950535272 , -3.0482012567101666)
+17 time : 1553038086.38
+18
+19 saw green
+20 cone location [ -14.15248748 0.13420653]
+21 car location ( -13.351984151667699 , 0.18374850272711785 , 1.6066485891543618)
+22 time : 1553038095.94
+23
+24 .. .. ... ... .. ... .. ... .
+25 saw green
+26 cone location [ -19.30022175 -1.77057121]
+27 car location ( -19.48897722935647 , -1.2483664208150635 , -2.8652253641792074)
+28 time : 1553038118.62
+29
+30 saw yellow
+31 cone location [ -24.67044653 -1.57417882]
+32 car location ( -24.68702891795409 , -2.1359811617575937 , -3.103686420670335)
+33 time : 1553038131.1
+34
+35 saw red
+36 cone location [ -30.58494499 -0.7577518 ]
+37 car location ( -30.658686803678684 , -1.3353637145970723 , 3.0455743285365346)
+38 time : 1553038144.24
+
+
+    49
+
+39
+40 saw green
+41 cone location [ -34.34016167 2.62120769]
+42 car location ( -34.18001420292492 , 2.794288198890393 , 2.3343337379010456)
+43 time : 1553038160.22
+44
+45 .. .. ... ... .. ... .. ... .
+46 saw yellow
+47 cone location [ -33.21207141 7.47530798]
+48 car location ( -33.840991480649876 , 7.8568159855428865 , 1.0440188153549848)
+49 time : 1553038179.61
+50
+51 saw red
+52 cone location [ -34.17586175 11.28563998]
+53 car location ( -34.117080750338964 , 11.417297031161104 , 2.4424683651814014)
+54 time : 1553038186.22
+55
+56 saw green
+57 cone location [ -31.83868132 15.16909006]
+58 car location ( -32.15516789144839 , 14.519568666374552 , -0.4756447847178715)
+59 time : 1553038199.0
+60
+61 .. .. ... ... .. ... .. ... .
+
+
+    Listing A.2: Log file for traffic lights with random transition errors: sequence 6 (Fig.
+    4.2)
+
+ 1
+ 2 .. .. ... ... .. ... .. ... .
+ 3 saw green
+ 4 cone location [ -1.20315832 -0.57228048]
+ 5 car location ( -1.2807292373046169 , -0.008971256600969731 , -3.0264783894113085)
+ 6 time : 1553037644.94
+ 7
+ 8 saw yellow
+ 9 cone location [ -2.49782205 -1.92630994]
+10 car location ( -1.9638795288997635 , -1.5684364132220296 , -0.93282282599856)
+11 time : 1553037651.4
+12
+13 saw red
+14 cone location [ -7.96080256 -1.89994298]
+15 car location ( -8.02980957114717 , -2.4681837086565985 , 3.0382115362831588)
+16 time : 1553037684.28
+17
+18 saw green
+19 cone location [ -9.44727791 0.39579729]
+20 car location ( -8.621296727143589 , 0.2301645655152624 , 1.3714112915027268)
+21 time : 1553037693.09
+22
+23 .. .. ... ... .. ... .. ... .
+24 saw green
+25 cone location [ -14.47189755 -1.59112153]
+26 car location ( -14.658315373707493 , -0.9990677773305542 , -2.8413766870470294)
+27 time : 1553037714.65
+28
+29 .. .. ... ... .. ... .. ... .
+30 saw green
+31 cone location [ -19.43948253 -0.20877225]
+32 car location ( -19.510456483194357 , 0.3892001437817271 , -3.0336650258367035)
+33 time : 1553037733.79
+
+
+    50
+
+34
+35 .. .. ... ... .. ... .. ... .
+36 saw yellow
+37 cone location [ -21.91674007 -1.76080718]
+38 car location ( -21.683795071972185 , -2.244401572444239 , -2.677808801675548)
+39 time : 1553037747.93
+40
+41 saw green
+42 cone location [ -24.16844617 0.46777857]
+43 car location ( -25.223320369495866 , 0.3018080517785095 , 1.742221673684914)
+44 time : 1553037760.72
+45
+46 ERROR green appeared after yellow
+47
+48 .. .. ... ... .. ... .. ... .
+49 saw green
+50 cone location [ -32.41609897 0.96640755]
+51 car location ( -32.35564716060205 , 0.9661621132886078 , 1.171794563747732)
+52 time : 1553037794.31
+53
+54 .. .. ... ... .. ... .. ... .
+
+
+    Listing A.3: Log file for traffic lights with repeated transition errors: sequence 11 (Fig.
+    4.3)
+
+ 1
+ 2 .. .. ... ... .. ... .. ... .
+ 3 saw yellow
+ 4 cone location [ -1.31887591 -1.64536433]
+ 5 car location ( -1.2090173028168014 , -2.2019288544649043 , -2.9311938578398773)
+ 6 time : 1553045002.14
+ 7
+ 8 saw green
+ 9 cone location [ -4.28213169 0.39424341]
+10 car location ( -3.40236644288562 , 0.4600299266547557 , 1.6410429459543834)
+11 time : 1553045012.41
+12
+13 ERROR green appeared after yellow
+14
+15 .. .. ... ... .. ... .. ... .
+16 saw yellow
+17 cone location [ -8.92437828 -1.66078512]
+18 car location ( -8.401970577213934 , -1.534493414519475 , -1.3154733974639097)
+19 time : 1553045033.04
+20
+21 saw green
+22 cone location [ -12.09853355 0.11984987]
+23 car location ( -11.23656919129367 , 0.2965209723608454 , 1.7595208200356645)
+24 time : 1553045046.33
+25
+26 ERROR green appeared after yellow
+27
+28 .. .. ... ... .. ... .. ... .
+29 saw yellow
+30 cone location [ -14.0137413 -1.86614991]
+31 car location ( -15.11967917801224 , -1.9617358128938507 , -1.4989679564934923)
+32 time : 1553045068.65
+33
+34 saw green
+35 cone location [ -18.89876099 -0.34748259]
+
+
+        51
+
+36 car location ( -18.960254034884645 , -0.3407134188498406 , 1.7032764889091314)
+37 time : 1553045088.02
+38
+39 ERROR green appeared after yellow
+40
+41 .. .. ... ... .. ... .. ... .
+42 saw yellow
+43 cone location [ -22.25739228 -1.7517678 ]
+44 car location ( -22.13849379657888 , -2.281988283444419 , -2.8843460102308853)
+45 time : 1553045104.32
+46
+47 saw green
+    48  cone location [ -27.1093992  0.41790404]
+49 car location ( -28.400852597730562 , 0.43198412515118906 , 1.6092593228560392)
+50 time : 1553045117.76
+51
+52 ERROR green appeared after yellow
+53
+54 .. .. ... ... .. ... .. ... .
+55 saw yellow
+56 cone location [ -33.81228796 5.44165228]
+57 car location ( -34.42702165092025 , 5.383335779546803 , 1.6836666322138085)
+58 time : 1553045145.7
+59
+60 saw green
+61 cone location [ -33.03422111 10.77680577]
+62 car location ( -32.50144893436689 , 10.741673750778823 , 1.498008306197782)
+63 time : 1553045158.72
+64
+65 ERROR green appeared after yellow
+66
+67 .. .. ... ... .. ... .. ... .
+
+
+
+
+
+
+
+
+
+
+                                     52
+
+   Bibliography
+
+
+
+[1] AI Mistakes Bus-Side Ad for Famous CEO, Charges Her with Jaywalk-
+   ing. https://www.caixinglobal.com/2018-11-22/ai-mistakes-bus-side-a
+   d-for-famous-ceo-charges-her-with-jaywalkingdo-101350772.html. life
+   news.
+
+   [2] AIR Web Rule Language. http://dig.csail.mit.edu/2009/AIR/.
+
+[3] Experimental Security Research of Tesla Autopilot. https://keenlab.tencent.
+   com/en/whitepapers/Experimental_Security_Research_of_Tesla_Autopil
+   ot.pdf.
+
+   [4]  mit-racecar. https://github.com/mit-racecar. Accessed Mar 13, 2018. Github
+        Repository.
+
+   [5]  PRELIMINARY REPORT HIGHWAY HWY18MH010. https://www.ntsb.gov
+        /investigations/AccidentReports/Reports/HWY18MH010-prelim.pdf.
+
+[6] The Grand Challenge. https://www.darpa.mil/about-us/timeline/-grand
+   -challenge-for-autonomous-vehicles. DARPA.
+
+   [7]  Uber’s Self-Driving Car Saw the Woman It Killed, Report Says. https://www.
+        wired.com/story/uber-self-driving-crash-arizona-ntsb-report/.
+
+   [8] VESC Project. https://vesc-project.com/.
+
+[9] Waymo unveils self-driving taxi service in Arizona for paying customers.
+   https://www.reuters.com/article/us-waymo-selfdriving-focus/waymo
+   -unveils-self-driving-taxi-service-in-arizona-for-paying-customers
+   -idUSKBN1O41M2. arizona.
+
+  [10]  Ivan Evtimov, Kevin Eykholt, Earlence Fernandes, Tadayoshi Kohno, Bo Li, Atul
+        Prakash, Amir Rahmati, and Dawn Song. Robust physical-world attacks on
+        machine learning models. CoRR, abs/1707.08945, 2017.
+
+  [11]  Leilani H. Gilpin. Learning symbolic commonsense rules through explanation.
+        2019.
+
+  [12]  Leilani H. Gilpin and Lalana Kagal. An adaptable self-monitoring framwork for
+        complex machines. page 3, 2019.
+
+            53
+
+[13] Leilani Henrina Gilpin, Jamie C. Macbeth, and Evelyn Florentine. Monitoring
+     scene understanders with conceptual primitive decomposition and commonsense
+     knowledge. 2018.
+[14] Ian Goodfellow, Jonathon Shlens, and Christian Szegedy. Explaining and har-
+     nessing adversarial examples. In International Conference on Learning Represen-
+    tations, 2015.
+[15] Brody Huval, Tao Wang, Sameep Tandon, Jeff Kiske, Will Song, Joel Pazhayam-
+     pallil, Mykhaylo Andriluka, Pranav Rajpurkar, Toki Migimatsu, Royce Cheng-
+    Yue, Fernando A. Mujica, Adam Coates, and Andrew Y. Ng. An empirical
+     evaluation of deep learning on highway driving. CoRR, abs/1504.01716, 2015.
+[16] A. Inzartsev, A. Pavin, A. Kleschev, V. Gribova, and G. Eliseenko. Application
+     of artificial intelligence techniques for fault diagnostics of autonomous underwater
+    vehicles. In OCEANS 2016 MTS/IEEE Monterey, pages 1–6, Sep. 2016.
+[17] Fei-Fei Li, Rob Fergus, and Pietro Perona. One-shot learning of object categories.
+    IEEE transactions on pattern analysis and machine intelligence, 28(4):594–611,
+    2006.
+[18] Shaoshan Liu, Jie Tang, Zhe Zhang, and Jean-Luc Gaudiot. CAAD: computer
+     architecture for autonomous driving. CoRR, abs/1702.01894, 2017.
+[19] W. James Murdoch, Peter J. Liu, and Bin Yu. Beyond word importance: Con-
+     textual decomposition to extract interactions from lstms. CoRR, abs/1801.05453,
+    2018.
+[20] Ramya Ramakrishnan, Ece Kamar, Besmira Nushi, Debadeepta Dey, Julie Shah,
+     and Eric Horvitz. Overcoming blind spots in the real world: Leveraging comple-
+     mentary abilities for joint execution. 2019.
+[21] Riyanarto Sarno, Rahadian Dustrial Dewandono, Tohari Ahmad, Moham-
+     mad Farid Naufal, and Fernandes Sinaga. Hybrid association rule learning and
+     process mining for fraud detection. IAENG International Journal of Computer
+    Science, 42(2), 2015.
+[22] William Saunders, Girish Sastry, Andreas Stuhlmueller, and Owain Evans. Trial
+    without error: Towards safe reinforcement learning via human intervention. In
+    Proceedings of the 17th International Conference on Autonomous Agents and
+    MultiAgent Systems, pages 2067–2069. International Foundation for Autonomous
+    Agents and Multiagent Systems, 2018.
+[23] Shai Shalev-Shwartz, Shaked Shammah, and Amnon Shashua. Safe, multi-agent,
+     reinforcement learning for autonomous driving. arXiv preprint arXiv:1610.03295,
+    2016.
+[24] Lihua Zhao, Ryutaro Ichise, Seiichi Mita, and Yutaka Sasaki. An ontology-based
+     intelligent speed adaptation system for autonomous cars. 11 2014.
+
+        54
+
