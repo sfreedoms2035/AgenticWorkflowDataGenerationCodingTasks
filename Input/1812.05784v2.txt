@@ -1,0 +1,525 @@
+arXiv:1812.05784v2  [cs.LG]  7 May 2019
+
+
+
+
+
+
+
+
+
+
+    Performance (AP)  Performance (mAP)
+
+
+
+
+
+
+
+
+
+
+    Performance (AP)  Performance (AP)
+
+
+
+
+
+
+
+
+
+
+    PointPillars: Fast Encoders for Object Detection from Point Clouds
+
+    Alex H. Lang Sourabh Vora Holger Caesar Lubing Zhou Jiong Yang
+        Oscar Beijbom
+        nuTonomy: an APTIV company
+        {alex, sourabh, holger, lubing, jiong.yang, oscar}@nutonomy.com
+
+
+        Abstract                                                                      All classes                              Car
+           Object detection in point clouds is an important aspect     66                               PP    86               C        PP
+        many robotics   such as autonomous                             64    F     A                          84         A      P+
+    of      applications                                  driving.                                            82   F
+    In this paper we consider the problem of encoding a point          62
+    cloud into a format appropriate for a downstream detection         60                  S                  80       V        S
+    pipeline. Recent literature suggests two types of encoders;        58        V                            78       M
+    fixed encoders tend to be fast but sacrifice accuracy, while                        20     40         60                20    40    60
+    encoders that are learned from data are more accurate, but                        Pedestrian                                Cyclist
+    slower. In this work we propose PointPillars, a novel en-          50        A                            62
+    coder which utilizes PointNets to learn a representation of              F                          PP         F                    PP
+    point clouds organized in vertical columns (pillars). While        48                  S                  60
+    the encoded features can be used with any standard 2D con-         46                                     58         A
+    volutional detection architecture, we further propose a lean       44
+    downstream network. Extensive experimentation shows that           42        V                            56       V        S
+    PointPillars outperforms previous encoders with respect to                          20     40         60                20    40    60
+    both speed and accuracy by a large margin. Despite only                             Runtime (Hz)                        Runtime (Hz)
+    using lidar, our full detection pipeline significantly outper-
+    forms the state of the art, even among fusion methods, with       Figure 1. Bird’s eye view performance vs speed for our proposed
+    respect to both the 3D and bird’s eye view KITTI bench-           PointPillars,     PP       method on the KITTI [5] test set. Lidar-only
+    marks. This detection performance is achieved while run-          methods drawn as blue circles; lidar & vision methods drawn as
+    ning at 62 Hz: a 2 - 4 fold runtime improvement. A faster         red squares. Also drawn are top methods from the KITTI leader-
+    version of our method matches the state of the art at 105 Hz.     board:                M : MV3D [2], A AVOD [11], C : ContFuse [15], V :
+    These benchmarks suggest that PointPillars is an appropri-        VoxelNet [31],            F : Frustum PointNet [21],   S : SECOND [28],
+    ate encoding for object detection in point clouds.                P+ PIXOR++ [29]. PointPillars outperforms all other lidar-only
+                                                                      methods in terms of both speed and accuracy by a large margin.
+                                                                      It also outperforms all fusion based method except on pedestrians.
+    1. Introduction                                                   Similar performance is achieved on the 3D metric (Table 2).
+             Deploying autonomous vehicles (AVs) in urban environ-
+    ments poses a difficult technological challenge.         Among     Following the tremendous advances in deep learning
+    other tasks, AVs need to detect and track moving objects          methods for computer vision, a large body of literature has
+    such as vehicles, pedestrians, and cyclists in realtime. To       investigated to what extent this technology could be applied
+    achieve this, autonomous vehicles rely on several sensors         towards object detection from lidar point clouds [31, 29, 30,
+    out of which the lidar is arguably the most important.       A    11, 2, 21, 15, 28, 26, 25]. While there are many similarities
+    lidar uses a laser scanner to measure the distance to the         between the modalities, there are two key differences: 1)
+    environment, thus generating a sparse point cloud repre-          the point cloud is a sparse representation, while an image is
+    sentation. Traditionally, a lidar robotics pipeline interprets    dense and 2) the point cloud is 3D, while the image is 2D.
+    such point clouds as object detections through a bottom-          As a result object detection from point clouds does not triv-
+    up pipeline involving background subtraction, followed by         ially lend itself to standard image convolutional pipelines.
+    spatiotemporal clustering and classification [12, 9].              Some early works focus on either using 3D convolu-
+
+        1
+
+tions [3] or a projection of the point cloud into the image performance at over 100 Hz (Figure 5). We have also re-
+[14]. Recent methods tend to view the lidar point cloud leased code (https://github.com/nutonomy/second.pytorch)
+from a bird’s eye view [2, 11, 31, 30]. This overhead per- that can reproduce our results.
+spective offers several advantages such as lack of scale am-
+biguity and the near lack of occlusion. 1.1. Related Work
+   However, the bird’s eye view tends to be extremely We start by reviewing recent work in applying convolu-
+sparse which makes direct application of convolutional tional neural networks toward object detection in general,
+neural networks impractical and inefficient. A common and then focus on methods specific to object detection from
+workaround to this problem is to partition the ground plane lidar point clouds.
+into a regular grid, for example 10 x 10 cm, and then per-
+form a hand crafted feature encoding method on the points 1.1.1 Object detection using CNNs
+in each grid cell [2, 11, 26, 30]. However, such methods
+may be sub-optimal since the hard-coded feature extraction Starting with the seminal work of Girshick et al. [6] it was
+method may not generalize to new configurations without established that convolutional neural network (CNN) archi-
+significant engineering efforts. To address these issues, and tectures are state of the art for detection in images. The
+building on the PointNet design developed by Qi et al. [22], series of papers that followed [24, 7] advocate a two-stage
+VoxelNet [31] was one of the first methods to truly do end- approach to this problem, where in the first stage a re-
+to-end learning in this domain. VoxelNet divides the space gion proposal network (RPN) suggests candidate proposals.
+into voxels, applies a PointNet to each voxel, followed by Cropped and resized versions of these proposals are then
+a 3D convolutional middle layer to consolidate the vertical classified by a second stage network. Two-stage methods
+axis, after which a 2D convolutional detection architecture dominated the important vision benchmark datasets such as
+is applied. While the VoxelNet performance is strong, the COCO [17] over single-stage architectures originally pro-
+inference time, at 4.4 Hz, is too slow to deploy in real time. posed by Liu et al. [18]. In a single-stage architecture a
+Recently SECOND [28] improved the inference speed of dense set of anchor boxes is regressed and classified in a
+VoxelNet but the 3D convolutions remain a bottleneck. single stage into a set of predictions providing a fast and
+   In this work we propose PointPillars: a method for ob- simple architecture. Recently Lin et al. [16] convincingly
+ject detection in 3D that enables end-to-end learning with argued that with their proposed focal loss function a sin-
+only 2D convolutional layers. PointPillars uses a novel en- gle stage method is superior to two-stage methods, both in
+coder that learn features on pillars (vertical columns) of the terms of accuracy and runtime. In this work, we use a single
+point cloud to predict 3D oriented boxes for objects. There stage method.
+are several advantages of this approach. First, by learning
+features instead of relying on fixed encoders, PointPillars 1.1.2 Object detection in lidar point clouds
+can leverage the full information represented by the point Object detection in point clouds is an intrinsically three di-
+cloud. Further, by operating on pillars instead of voxels mensional problem. As such, it is natural to deploy a 3D
+there is no need to tune the binning of the vertical direc- convolutional network for detection, which is the paradigm
+tion by hand. Finally, pillars are highly efficient because all of several early works [3, 13]. While providing a straight-
+key operations can be formulated as 2D convolutions which forward architecture, these methods are slow; e.g. Engelcke
+are extremely efficient to compute on a GPU. An additional et al. [3] require 0.5s for inference on a single point cloud.
+benefit of learning features is that PointPillars requires no Most recent methods improve the runtime by projecting
+hand-tuning to use different point cloud configurations. For the 3D point cloud either onto the ground plane [11, 2] or
+example, it can easily incorporate multiple lidar scans, or the image plane [14]. In the most common paradigm the
+even radar point clouds. point cloud is organized in voxels and the set of voxels in
+   We evaluated our PointPillars network on the public each vertical column is encoded into a fixed-length, hand-
+KITTI detection challenges which require detection of cars, crafted, feature encoding to form a pseudo-image which can
+pedestrians, and cyclists in either the bird’s eye view (BEV) be processed by a standard image detection architecture.
+or 3D [5]. While our PointPillars network is trained using Some notable works here include MV3D [2], AVOD [11],
+only lidar point clouds, it dominates the current state of the PIXOR [30] and Complex YOLO [26] which all use varia-
+art including methods that use lidar and images, thus estab- tions on the same fixed encoding paradigm as the first step
+lishing new standards for performance on both BEV and 3D of their architectures. The first two methods additionally
+detection (Table 1 and Table 2). At the same time PointPil- fuse the lidar features with image features to create a multi-
+lars runs at 62 Hz, which is orders of magnitude faster than modal detector. The fusion step used in MV3D and AVOD
+previous art. PointPillars further enables a trade off between forces them to use two-stage detection pipelines, while
+speed and accuracy; in one setting we match state of the art PIXOR and Complex YOLO use single stage pipelines.
+
+    Point cloud        Predictions
+
+   Pillar          Backbone  Detection
+Feature Net        (2D CNN)  Head (SSD)
+
+
+          Point  Stacked          Learned   Pseudo                   Conv                  Deconv
+          cloud   Pillars         Features   image                          C  H/2                   H/2
+                                                                               W/2  Conv        2CW/2
+                                                                            2C  H/4        Deconv    H/2  Concat
+                   N      C                  H                                 W/4  Conv       2C W/2             H/2
+              D    P              P      C   W                                      H/8    Deconv        6C       W/2
+                  Pillar Index                                                 4C W/8          2C    H/2
+                                                                                                     W/2
+
+               Figure 2. Network overview. The main components of the network are a Pillar Feature Network, Backbone, and SSD Detection Head. See
+    Section 2 for more details. The raw point cloud is converted to a stacked pillar tensor and pillar index tensor. The encoder uses the stacked
+     pillars to learn a set of features that can be scattered back to a 2D pseudo-image for a convolutional neural network. The features from the
+             backbone are used by the detection head to predict 3D bounding boxes for objects. Note: here we show the backbone dimensions for the
+    car network.
+
+        In their seminal work Qi et al. [22, 23] proposed a simple   2. PointPillars Network
+         architecture, PointNet, for learning from unordered point                       PointPillars accepts point clouds as input and estimates
+      sets, which offered a path to full end-to-end learning. Vox-                  oriented 3D boxes for cars, pedestrians and cyclists. It con-
+        elNet [31] is one of the first methods to deploy PointNets                   sists of three main stages (Figure 2): (1) A feature encoder
+      for object detection in lidar point clouds. In their method,                        network that converts a point cloud to a sparse pseudo-
+       PointNets are applied to voxels which are then processed by                          image; (2) a 2D convolutional backbone to process the
+        a set of 3D convolutional layers followed by a 2D backbone                     pseudo-image into high-level representation; and (3) a de-
+       and a detection head. This enables end-to-end learning, but   tection head that detects and regresses 3D boxes.
+      like the earlier work that relied on 3D convolutions, Voxel-
+        Net is slow, requiring 225ms inference time (4.4 Hz) for a   2.1. Pointcloud to Pseudo-Image
+         single point cloud. Another recent method, Frustum Point-                        To apply a 2D convolutional architecture, we first con-
+        Net [21], uses PointNets to segment and classify the point   vert the point cloud to a pseudo-image.
+       cloud in a frustum generated from projecting a detection on       We denote by l a point in a point cloud with coordinates
+         an image into 3D. Frustum PointNet’s achieved high bench-   x,  y,      z and reflectance r.             As a first step the point cloud
+            mark performance compared to other fusion methods, but                    is discretized into an evenly spaced grid in the x-y plane,
+        its multi-stage design makes end-to-end learning impracti-                     creating a set of pillars P with P = B. Note that there is
+    cal.         Very recently SECOND [28] offered a series of im-                    no need for a hyper parameter to control the binning in the
+          provements to VoxelNet resulting in stronger performance                      z dimension. The points in each pillar are then augmented
+            and a much improved speed of 20 Hz. However, they were   with x
+    unable to remove the expensive 3D convolutional layers.                 c,  yc,    zc,                xp and yp where the c subscript denotes
+                                                                                  distance to the arithmetic mean of all points in the pillar and
+    1.2. Contributions                                                            the p subscript denotes the offset from the pillar x, y center.
+             • We propose a novel point cloud encoder and network,   The augmented lidar point l is now D = 9 dimensional.
+          PointPillars, that operates on the point cloud to enable                        The set of pillars will be mostly empty due to sparsity
+          end-to-end training of a 3D object detection network.                     of the point cloud, and the non-empty pillars will in general
+                                                                     have few points in them.                       For example, at 0.162 m2 bins
+            • We show how all computations on pillars can be posed                       the point cloud from an HDL-64E Velodyne lidar has 6k-9k
+               as dense 2D convolutions which enables inference at                     non-empty pillars in the range typically used in KITTI for
+           62 Hz; a factor of 2-4 times faster than other methods.                       ∼ 97% sparsity. This sparsity is exploited by imposing a
+                 • We conduct experiments on the KITTI dataset and                       limit both on the number of non-empty pillars per sample
+           demonstrate state of the art results on cars, pedestri-                   (P ) and on the number of points per pillar (N ) to create a
+          ans, and cyclists on both BEV and 3D benchmarks.                           dense tensor of size (D, P, N ). If a sample or pillar holds
+                                                                                    too much data to fit in this tensor the data is randomly sam-
+          • We conduct several ablation studies to examine the key                 pled. Conversely, if a sample or pillar has too little data to
+          factors that enable a strong detection performance.        populate the tensor, zero padding is applied.
+
+Figure 3. Qualitative analysis of KITTI results. We show a bird’s-eye view of the lidar point cloud (top), as well as the 3D bounding boxes
+projected into the image for clearer visualization. Note that our method only uses lidar. We show predicted boxes for car (orange), cyclist
+(red) and pedestrian (blue). Ground truth boxes are shown in gray. The orientation of boxes is shown by a line connected the bottom center
+to the front of the box.
+a b c d
+
+
+
+
+
+
+
+
+
+
+        Figure 4. Failure cases on KITTI. Same visualize setup from Figure 3 but focusing on several common failure modes.
+
+   Next, we use a simplified version of PointNet where, operates on stride S after receiving an input blob of stride
+for each point, a linear layer is applied followed by Batch- Sin. All subsequent convolutions in a block have stride 1.
+Norm [10] and ReLU [19] to generate a (C, P, N ) sized The final features from each top-down block are com-
+tensor. This is followed by a max operation over the chan- bined through upsampling and concatenation as follows.
+nels to create an output tensor of size (C, P ). Note that the First, the features are upsampled, Up(Sin, Sout, F ) from an
+linear layer can be formulated as a 1x1 convolution across initial stride Sin to a final stride Sout (both again measured
+the tensor resulting in very efficient computation. wrt. original pseudo-image) using a transposed 2D convo-
+   Once encoded, the features are scattered back to the lution with F final features. Next, BatchNorm and ReLU
+original pillar locations to create a pseudo-image of size is applied to the upsampled features. The final output fea-
+(C, H, W ) where H and W indicate the height and width tures are a concatenation of all features that originated from
+of the canvas. different strides.
+2.2. Backbone 2.3. Detection Head
+   We use a similar backbone as [31] and the structure is In this paper, we use the Single Shot Detector (SSD) [18]
+shown in Figure 2. The backbone has two sub-networks: setup to perform 3D object detection. Similar to SSD, we
+one top-down network that produces features at increas- match the priorboxes to the ground truth using 2D Inter-
+ingly small spatial resolution and a second network that per- section over Union (IoU) [4]. Bounding box height and
+forms upsampling and concatenation of the top-down fea- elevation were not used for matching; instead given a 2D
+tures. The top-down backbone can be characterized by a se- match, the height and elevation become additional regres-
+ries of blocks Block(S, L, F ). Each block operates at stride sion targets.
+S (measured relative to the original input pseudo-image). 3. Implementation Details
+A block has L 3x3 2D conv-layers with F output channels,
+each followed by BatchNorm and a ReLU. The first con- In this section we describe our network parameters and
+volution inside the layer has stride SSin to ensure the block the loss function that we optimize for.
+
+3.1. Network                                                                         4. Experimental setup
+                           Instead of pre-training our networks, all weights were       In this section we present our experimental setup, includ-
+initialized randomly using a uniform distribution as in [8].                         ing dataset, experimental settings and data augmentation.
+ The encoder network has C                              = 64 output features. The
+car and pedestrian/cyclist backbones are the same except                             4.1. Dataset
+for the stride of the first block (S  = 2 for car, S                      = 1 for
+pedestrian/cyclist). Both network consists of three blocks,                                  All experiments use the KITTI object detection bench-
+Block1(S, 4, C), Block2(2S, 6, 2C), and Block3(4S, 6,                                mark dataset [5], which consists of samples that have both
+4C). Each block is upsampled by the following upsampling                             lidar point clouds and images. We only train on lidar point
+steps: Up1(S, S, 2C), Up2(2S, S, 2C) and Up3(4S, S, 2C).                             clouds, but compare with fusion methods that use both lidar
+Then the features of Up1, Up2 and Up3 are concatenated                               and images. The samples are originally divided into 7481
+together to create 6C features for the detection head.                               training and 7518 testing samples. For experimental studies
+3.2. Loss                                                                            we split the official training into 3712 training samples and
+                                                                                     3769 validation samples [1], while for our test submission
+                                We use the same loss functions introduced in SEC-    we created a minival set of 784 samples from the valida-
+OND [28]. Ground truth boxes and anchors are defined by                              tion set and trained on the remaining 6733 samples.       The
+(x, y, z, w, l, h, θ). The localization regression residuals be-                     KITTI benchmark requires detections of cars, pedestrians,
+tween ground truth and anchors are defined by:                                       and cyclists. Since the ground truth objects were only anno-
+                                                                                     tated if they are visible in the image, we follow the standard
+ ∆x = xgtd−a xa , ∆y = ygtd−a ya , ∆z = zgth−a za                                    convention [2, 31] of only using lidar points that project
+                                                                                     into the image.    Following the standard literature practice
+ ∆w = log wgt , ∆l = log lgt , ∆h = log hgt                                          on KITTI [11, 31, 28], we train one network for cars and
+ ∆θ = sin (wθgta      − θa),  la      ha                                             one network for both pedestrians and cyclists.
+                                                                                     4.2. Settings
+where xgt and xa are respectively
+chor boxes and da     = √(wa)2 + (lthe ground truth and an-a)2                           Unless explicitly varied in an experimental study, we use
+tion loss is:             . The total localiza-                                      an xy resolution: 0.16 m, max number of pillars (P ): 12000,
+                                                                                            We use the same anchors and matching strategy as [31].
+      Lloc =             ∑                              SmoothL1 (∆b)                and max number of points per pillar (N ): 100.
+               b∈(x,y,z,w,l,h,θ)                                                     Each class anchor is described by a width, length, height,
+                                                                                     and z center, and is applied at two orientations: 0 and 90
+ Since the     angle     localization                     loss cannot distinguish    degrees. Anchors are matched to ground truth using the 2D
+flipped boxes, we use a softmax classification loss on the                           IoU with the following rules.      A positive match is either
+discretized directions [28], Ldir, which enables the network                         the highest with a ground truth box, or above the positive
+to learn the heading.                                                                match threshold, while a negative match is below the nega-
+                           For the object classification loss,    we use the focal   tive threshold. All other anchors are ignored in the loss.
+loss [16]:                                                                                     At inference time we apply axis aligned non maximum
+                                                                                     suppression (NMS) with an overlap threshold of 0.5 IoU.
+     Lcls = −αa (1 − pa)γ log pa,                                                    This provides similar performance compared to rotational
+                                                                                     NMS, but is much faster.
+where pa is the class probability of an anchor. We use the
+original paper settings of α  = 0.25 and γ                         = 2. The total    Car.     The x, y, z range is [(0, 70.4), (-40, 40), (-3, 1)]
+loss is therefore:                                                                   meters respectively. The car anchor has width, length, and
+                                                                                     height of (1.6, 3.9, 1.5) m with a z center of -1 m. Matching
+ L     = Nₚₒₛ1        (βlocLloc + βclsLcls + βdirLdir) ,                             uses positive and negative thresholds of 0.6 and 0.45.
+
+where Npos is the number of positive anchors and βloc = 2,                           Pedestrian & Cyclist.    The x, y, z range of [(0, 48), (-20,
+βcls = 1, and βdir = 0.2.                                                            20), (-2.5, 0.5)] meters respectively. The pedestrian anchor
+                          To optimize the loss function we use the Adam optimizer    has width, length, and height of (0.6, 0.8, 1.73) meters with
+with an initial learning rate of 2 ∗ 10−4 and decay the learn-                       a z center of -0.6 meters, while the cyclist anchor has width,
+ing rate by a factor of 0.8 every 15 epochs and train for 160                        length, and height of (0.6, 1.76, 1.73) meters with a z center
+epochs. We use a batch size of 2 for validation set and 4 for                        of -0.6 meters. Matching uses positive and negative thresh-
+our test submission.                                                                 olds of 0.5 and 0.35.
+
+      Method        Modality        Speed  mAP                  Car                Pedestrian                Cyclist
+                                    (Hz)   Mod.          Easy   Mod.    Hard   Easy   Mod.       Hard   Easy   Mod.  Hard
+     MV3D [2]     Lidar & Img.      2.8    N/A          86.02  76.90   68.49   N/A    N/A        N/A    N/A    N/A    N/A
+  Cont-Fuse [15]  Lidar & Img.      16.7   N/A          88.81  85.83   77.33   N/A    N/A        N/A    N/A    N/A    N/A
+   Roarnet [25]   Lidar & Img.       10    N/A          88.20  79.41   70.02   N/A    N/A        N/A    N/A    N/A    N/A
+  AVOD-FPN [11]   Lidar & Img.       10   64.11         88.53  83.79   77.90  58.75  51.05      47.54  68.09  57.48        50.77
+ F-PointNet [21]  Lidar & Img.      5.9   65.39         88.70  84.00   75.33  58.09  50.22      47.20  75.38  61.96        54.68
+    HDNET [29]    Lidar & Map        20    N/A          89.14  86.57   78.32   N/A    N/A        N/A    N/A    N/A    N/A
+   PIXOR++ [29]      Lidar           35    N/A          89.38  83.70   77.97   N/A    N/A        N/A    N/A    N/A    N/A
+  VoxelNet [31]      Lidar          4.4   58.25         89.35  79.26   77.39  46.13  40.74      38.11  66.70  54.76        50.55
+   SECOND [28]       Lidar           20   60.56         88.07  79.37   77.95  55.10  46.27      44.76  73.67  56.04        48.78
+   PointPillars      Lidar           62   66.19         88.35  86.10   79.83  58.66  50.23      47.19  79.14  62.25        56.00
+                                    Table 1. Results on the KITTI test BEV detection benchmark.
+
+      Method        Modality        Speed  mAP                  Car                Pedestrian                Cyclist
+                                    (Hz)   Mod.          Easy   Mod.    Hard   Easy   Mod.      Hard    Easy   Mod.         Hard
+ MV3D [2]         Lidar & Img.      2.8    N/A          71.09    62.35 55.12   N/A    N/A        N/A    N/A    N/A    N/A
+  Cont-Fuse [15]  Lidar & Img.      16.7   N/A          82.54  66.22   64.04   N/A    N/A        N/A    N/A    N/A    N/A
+   Roarnet [25]   Lidar & Img.       10    N/A          83.71  73.04   59.16   N/A    N/A        N/A    N/A    N/A    N/A
+  AVOD-FPN [11]   Lidar & Img.       10   55.62         81.94  71.88   66.38  50.80  42.81     40.88   64.00  52.18        46.61
+ F-PointNet [21]  Lidar & Img.      5.9   57.35         81.20  70.39   62.19  51.21  44.89     40.23   71.96  56.77        50.39
+  VoxelNet [31]      Lidar          4.4   49.05         77.47  65.11   57.73  39.48  33.69      31.5   61.22  48.36        44.37
+   SECOND [28]       Lidar           20   56.69         83.13  73.66   66.20  51.07  42.56     37.29   70.51  53.85        46.90
+   PointPillars      Lidar           62   59.20         79.05  74.99   68.30  52.08  43.53     41.49   75.78  59.07        52.92
+                                    Table 2. Results on the KITTI test 3D detection benchmark.
+
+4.3. Data Augmentation                                               image plane and average orientation similarity assesses the
+ Data augmentation is critical for good performance on               average orientation (measured in BEV) similarity for 2D de-
+the KITTI benchmark [28, 30, 2].                                  tections. The KITTI dataset is stratified into easy, moderate,
+ First, following SECOND [28], we create a lookup table             and hard difficulties, and the official KITTI leaderboard is
+of the ground truth 3D boxes for all classes and the asso-        ranked by performance on moderate.
+ciated point clouds that falls inside these 3D boxes. Then                 As shown in Table 1 and Table 2, PointPillars outper-
+for each sample, we randomly select 15, 0, 8 ground truth               forms all published methods with respect to mean average
+samples for cars, pedestrians, and cyclists respectively and             precision (mAP). Compared to lidar-only methods, Point-
+place them into the current point cloud.         We found these    Pillars achieves better results across all classes and diffi-
+settings to perform better than the proposed settings [28].        culty strata except for the easy car stratum. It also outper-
+ Next, all ground truth boxes are individually augmented.         forms fusion based methods on cars and cyclists.
+Each box is rotated (uniformly drawn from [−π/20, π/20])
+and translated (x, y,            and z independently drawn from           While PointPillars predicts 3D oriented boxes, the BEV
+N (0, 0.25)) to further enrich the training set.                     and 3D metrics do not take orientation into account. Orien-
+ Finally, we perform two sets of global augmentations               tation is evaluated using AOS [5], which requires projecting
+that are jointly applied to the point cloud and all boxes.             the 3D box into the image, performing 2D detection match-
+First, we apply random mirroring flip along the x axis [30],           ing, and then assessing the orientation of these matches.
+then a global rotation and scaling [31, 28]. Finally, we ap-            The performance of PointPillars on AOS significantly ex-
+ply a global translation with x, y, z drawn from N (0, 0.2)         ceeds in all strata as compared to the only two 3D detection
+to simulate localization noise.                                       methods [11, 28] that predict oriented boxes (Table 3). In
+                                                                        general, image only methods perform best on 2D detection
+5. Results                                                         since the 3D projection of boxes into the image can result in
+ In this section we present results of our PointPillars               loose boxes depending on the 3D pose. Despite this, Point-
+method and compare to the literature.                                 Pillars moderate cyclist AOS of 68.16 outperforms the best
+Quantitative Analysis.           All detection results are mea-   image based method [27].
+sured using the official KITTI evaluation detection metrics             For comparison to other methods on val, we note that our
+which are: bird’s eye view (BEV), 3D, 2D, and average ori-               network achieved BEV AP of (87.98, 63.55, 69.71) and 3D
+entation similarity (AOS). The 2D detection is done in the          AP of (77.98, 57.86, 66.02) for the moderate strata of cars,
+                                                                  pedestrians, and cyclists respectively.
+
+    Method       Modality   Speed               mAOS              Car                 Pedestrian                   Cyclist
+                            (Hz)                Mod.      Easy    Mod.   Hard    Easy    Mod.   Hard       Easy    Mod.    Hard
+ SubCNN [27]       Img.        0.5             72.71   90.61     88.43   78.63   78.33  66.28   61.37      71.39   63.41   56.34
+AVOD-FPN [11]  Lidar & Img.     10             63.19   89.95     87.13   79.74   53.36  44.92   43.77      67.61   57.53   54.16
+ SECOND [28]      Lidar         20             54.53   87.84     81.31   71.95   51.56  43.51   38.78      80.97   57.20   55.14
+ PointPillars     Lidar         62             68.86   90.19     88.76   86.38   58.05  49.66   47.88      82.43   68.16   61.96
+Table 3. Results on the KITTI test average orientation similarity (AOS) detection benchmark. SubCNN is the best performing image only
+method, while AVOD-FPN, SECOND, and PointPillars are the only 3D object detectors that predict orientation.
+
+Qualitative Analysis.        We provide qualitative results in   encoder is still significantly slower; in their open source im-
+Figure 3 and 4. While we only train on lidar point clouds,       plementation1 the encoder requires 48 ms.
+for ease of interpretation we visualize the 3D bounding box      Slimmer Design.           We opt for a single PointNet in our
+predictions from the BEV and image perspective. Figure 3         encoder, compared to 2 sequential PointNets suggested
+shows our detection results, with tight oriented 3D bound-       by [31]. This reduced our runtime by 2.5 ms in our PyTorch
+ing boxes.     The predictions for cars are particularly accu-   runtime. The number of dimensions of the first block were
+rate and common failure modes include false negatives on         also lowered 64 to match the encoder output size, which re-
+difficult samples (partially occluded or faraway objects) or     duced the runtime by 4.5 ms.        Finally, we saved another
+false positives on similar classes (vans or trams).    Detect-   3.9
+ing pedestrians and cyclists is more challenging and leads                ms by cutting the output dimensions of the upsampled
+to some interesting failure modes. Pedestrians and cyclists      feature layers by half to 128. Neither of these changes af-
+are commonly misclassified as each other (see Figure 4a          fected detection performance.
+for a standard example and Figure 4d for the combination         TensorRT.         While all our experiments were performed in
+of pedestrian and table classified as a cyclist).    Addition-   PyTorch [20], the final GPU kernels for encoding, backbone
+ally, pedestrians are easily confused with narrow vertical       and detection head were built using NVIDIA TensorRT,
+features of the environment such as poles or tree trunks (see    which is a library for optimized GPU inference.       Switch-
+Figure 4b). In some cases we correctly detect objects that       ing to TensorRT gave a 45.5% speedup from the PyTorch
+are missing in the ground truth annotations (see Figure 4c).     pipeline which runs at 42.4 Hz.
+                                                                 The Need for Speed.         As seen in Figure 5, PointPillars
+6. Realtime Inference                                            can achieve 105 Hz with limited loss of accuracy. While it
+    As indicated by our results (Table 1 and Figure 5), Point-   could be argued that such runtime is excessive since a lidar
+Pillars represent a significant improvement in terms of in-      typically operates at 20 Hz, there are two key things to keep
+ference runtime.        In this section we break down our run-   in mind. First, due to an artifact of the KITTI ground truth
+time and consider the different design choices that enabled      annotations, only lidar points which projected into the front
+this speedup. We focus on the car network, but the pedes-        image are utilized, which is only ∼ 10% of the entire point
+trian and bicycle network runs at a similar speed since the      cloud. However, an operational AV needs to view the full
+smaller range cancels the effect of the backbone operating       environment and process the complete point cloud, signif-
+at lower strides.       All runtimes are measured on a desktop   icantly increasing all aspects of the runtime. Second, tim-
+with an Intel i7 CPU and a 1080ti GPU.                           ing measurements in the literature are typically done on a
+     The main inference steps are as follows. First, the point   high-power desktop GPU. However, an operational AV may
+cloud is loaded and filtered based on range and visibility in    instead use embedded GPUs or embedded compute which
+the images (1.4 ms). Then, the points are organized in pil-      may not have the same throughput.
+lars and decorated (2.7 ms). Next, the PointPillar tensor is     7. Ablation Studies
+uploaded to the GPU (2.9 ms), encoded (1.3 ms), scattered
+to the pseudo-image (0.1 ms), and processed by the back-               In this section we provide ablation studies and discuss
+bone and detection heads (7.7 ms). Finally NMS is applied        our design choices compared to the recent literature.
+on the CPU (0.1 ms) for a total runtime of 16.2 ms.              7.1. Spatial Resolution
+Encoding.         The key design to enable this runtime is the          A trade-off between speed and accuracy can be achieved
+PointPilar encoding. For example, at 1.3 ms it is 2 orders of    by varying the size of the spatial binning. Smaller pillars al-
+magnitude faster than the VoxelNet encoder (190 ms) [31].        low finer localization and lead to more features, while larger
+Recently, SECOND proposed a faster sparse version of the         pillars are faster due to fewer non-empty pillars (speeding
+VoxelNet encoder for a total network runtime of 50 ms.           up the encoder) and a smaller pseudo-image (speeding up
+They did not provide a runtime analysis, but since the rest
+of their architecture is similar to ours, it suggests that the   1
+                                                                    https://github.com/traveller59/second.pytorch/
+
+               74         PointPillars                                     Encoder           Type  0.16²  0.20²  0.24²                0.28²
+                                                                           MV3D [2]          Fixed  72.8   71.0   70.8                 67.6
+               72                                                          C. Yolo [26]      Fixed  72.0   72.0   70.6                 66.9
+               70     SECOND                                               PIXOR [30]        Fixed  72.9   71.3   69.9                 65.6
+               Frustum PointNet
+               68                                                         VoxelNet [31]   Learned   74.4   74.0   72.9                 71.9
+               66  VoxelNet                                                PointPillars   Learned   73.7   72.6   72.9                 72.0
+               64                                                            Table 4. Encoder performance evaluation. To fairly compare en-
+               62         Complex-YOLO                                     coders, the same network architecture and training procedure was
+                   0  20     40    60     80     100                           used and only the encoder and xy resolution were changed be-
+                      Inference speed (Hz)                                tween experiments.          Performance is measured as BEV mAP on
+    Figure 5. BEV detection performance (mAP) vs speed (Hz) on the        KITTI val.    Learned encoders clearly beat fixed encoders, espe-
+    KITTI [5] val set across pedestrians, bicycles and cars. Blue cir-    cially at larger resolutions.
+    cles indicate lidar only methods, red squares indicate methods that
+    use lidar & vision. Different operating points were achieved by us-
+    ing pillar grid sizes in {0.12², 0.16², 0.2², 0.24², 0.28²} m². The   cloud in each pillar.           Among the learned encoders Voxel-
+    number of max-pillars was varied along with the resolution and set          Net is marginally stronger than PointPillars. However, this
+    to 16000, 12000, 12000, 8000, 8000 respectively.                            is not a fair comparison, since the VoxelNet encoder is or-
+                                                                                  ders of magnitude slower and has orders of magnitude more
+    the CNN backbone). To quantify this effect we performed                       parameters. When the comparison is made for a similar in-
+    a sweep across grid sizes. From Figure 5 it is clear that the         ference time, it is clear that PointPillars offers a better oper-
+    larger bin sizes lead to faster networks; at 0.282 we achieve         ating point (Figure 5).
+    105 Hz at similar performance to previous methods. The                       There are a few curious aspects of Table 4. First, despite
+    decrease in performance was mainly due to the pedestrian                     notes in the original papers that their encoder only works
+    and cyclist classes, while car performance was stable across                     on cars, we found that the MV3D [2] and PIXOR [30] en-
+    the bin sizes.                                                            coders can learn pedestrians and cyclists quite well. Second,
+                                                                                  our implementations beat the respective published results
+    7.2. Per Box Data Augmentation                                                 by a large margin (1 − 10 mAP). While this is not an ap-
+                       Both VoxelNet [31] and SECOND [28] recommend ex-         ples to apples comparison since we only used the respective
+    tensive per box augmentation.               However, in our experi-        encoders and not the full network architectures, the perfor-
+    ments, minimal box augmentation worked better.              In par-   mance difference is noteworthy.          We see several potential
+    ticular, the detection performance for pedestrians degraded                       reasons. For VoxelNet and SECOND we suspect the boost
+    significantly with more box augmentation. Our hypothesis                           in performance comes from improved data augmentation
+    is that the introduction of ground truth sampling mitigates           hyperparameters as discussed in Section 7.2.            Among the
+    the need for extensive per box augmentation.                                  fixed encoders, roughly half the performance increase can
+                                                                                  be explained by the introduction of ground truth database
+    7.3. Point Decorations                                                         sampling [28], which we found to boost the mAP by around
+                 During the lidar point decoration step, we perform the          3% mAP. The remaining differences are likely due to a com-
+    VoxelNet [31] decorations plus two additional decorations:                   bination of multiple hyperparameters including network de-
+    xp and yp which are the x and y offset from the pillar x, y               sign (number of layers, type of layers, whether to use a fea-
+    center. These extra decorations added 0.5 mAP to final de-                 ture pyramid); anchor box design (or lack thereof [30]); lo-
+    tection performance and provided more reproducible exper-                  calization loss with respect to 3D and angle; classification
+    iments.                                                                          loss; optimizer choices (SGD vs Adam, batch size); and
+                                                                                   more. However, a more careful study is needed to isolate
+    7.4. Encoding                                                         each cause and effect.
+                To assess the impact of the proposed PointPillar encod-   8. Conclusion
+    ing in isolation, we implemented several encoders in the
+    official codebase of SECOND [28]. For details on each en-                        In this paper, we introduce PointPillars, a novel deep
+    coding, we refer to the original papers.                                      network and encoder that can be trained end-to-end on li-
+                  As shown in Table 4, learning the feature encoding is            dar point clouds. We demonstrate that on the KITTI chal-
+    strictly superior to fixed encoders across all resolution. This            lenge, PointPillars dominates all existing methods by offer-
+    is expected as most successful deep learning architectures                        ing higher detection performance (mAP on both BEV and
+    are trained end-to-end.           Further, the differences increase       3D) at a faster speed. Our results suggests that PointPillars
+    with larger bin sizes where the lack of expressive power                    offers the best architecture so far for 3D object detection
+    of the fixed encoders are accentuated due to a larger point           from lidar.
+
+
+
+
+
+
+
+
+
+
+mean Average Precision
+
+   References                                                         [20] A. Paszke, S. Gross, S. Chintala, G. Chanan, E. Yang, Z. De-
+     [1] X. Chen, K. Kundu, Y. Zhu, A. G. Berneshawi, H. Ma, S. Fi-          Vito, Z. Lin, A. Desmaison, L. Antiga, and A. Lerer. Auto-
+    dler, and R. Urtasun. 3d object proposals for accurate object      matic differentiation in pytorch. In NIPS-W, 2017. 7
+    class detection. In NIPS, 2015. 5                                 [21] C. R. Qi, W. Liu, C. Wu, H. Su, and L. J. Guibas.      Frus-
+       [2] X. Chen, H. Ma, J. Wan, B. Li, and T. Xia. Multi-view 3d           tum pointnets for 3d object detection from RGB-D data. In
+    object detection network for autonomous driving. In CVPR,          CVPR, 2018. 1, 3, 6
+    2017. 1, 2, 5, 6, 8                                               [22] C. R. Qi, H. Su, K. Mo, and L. J. Guibas.     Pointnet: Deep
+    [3] M. Engelcke, D. Rao, D. Z. Wang, C. H. Tong, and I. Posner.      learning on point sets for 3d classification and segmentation.
+    Vote3deep: Fast object detection in 3d point clouds using          In CVPR, 2017. 2, 3
+    efficient convolutional neural networks. In ICRA, 2017. 2           [23] C. R. Qi, L. Yi, H. Su, and L. J. Guibas. Pointnet++: Deep
+        [4] M. Everingham, L. Van Gool, C. K. I. Williams, J. Winn,      hierarchical feature learning on point sets in a metric space.
+    and A. Zisserman.        The pascal visual object classes (VOC)    In NIPS, 2017. 3
+    challenge.      International Journal of Computer Vision, 2010.      [24] S. Ren, K. He, R. Girshick, and J. Sun. Faster R-CNN: To-
+    4                                                                        wards real-time object detection with region proposal net-
+   [5] A. Geiger, P. Lenz, and R. Urtasun.     Are we ready for au-    works. In NIPS, 2015. 2
+    tonomous driving?     the KITTI vision benchmark suite.      In        [25] K. Shin, Y. Kwon, and M. Tomizuka. Roarnet: A robust 3d
+    CVPR, 2012. 1, 2, 5, 6, 8                                                object detection based on region approximation refinement.
+   [6] R. Girshick, J. Donahue, T. Darrell, and J. Malik. Rich fea-    arXiv:1811.03818, 2018. 1, 6
+    ture hierarchies for accurate object detection and semantic            [26] M. Simon, S. Milz, K. Amende, and H.-M. Gross. Complex-
+    segmentation. In CVPR, 2014. 2                                                 YOLO: Real-time 3d object detection on point clouds.
+   [7] K. He, G. Gkioxari, P. Doll´ar, and R. Girshick.     Mask R-    arXiv:1803.06199, 2018. 1, 2, 8
+    CNN. In ICCV, 2017. 2                                             [27] Y. Xiang, W. Choi, Y. Lin, and S. Savarese.     Subcategory-
+   [8] K. He, X. Zhang, S. Ren, and J. Sun.       Delving deep into            aware convolutional neural networks for object proposals
+    rectifiers: Surpassing human-level performance on imagenet                 and detection. In IEEE Winter Conference on Applications
+    classification. In ICCV, 2015. 5                                   of Computer Vision (WACV), 2017. 6, 7
+    [9] M. Himmelsbach, A. Mueller, T. L¨uttel, and H.-J. W¨unsche.           [28] Y. Yan, Y. Mao, and B. Li. SECOND: Sparsely embedded
+    Lidar-based 3d object perception.     In     Proceedings of 1st      convolutional detection. Sensors, 18(10), 2018. 1, 2, 3, 5, 6,
+    international workshop on cognition for technical systems,         7, 8
+    2008. 1                                                                [29] B. Yang, M. Liang, and R. Urtasun. HDNET: Exploiting HD
+    [10] S. Ioffe and C. Szegedy. Batch normalization: Accelerating    maps for 3d object detection. In CoRL, 2018. 1, 6
+    deep network training by reducing internal covariate shift.       [30] B. Yang, W. Luo, and R. Urtasun.         PIXOR: Real-time 3d
+    CoRR, abs/1502.03167, 2015. 4                                      object detection from point clouds. In8     CVPR, 2018. 1, 2, 6,
+     [11] J. Ku, M. Mozifian, J. Lee, A. Harakeh, and S. Waslander.   [31] Y. Zhou and O. Tuzel.      Voxelnet: End-to-end learning for
+    Joint 3d proposal generation and object detection from view             point cloud based 3d object detection. In CVPR, 2018. 1, 2,
+    aggregation. In IROS, 2018. 1, 2, 5, 6, 7                          3, 4, 5, 6, 7, 8
+        [12] J. Leonard, J. How, S. Teller, M. Berger, S. Campbell,
+    G. Fiore, L. Fletcher, E. Frazzoli, A. Huang, S. Karaman,
+    et al. A perception-driven autonomous urban vehicle.      Jour-
+    nal of Field Robotics, 2008. 1
+   [13] B. Li. 3d fully convolutional network for vehicle detection
+    in point cloud. In IROS, 2017. 2
+  [14] B. Li, T. Zhang, and T. Xia. Vehicle detection from 3d lidar
+    using fully convolutional network. In RSS, 2016. 2
+      [15] M. Liang, B. Yang, S. Wang, and R. Urtasun. Deep contin-
+    uous fusion for multi-sensor 3d object detection. In ECCV,
+    2018. 1, 6
+[16] T.-Y. Lin, P. Goyal, R. Girshick, K. He, and P. Doll´ar. Focal
+    loss for dense object detection. PAMI, 2018. 2, 5
+  [17] T.-Y. Lin, M. Maire, S. Belongie, J. Hays, P. Perona, D. Ra-
+    manan, P. Doll´ar, and C. L. Zitnick. Microsoft COCO: Com-
+    mon objects in context. In ECCV, 2014. 2
+     [18] W. Liu, D. Anguelov, D. Erhan, C. Szegedy, S. Reed, C.-Y.
+    Fu, and A. C. Berg. SSD: Single shot multibox detector. In
+    ECCV, 2016. 2, 4
+  [19] V. Nair and G. E. Hinton. Rectified linear units improve re-
+    stricted boltzmann machines. In ICML, 2010. 4
+
