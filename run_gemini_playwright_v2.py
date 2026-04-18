@@ -139,6 +139,16 @@ def extract_semantic_blocks(text):
     blocks = {}
     if not text:
         return blocks
+    
+    # Pre-process: Normalize escaped newlines around !!!!! delimiters to real newlines.
+    # Deep Think / long-form outputs often produce: \\n!!!!!BLOCK_NAME!!!!!\\n
+    # where \\n is a literal two-character escape, not a real newline.
+    # We convert these to real newlines so the regex can match block boundaries.
+    for _ in range(3):
+        text = re.sub(r'\\\\n\s*(!{3,})', r'\n\1', text)
+        text = re.sub(r'(!{3,}[A-Z0-9_-]+!{3,})\s*\\\\n', r'\1\n', text)
+        text = re.sub(r'\\n\s*(!{3,})', r'\n\1', text)
+        text = re.sub(r'(!{3,}[A-Z0-9_-]+!{3,})\s*\\n', r'\1\n', text)
         
     # Require delimiters to be at the start of a line (or string) to prevent mid-sentence severing
     pattern = r'(?:^|\n)[ \t]*\**[\\!]{3,}\s*([A-Z0-9\-_]+)\s*:?\s*[\\!]{3,}\**\s*(.*?)(?=(?:^|\n)[ \t]*\**[\\!]{3,}\s*[A-Z0-9\-_]+\s*:?\s*[\\!]{3,}|\s*$)'
@@ -327,6 +337,64 @@ def heuristic_extract_blocks(text):
     return blocks
 
 
+
+
+def activate_deep_think(page):
+    """Activate Deep Think mode via the Gemini UI Tools menu."""
+    try:
+        log("🧠 Activating Deep Think mode...")
+        
+        # Click the "Tools" or model picker button
+        tools_selectors = [
+            'button[aria-label*="Tool"]',
+            'button[data-test-id="tools-button"]',
+            '.tools-button',
+            'button:has-text("Tools")',
+        ]
+        
+        clicked = False
+        for sel in tools_selectors:
+            try:
+                btn = page.locator(sel).first
+                if btn.is_visible(timeout=2000):
+                    btn.click()
+                    page.wait_for_timeout(1500)
+                    clicked = True
+                    log(f"  Clicked tools button: {sel}")
+                    break
+            except:
+                continue
+        
+        if not clicked:
+            log("  ⚠️ Could not find Tools button, trying direct Deep Think selection")
+        
+        # Look for "Deep Think" option
+        deep_think_selectors = [
+            'text="Deep Think"',
+            '[data-value="deep-think"]',
+            'button:has-text("Deep Think")',
+            'div:has-text("Deep Think")',
+        ]
+        
+        for sel in deep_think_selectors:
+            try:
+                option = page.locator(sel).first
+                if option.is_visible(timeout=2000):
+                    option.click()
+                    page.wait_for_timeout(1500)
+                    log(f"  ✅ Deep Think activated via: {sel}")
+                    return True
+            except:
+                continue
+        
+        log("  ⚠️ Deep Think option not found in UI, continuing without it")
+        return False
+        
+    except Exception as e:
+        log(f"  ⚠️ Deep Think activation failed: {e}")
+        return False
+
+
 def validate_and_save_json(llm_response, out_json_path, thinking_text=None):
     """Assemble the granular semantic blocks into a valid 6-turn conversational JSON."""
     try:
@@ -470,7 +538,7 @@ def validate_and_save_json(llm_response, out_json_path, thinking_text=None):
 
 
 
-def run_gemini(pdf_path, prompt_file):
+def run_gemini(pdf_path, prompt_file, deep_think=False):
     with open(prompt_file, 'r', encoding='utf-8') as f:
         prompt_text = f.read()
 
@@ -948,6 +1016,128 @@ CRITICAL AVOIDANCE: DO NOT use "Canvas" mode, "Gems", or any interactive coding 
 
         page.wait_for_timeout(500)  # Brief settle
 
+
+        if deep_think:
+            log("Activating Deep Think tool...")
+            deep_think_activated = False
+            
+            def activate_deep_think(max_retries=3):
+                """Click Tools → Deep Think in the Gemini UI using Playwright native locators."""
+                nonlocal selected_model_name, deep_think_activated
+                
+                for attempt in range(max_retries):
+                    try:
+                        # Step 1: Find and click the Tools button
+                        tools_clicked = False
+                        
+                        # Native locators based on screenshot "+ | Tools"
+                        tools_selectors = [
+                            'button:has-text("Tools")',
+                            'button:has-text("Werkzeuge")',
+                            'button[aria-label*="Tools"]',
+                            'button[aria-label*="Werkzeuge"]',
+                            'button.tool-button',
+                            'button[data-test-id="tools-button"]'
+                        ]
+                        
+                        for sel in tools_selectors:
+                            try:
+                                btn = page.locator(sel).first
+                                if btn.is_visible(timeout=1000):
+                                    btn.click()
+                                    tools_clicked = True
+                                    log(f"  Clicked tools button via: {sel}")
+                                    break
+                            except Exception:
+                                continue
+                        
+                        if not tools_clicked:
+                            # Try JS fallback
+                            tools_clicked = page.evaluate("""() => {
+                                const allBtns = document.querySelectorAll('button');
+                                for (const btn of allBtns) {
+                                    const text = (btn.innerText || '').trim().toLowerCase();
+                                    if (text === 'tools' || text === 'werkzeuge' || text.includes('tool')) {
+                                        if (btn.offsetParent !== null) {
+                                            btn.click();
+                                            return true;
+                                        }
+                                    }
+                                }
+                                return false;
+                            }""")
+                            
+                        if not tools_clicked:
+                            log(f"  ⚠️ Could not find Tools button (attempt {attempt+1})")
+                            page.wait_for_timeout(1000)
+                            continue
+                        
+                        page.wait_for_timeout(1500)  # Wait for menu animation
+                        
+                        # Step 2: Find and click Deep Think in the menu
+                        dt_clicked = False
+                        
+                        # Native locators for dropdown item
+                        dt_selectors = [
+                            'button:has-text("Deep Think")',
+                            '.mat-mdc-menu-item:has-text("Deep Think")',
+                            '[role="menuitem"]:has-text("Deep Think")',
+                            'div[role="option"]:has-text("Deep Think")',
+                            'span:has-text("Deep Think")'
+                        ]
+                        
+                        for sel in dt_selectors:
+                            try:
+                                option = page.locator(sel).last
+                                if option.is_visible(timeout=1000):
+                                    option.click()
+                                    dt_clicked = True
+                                    log(f"  ✅ Deep Think activated natively via: {sel}")
+                                    break
+                            except Exception:
+                                continue
+                        
+                        if not dt_clicked:
+                            # Try JS fallback
+                            dt_clicked = page.evaluate("""() => {
+                                const allElements = document.querySelectorAll('button, a, div[role="option"], span, [role="menuitem"]');
+                                for (const el of allElements) {
+                                    const text = (el.innerText || '').trim().toLowerCase();
+                                    if ((text.includes('deep think') || text.includes('deepthink')) && el.offsetParent !== null) {
+                                        el.click();
+                                        return true;
+                                    }
+                                }
+                                return false;
+                            }""")
+                            if dt_clicked:
+                                log(f"  ✅ Deep Think activated JS fallback")
+                        
+                        if dt_clicked:
+                            selected_model_name = "Gemini-3.1-pro-deep-think"
+                            deep_think_activated = True
+                            page.wait_for_timeout(1500)  # Wait for mode to take effect
+                            return True
+                        else:
+                            log(f"  ⚠️ Deep Think option not found in menu (attempt {attempt+1})")
+                            page.keyboard.press("Escape")
+                            page.wait_for_timeout(500)
+                    
+                    except Exception as e:
+                        log(f"  ⚠️ Deep Think activation error (attempt {attempt+1}): {e}")
+                        try:
+                            page.keyboard.press("Escape")
+                        except Exception:
+                            pass
+                        page.wait_for_timeout(1000)
+                
+                log("  ⚠️ Could not activate Deep Think after all retries — proceeding without it")
+                return False
+            
+            activate_deep_think()
+            if deep_think_activated:
+                selected_model_name = "Gemini-3.1-pro-deep-think"
+
         # --- FORCE DISABLE CANVAS UI CHIPS ---
         log("Checking for Canvas suggestion chips to disable...")
         try:
@@ -1086,7 +1276,7 @@ CRITICAL AVOIDANCE: DO NOT use "Canvas" mode, "Gems", or any interactive coding 
             ]
 
             # Polling loop
-            max_wait = 750  # 12.5 minutes (raised from 420s)
+            max_wait = 1080 if deep_think else 750  # 18 min for Deep Think, 12.5 min otherwiseutes (raised from 420s)
             start_wait = time.time()
             rep_check_interval = 5
             canvas_check_counter = 0
@@ -1535,7 +1725,8 @@ if __name__ == "__main__":
         print("Usage: python run_gemini_playwright_v2.py <pdf_path> <prompt_path>", file=sys.stderr)
         sys.exit(1)
 
-    result = run_gemini(sys.argv[1], sys.argv[2])
+    deep_think_flag = '--deep-think' in sys.argv
+    result = run_gemini(sys.argv[1], sys.argv[2], deep_think=deep_think_flag)
 
     elapsed = time.time() - _WORKFLOW_START_TIME
     minutes = int(elapsed // 60)

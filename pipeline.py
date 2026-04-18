@@ -1,3 +1,4 @@
+import re
 """
 pipeline.py — Master Orchestrator for AD/ADAS Coding Task Generation
 =====================================================================
@@ -16,10 +17,14 @@ Usage:
     python pipeline.py --resume                      # Resume from last checkpoint
     python pipeline.py --pdf "file.pdf" --turn 3     # Start from Turn 3
     python pipeline.py --validate-only               # Just validate existing outputs
+    python pipeline.py --terms                       # Terms mode (Deep Think)
+    python pipeline.py --terms --resume              # Resume terms mode               # Just validate existing outputs
     python pipeline.py --no-dashboard                # Skip dashboard generation
 """
 import os
 import sys
+
+DEEP_THINK_MODE = False
 import json
 import glob
 import subprocess
@@ -42,6 +47,15 @@ PROGRESS_FILE = os.path.join(BASE_DIR, "Output", "progress.json")
 STATISTICS_FILE = os.path.join(BASE_DIR, "Output", "statistics.json")
 DASHBOARD_OUTPUT = os.path.join(BASE_DIR, "Output", "dashboard.html")
 
+
+# ── Terms Mode Configuration ─────────────────────────────────────────────────
+INPUT_TERMS_DIR = os.path.join(BASE_DIR, "Input_terms")
+OUTPUT_JSON_TERMS_DIR = os.path.join(BASE_DIR, "Output", "json_terms")
+OUTPUT_THINK_TERMS_DIR = os.path.join(BASE_DIR, "Output", "thinking_terms")
+EVAL_TERMS_DIR = os.path.join(BASE_DIR, "Eval_terms")
+PROMPTS_TERMS_DIR = os.path.join(BASE_DIR, "Output", "prompts_terms")
+PROGRESS_TERMS_FILE = os.path.join(BASE_DIR, "Output", "progress_terms.json")
+STATISTICS_TERMS_FILE = os.path.join(BASE_DIR, "Output", "statistics_terms.json")
 PLAYWRIGHT_SCRIPT = os.path.join(BASE_DIR, "run_gemini_playwright_v2.py")
 VALIDATE_SCRIPT = os.path.join(SCRIPTS_DIR, "validate_task.py")
 AUTO_REPAIR_SCRIPT = os.path.join(SCRIPTS_DIR, "auto_repair.py")
@@ -93,9 +107,12 @@ VARIATION_REGULATORY = {
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
-def ensure_dirs():
+def ensure_dirs(terms_mode=False):
     """Create all required directories."""
-    for d in [OUTPUT_JSON_DIR, OUTPUT_THINK_DIR, EVAL_DIR, PROMPTS_DIR]:
+    dirs = [OUTPUT_JSON_DIR, OUTPUT_THINK_DIR, EVAL_DIR, PROMPTS_DIR]
+    if terms_mode:
+        dirs.extend([OUTPUT_JSON_TERMS_DIR, OUTPUT_THINK_TERMS_DIR, EVAL_TERMS_DIR, PROMPTS_TERMS_DIR, INPUT_TERMS_DIR])
+    for d in dirs:
         os.makedirs(d, exist_ok=True)
 
 
@@ -132,27 +149,31 @@ def classify_pdf(pdf_path):
     return mode
 
 
-def task_output_path(doc_short, turn, task_idx):
+def task_output_path(doc_short, turn, task_idx, terms_mode=False):
     """Generate the standardized output file path for a task (consistent capital T)."""
-    return os.path.join(OUTPUT_JSON_DIR, f"{doc_short}_Turn{turn}_Task{task_idx}.json")
+    out_dir = OUTPUT_JSON_TERMS_DIR if terms_mode else OUTPUT_JSON_DIR
+    return os.path.join(out_dir, f"{doc_short}_Turn{turn}_Task{task_idx}.json")
 
 
-def thinking_output_path(doc_short, turn, task_idx):
+def thinking_output_path(doc_short, turn, task_idx, terms_mode=False):
     """Generate the standardized thinking file path."""
-    return os.path.join(OUTPUT_THINK_DIR, f"{doc_short}_Turn{turn}_Task{task_idx}.txt")
+    out_dir = OUTPUT_THINK_TERMS_DIR if terms_mode else OUTPUT_THINK_DIR
+    return os.path.join(out_dir, f"{doc_short}_Turn{turn}_Task{task_idx}.txt")
 
 
-def prompt_path(doc_short, turn, task_idx, is_repair=False):
+def prompt_path(doc_short, turn, task_idx, is_repair=False, terms_mode=False):
     """Generate the prompt file path."""
     suffix = "_RepairPrompt" if is_repair else "_Prompt"
-    return os.path.join(PROMPTS_DIR, f"{doc_short}_Turn{turn}_Task{task_idx}{suffix}.txt")
+    out_dir = PROMPTS_TERMS_DIR if terms_mode else PROMPTS_DIR
+    return os.path.join(out_dir, f"{doc_short}_Turn{turn}_Task{task_idx}{suffix}.txt")
 
 
 # ── Progress Tracking ────────────────────────────────────────────────────────
-def load_progress():
+def load_progress(terms_mode=False):
     """Load progress state from disk."""
-    if os.path.exists(PROGRESS_FILE):
-        with open(PROGRESS_FILE, 'r', encoding='utf-8') as f:
+    pf = PROGRESS_TERMS_FILE if terms_mode else PROGRESS_FILE
+    if os.path.exists(pf):
+        with open(pf, 'r', encoding='utf-8') as f:
             return json.load(f)
     return {
         "started_at": datetime.now().isoformat(),
@@ -161,10 +182,11 @@ def load_progress():
     }
 
 
-def save_progress(progress):
+def save_progress(progress, terms_mode=False):
     """Save progress state to disk."""
     progress["updated_at"] = datetime.now().isoformat()
-    with open(PROGRESS_FILE, 'w', encoding='utf-8') as f:
+    pf = PROGRESS_TERMS_FILE if terms_mode else PROGRESS_FILE
+    with open(pf, 'w', encoding='utf-8') as f:
         json.dump(progress, f, indent=2)
 
 
@@ -191,7 +213,7 @@ def print_task_summary(tk, status, stats, elapsed, repair_type, attempts):
           f"Time: {elapsed:.0f}s | Attempts: {attempts}{repair_label}")
 
 
-def compute_statistics(progress):
+def compute_statistics(progress, terms_mode=False):
     """Compute min/max/mean/stddev for all tracked metrics and save to statistics.json."""
     results = progress.get("task_results", {})
     if not results:
@@ -253,7 +275,8 @@ def compute_statistics(progress):
     }
 
     # Save to disk
-    with open(STATISTICS_FILE, 'w', encoding='utf-8') as f:
+    sf = STATISTICS_TERMS_FILE if terms_mode else STATISTICS_FILE
+    with open(sf, 'w', encoding='utf-8') as f:
         json.dump(stats_summary, f, indent=2)
 
     return stats_summary
@@ -534,9 +557,11 @@ def build_repair_prompt(validation_report, original_prompt_text):
 
 
 # ── Execution Engine ─────────────────────────────────────────────────────────
-def run_playwright(pdf_path, prompt_file):
+def run_playwright(pdf_path, prompt_file, deep_think=False):
     """Execute the Playwright script and return success boolean."""
     cmd = f'python "{PLAYWRIGHT_SCRIPT}" "{pdf_path}" "{prompt_file}"'
+    if deep_think:
+        cmd += ' --deep-think'
     result = subprocess.run(cmd, shell=True, cwd=BASE_DIR, capture_output=True, text=True, encoding="utf-8", errors="replace")
     if result.returncode != 0:
         # Check for safety rejection (approx 139 chars) or empty response
@@ -661,9 +686,37 @@ def decide_repair_strategy(report):
     return "gemini"
 
 
+
+
+def parse_terms(terms_file):
+    """Parse Terms.md into a list of (number, name, full_text) tuples.
+    
+    Each line in Terms.md has the format:
+        N. **Term Name:** Description text.
+    
+    Returns:
+        List of (int, str, str) tuples: (term_number, term_name, full_line)
+    """
+    with open(terms_file, 'r', encoding='utf-8') as f:
+        content = f.read()
+    
+    terms = []
+    # Match lines like: 1. **Deterministic Replay:** When a bug...
+    pattern = re.compile(r'^(\d+)\.\s+\*\*(.+?):\*\*\s*(.+)$', re.MULTILINE)
+    
+    for match in pattern.finditer(content):
+        num = int(match.group(1))
+        name = match.group(2).strip()
+        full_line = match.group(0).strip()
+        terms.append((num, name, full_line))
+    
+    return sorted(terms, key=lambda t: t[0])
+
 # ── Main Pipeline ────────────────────────────────────────────────────────────
 def process_task(pdf_path, doc_short, doc_name, turn, task_idx,
-                 variation, mode, progress):
+                 variation, mode, progress,
+                 terms_mode=False, terms_text=None,
+                 terms_number=None, terms_name=None):
     """Process a single task: generate → validate → smart repair loop.
 
     Retry logic:
@@ -674,8 +727,9 @@ def process_task(pdf_path, doc_short, doc_name, turn, task_idx,
       → Gemini re-prompt.
     """
     tk = task_key(doc_short, turn, task_idx)
-    json_out = task_output_path(doc_short, turn, task_idx)
-    qa_report_path = os.path.join(EVAL_DIR, f"{doc_short}_Turn{turn}_Task{task_idx}_QA.json")
+    json_out = task_output_path(doc_short, turn, task_idx, terms_mode=terms_mode)
+    eval_dir = EVAL_TERMS_DIR if terms_mode else EVAL_DIR
+    qa_report_path = os.path.join(eval_dir, f"{doc_short}_Turn{turn}_Task{task_idx}_QA.json")
     task_start = time.time()
     task_stats = {}  # Will hold per-task metrics
 
@@ -697,10 +751,24 @@ def process_task(pdf_path, doc_short, doc_name, turn, task_idx,
     print(f"  📋 {tk} | {lang} | Diff {diff} | {strategy} | {role}")
     print(f"{'─'*60}")
 
+
+    # In terms mode, write a single-term .txt file so Playwright only injects THIS term
+    if terms_mode and terms_text:
+        term_source_file = os.path.join(INPUT_TERMS_DIR, f"Term{terms_number:03d}.txt")
+        with open(term_source_file, 'w', encoding='utf-8') as f:
+            f.write(terms_text)
+        effective_input = term_source_file
+    else:
+        effective_input = pdf_path
+
     gemini_attempts = 0
     final_repair_type = "none"
     # Always generate the base prompt text so it's available for repairs
-    base_prompt_text = build_generation_prompt(variation, turn, task_idx, doc_name, mode)
+    if terms_mode:
+        base_prompt_text = build_generation_prompt(variation, turn, task_idx, doc_name, mode)
+        # Terms mode uses same prompt builder but passes deep_think to Playwright
+    else:
+        base_prompt_text = build_generation_prompt(variation, turn, task_idx, doc_name, mode)
 
     while gemini_attempts < MAX_GEMINI_ATTEMPTS:
         gemini_attempts += 1
@@ -708,7 +776,7 @@ def process_task(pdf_path, doc_short, doc_name, turn, task_idx,
         # ── Step 1: Build and save prompt ──
         if gemini_attempts == 1:
             prompt_text = base_prompt_text
-            p_path = prompt_path(doc_short, turn, task_idx, is_repair=False)
+            p_path = prompt_path(doc_short, turn, task_idx, is_repair=False, terms_mode=terms_mode)
         else:
             # Build repair prompt from last validation report
             last_report = run_validation(json_out)
@@ -716,7 +784,7 @@ def process_task(pdf_path, doc_short, doc_name, turn, task_idx,
                 break  # Fixed by previous local repair!
 
             prompt_text = build_repair_prompt(last_report, base_prompt_text)
-            p_path = prompt_path(doc_short, turn, task_idx, is_repair=True)
+            p_path = prompt_path(doc_short, turn, task_idx, is_repair=True, terms_mode=terms_mode)
 
         # Save prompt
         os.makedirs(os.path.dirname(p_path), exist_ok=True)
@@ -725,14 +793,14 @@ def process_task(pdf_path, doc_short, doc_name, turn, task_idx,
 
         # ── Step 2: Run Playwright (Gemini attempt) ──
         print(f"  🌐 Gemini attempt {gemini_attempts}/{MAX_GEMINI_ATTEMPTS}...")
-        pw_result = run_playwright(pdf_path, p_path)
+        pw_result = run_playwright(effective_input if terms_mode else pdf_path, p_path, deep_think=DEEP_THINK_MODE)
         
         # SAFETY RETRY LOGIC
         if pw_result == "SAFETY_REJECTION":
             print(f"  ⚠️ Triggering 'Soft Prompt' retry to bypass safety filters...")
             p_text = build_generation_prompt(variation, turn, task_idx, doc_name, mode, is_soft_retry=True)
             with open(p_path, 'w', encoding='utf-8') as f: f.write(p_text)
-            pw_result = run_playwright(pdf_path, p_path)
+            pw_result = run_playwright(effective_input if terms_mode else pdf_path, p_path, deep_think=DEEP_THINK_MODE)
 
         if not pw_result:
             print(f"  ❌ Playwright failed on attempt {gemini_attempts}")
@@ -754,7 +822,7 @@ def process_task(pdf_path, doc_short, doc_name, turn, task_idx,
                 "repair_type": final_repair_type, "elapsed_seconds": round(elapsed, 1),
                 **task_stats
             }
-            save_progress(progress)
+            save_progress(progress, terms_mode=terms_mode)
             print_task_summary(tk, "PASS", task_stats, elapsed, final_repair_type, gemini_attempts)
             return True
 
@@ -788,7 +856,7 @@ def process_task(pdf_path, doc_short, doc_name, turn, task_idx,
                         "repairs_applied": repair_result.get("fixes_applied", []),
                         **task_stats
                     }
-                    save_progress(progress)
+                    save_progress(progress, terms_mode=terms_mode)
                     print_task_summary(tk, "PASS", task_stats, elapsed, "local", gemini_attempts)
                     return True
 
@@ -811,7 +879,7 @@ def process_task(pdf_path, doc_short, doc_name, turn, task_idx,
                                 "repairs_applied": repair_result.get("fixes_applied", []) + ["partial_followup_repair"],
                                 **task_stats
                             }
-                            save_progress(progress)
+                            save_progress(progress, terms_mode=terms_mode)
                             print_task_summary(tk, "PASS", task_stats, elapsed, "local+partial", gemini_attempts)
                             return True
                 print(f"  ⚠️ Local repair insufficient. Remaining issues need Gemini re-prompt.")
@@ -834,7 +902,7 @@ def process_task(pdf_path, doc_short, doc_name, turn, task_idx,
                         "repairs_applied": ["partial_followup_repair"],
                         **task_stats
                     }
-                    save_progress(progress)
+                    save_progress(progress, terms_mode=terms_mode)
                     print_task_summary(tk, "PASS", task_stats, elapsed, "partial", gemini_attempts)
                     return True
             print(f"  ⚠️ Partial repair insufficient. Will try full Gemini re-prompt.")
@@ -849,7 +917,7 @@ def process_task(pdf_path, doc_short, doc_name, turn, task_idx,
         "repair_type": "exhausted", "elapsed_seconds": round(elapsed, 1),
         **task_stats
     }
-    save_progress(progress)
+    save_progress(progress, terms_mode=terms_mode)
     print_task_summary(tk, "FAIL", task_stats, elapsed, "exhausted", gemini_attempts)
     print(f"  ❌ FAILED after {gemini_attempts} Gemini attempts — flagged for manual review")
     return False
@@ -955,9 +1023,162 @@ def process_pdf(pdf_path, progress, start_turn=1, start_task=1, end_turn=8, skip
 
     if total_fail == 0:
         progress["pdfs_completed"].append(pdf_name)
-        save_progress(progress)
+        save_progress(progress, terms_mode=False)
 
     return total_fail == 0
+
+
+
+
+def process_term(term_number, term_name, term_text, progress,
+                  start_turn=1, start_task=1, end_turn=8,
+                  test_setup=False, limit_tasks=0):
+    """Process all 16 tasks for a single term (analogous to process_pdf).
+    
+    Each term gets 8 turns x 2 tasks = 16 tasks, just like a PDF.
+    Output files are named like: Term001_Turn1_Task1.json
+    """
+    doc_short = f"Term{term_number:03d}"
+    doc_name = f"AD_ADAS_Term_{term_number:03d}_{term_name.replace(' ', '_')}"
+    terms_file = os.path.join(INPUT_TERMS_DIR, "Terms.md")
+
+    print(f"\n{'═'*70}")
+    print(f"  📚 Term {term_number}/200: {term_name}")
+    print(f"  📁 Short name: {doc_short}")
+    print(f"  📝 {term_text[:80]}...")
+    print(f"{'═'*70}")
+
+    # Always TECHNICAL classification for terms
+    mode = "TECHNICAL"
+    schema = VARIATION_TECHNICAL
+
+    # Process each turn
+    total_pass = 0
+    total_fail = 0
+    tasks_processed_this_run = 0
+    term_start = time.time()
+
+    for turn in range(start_turn, end_turn + 1):
+        variations = schema[turn]
+        for task_idx_0, variation in enumerate(variations):
+            task_idx = task_idx_0 + 1
+            if turn == start_turn and task_idx < start_task:
+                continue
+
+            result = process_task(
+                terms_file, doc_short, doc_name,
+                turn, task_idx, variation, mode, progress,
+                terms_mode=True, terms_text=term_text,
+                terms_number=term_number, terms_name=term_name)
+
+            if result:
+                total_pass += 1
+            else:
+                total_fail += 1
+
+            tasks_processed_this_run += 1
+
+            if test_setup:
+                print("\n  [TEST SETUP] Exiting after 1 task.")
+                return total_pass, total_fail, True
+
+            if limit_tasks > 0 and tasks_processed_this_run >= limit_tasks:
+                print(f"\n  [LIMIT REACHED] Exiting after {limit_tasks} tasks.")
+                return total_pass, total_fail, True
+
+    # Term summary
+    term_elapsed = time.time() - term_start
+    term_min = int(term_elapsed // 60)
+    term_sec = term_elapsed % 60
+    print(f"\n{'═'*70}")
+    print(f"  📚 Term {term_number} ({term_name}) COMPLETE: {total_pass}/16 passed, {total_fail}/16 failed")
+    print(f"  ⏱️  Elapsed: {term_min}m {term_sec:.0f}s")
+    print(f"{'═'*70}")
+
+    if total_fail == 0:
+        if "terms_completed" not in progress:
+            progress["terms_completed"] = []
+        progress["terms_completed"].append(doc_short)
+        save_progress(progress, terms_mode=True)
+
+    return total_pass, total_fail, False
+
+
+def process_terms(progress, start_turn=1, start_task=1, end_turn=8,
+                  skip_dashboard=False, test_setup=False, limit_tasks=0,
+                  start_term=1, limit_terms=0):
+    """Process all terms from Terms.md (terms mode entry point).
+    
+    Iterates over each of the 200 terms, treating each one like a separate
+    PDF document. Each term gets 16 tasks (8 turns x 2 tasks).
+    """
+    terms_file = os.path.join(INPUT_TERMS_DIR, "Terms.md")
+    if not os.path.exists(terms_file):
+        print(f"❌ Terms file not found: {terms_file}")
+        sys.exit(1)
+
+    all_terms = parse_terms(terms_file)
+    if not all_terms:
+        print("❌ No terms found in Terms.md")
+        sys.exit(1)
+
+    print(f"\n{'═'*70}")
+    print(f"  📋 TERMS MODE: {len(all_terms)} terms found")
+    print(f"  📁 Input: {terms_file}")
+    print(f"  📁 Output: {OUTPUT_JSON_TERMS_DIR}")
+    dt_label = " (Deep Think)" if DEEP_THINK_MODE else ""
+    print(f"  🧠 Model: Google Gemini 3.1 Pro{dt_label}")
+    print(f"  📊 Structure: {len(all_terms)} terms × 16 tasks = {len(all_terms) * 16} total tasks")
+    print(f"{'═'*70}")
+
+    # Filter to terms starting from start_term
+    terms_to_process = [t for t in all_terms if t[0] >= start_term]
+    
+    # Skip already completed terms
+    completed = set(progress.get("terms_completed", []))
+    terms_to_process = [t for t in terms_to_process
+                        if f"Term{t[0]:03d}" not in completed]
+
+    if not terms_to_process:
+        print("✅ All terms already completed!")
+        return
+
+    print(f"  🔄 Terms remaining: {len(terms_to_process)} (starting from term {terms_to_process[0][0]})")
+
+    overall_pass = 0
+    overall_fail = 0
+    terms_done = 0
+
+    for term_num, term_name, term_text in terms_to_process:
+        tp, tf, early_exit = process_term(
+            term_num, term_name, term_text, progress,
+            start_turn=start_turn, start_task=start_task,
+            end_turn=end_turn, test_setup=test_setup,
+            limit_tasks=limit_tasks)
+
+        overall_pass += tp
+        overall_fail += tf
+        terms_done += 1
+
+        # Reset start position after first term
+        start_turn = 1
+        start_task = 1
+
+        if early_exit:
+            break
+
+        if limit_terms > 0 and terms_done >= limit_terms:
+            print(f"\n  [LIMIT REACHED] Exiting after processing {terms_done} terms.")
+            break
+
+    # Compute and print statistical summary
+    stats_summary = compute_statistics(progress, terms_mode=True)
+    print_statistical_summary(stats_summary, label="Terms Mode")
+
+    total_expected = terms_done * 16
+    print(f"\n{'═'*70}")
+    print(f"  📋 Terms Run Complete: {terms_done} terms, {overall_pass}/{total_expected} tasks passed")
+    print(f"{'═'*70}")
 
 
 def validate_only_mode():
@@ -994,6 +1215,14 @@ def validate_only_mode():
 def main():
     parser = argparse.ArgumentParser(description="AD/ADAS Coding Task Generation Pipeline")
     parser.add_argument("--pdf", help="Process a specific PDF file")
+    parser.add_argument("--terms", action="store_true",
+                        help="Terms mode: use Input_terms/Terms.md instead of PDFs")
+    parser.add_argument("--deep-think", action="store_true",
+                        help="Force use of Deep Think model")
+    parser.add_argument("--start-term", type=int, default=1,
+                        help="Start from term N (1-indexed, terms mode only)")
+    parser.add_argument("--limit-terms", type=int, default=0,
+                        help="Stop after processing N terms (terms mode only)")
     parser.add_argument("--resume", action="store_true", help="Resume from last checkpoint")
     parser.add_argument("--turn", type=int, default=1, help="Start from turn N")
     parser.add_argument("--end-turn", type=int, default=8, help="End at turn N (inclusive). Useful for test runs.")
@@ -1004,6 +1233,8 @@ def main():
     parser.add_argument("--no-dashboard", action="store_true", help="Skip dashboard generation")
     parser.add_argument("--test-setup", action="store_true", help="One turn (turn 2), one task (task 1), one attempt (test mode)")
     args = parser.parse_args()
+    global DEEP_THINK_MODE
+    DEEP_THINK_MODE = getattr(args, "deep_think", False)
 
     if args.test_setup:
         args.turn = 2
@@ -1018,6 +1249,39 @@ def main():
         validate_only_mode()
         return
 
+
+    # ── TERMS MODE ────────────────────────────────────────────────────────
+    if args.terms:
+        progress = load_progress(terms_mode=True)
+        start_time = time.time()
+
+        print(f"\n{'═'*70}")
+        print(f"  🚀 Pipeline Starting: TERMS MODE")
+        print(f"  📂 Input:  {INPUT_TERMS_DIR}")
+        print(f"  📂 Output: {OUTPUT_JSON_TERMS_DIR}")
+        print(f"  🔄 Max Gemini attempts per task: {MAX_GEMINI_ATTEMPTS}")
+        print(f"{'═'*70}")
+
+        completed = progress.get("terms_completed", [])
+        if args.resume and len(completed) >= 200:
+            print("✅ All 200 terms already completed!")
+            return
+
+        process_terms(progress,
+                      start_turn=args.turn, start_task=args.task,
+                      end_turn=args.end_turn, skip_dashboard=args.no_dashboard,
+                      test_setup=args.test_setup, limit_tasks=args.limit_tasks,
+                      start_term=args.start_term, limit_terms=args.limit_terms)
+
+        elapsed = time.time() - start_time
+        minutes = int(elapsed // 60)
+        seconds = elapsed % 60
+        print(f"\n{'='*70}")
+        print(f"  🏁 Terms Pipeline Complete: {minutes}m {seconds:.0f}s elapsed")
+        print(f"{'='*70}")
+        return
+
+    # ── PDF MODE (default) ────────────────────────────────────────────────
     progress = load_progress()
     start_time = time.time()
 

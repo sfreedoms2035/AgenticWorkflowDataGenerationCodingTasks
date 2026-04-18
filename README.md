@@ -108,6 +108,19 @@ If the pipeline is interrupted, it can pick up exactly where it left off:
 python pipeline.py --resume
 ```
 
+**To use Terms Mode (generates tasks based on autonomous driving terms instead of PDFs):**
+Place your terms list in `Input_terms/Terms.md`.
+```bash
+python pipeline.py --terms-mode
+```
+
+**To enable the Deep Think model (e.g., Gemini 2.0 Flash Thinking / Gemini Thinking):**
+Can be combined with any mode to enable advanced reasoning capabilities.
+```bash
+python pipeline.py --deep-think
+python pipeline.py --terms-mode --deep-think
+```
+
 ### 3. Validating Existing Data
 To re-run the quality gates and update the dashboard without generating new data:
 ```powershell
