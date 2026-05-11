@@ -1,0 +1,841 @@
+arXiv:2312.07488v2 [cs.CV] 21 Dec 2023
+
+
+
+
+
+
+
+
+
+
+    LMDrive: Closed-Loop End-to-End Driving with Large Language Models
+
+        Hao Shao1,2 Yuxuan Hu3 Letian Wang⁴
+        2,5  Hongsheng Li1,3,5
+        Steven L. Waslander⁴ Yu Liu
+        1CUHK MMLab 2SenseTime Research 3CPII under InnoHK
+        4University of Toronto 5Shanghai Artificial Intelligence Laboratory
+
+
+        Abstract                                                      Instruction
+      Despite significant recent progress in the field of au-         Turn right at next        Control
+                                                                      intersection.
+    tonomous driving, modern methods still struggle and can           Watch for walkers up  LLM           Environment
+    incur serious accidents when encountering long-tail un-           front!                              Closed
+    foreseen events and challenging urban scenarios.   On the
+    one hand, large language models (LLM) have shown im-                  LiDAR                           Loop
+    pressive reasoning capabilities that approach “Artificial
+    General Intelligence”.    On the other hand, previous au-             Multi-view camera               Sensor data
+    tonomous driving methods tend to rely on limited-format          Data Flow
+    inputs (e.g.   sensor data and navigation waypoints), re-        Gradient Flow
+    stricting the vehicle’s ability to understand language in-
+    formation and interact with humans. To this end, this pa-
+    per introduces LMDrive, a novel language-guided, end-           Figure 1. We present LMDrive, the first language-guided closed-
+    to-end, closed-loop autonomous driving framework.     LM-       loop end-to-end driving framework. LMDrive takes as input the
+    Drive uniquely processes and integrates multi-modal sen-        language instruction and multi-modal multi-view sensor data, and
+    sor data with natural language instructions, enabling in-       outputs control signals in real-time to drive in complex scenarios.
+    teraction with humans and navigation software in realis-        planning, and fixed interfaces are designed to integrate them
+    tic instructional settings. To facilitate further research in   together [2, 23]; and 2) an end-to-end approach that directly
+    language-based closed-loop autonomous driving, we also          converts sensor data to control signals via a neural net-
+    publicly release the corresponding dataset which includes       work [16, 35]. While both of these approaches are widely
+    approximately 64K instruction-following data clips, and the     adopted and constantly making breakthroughs on challeng-
+    LangAuto benchmark that tests the system’s ability to han-      ing benchmarks, both of them share a limitation in that they
+    dle complex instructions and challenging driving scenarios.     solely rely on fixed-format inputs such as the sensor data,
+    Extensive closed-loop experiments are conducted to demon-       target waypoints, and action commands, which restricts the
+    strate LMDrive’s effectiveness. To the best of our knowl-       agent’s ability to comprehend multi-modal information and
+    edge, we’re the very first work to leverage LLMs for closed-    to interact with humans and the environment. On the other
+    loop end-to-end autonomous driving. Codes can be found          hand, large language models (LLMs) have shown an im-
+    at our webpage.                                                 pressive range of capabilities that approach “Artificial Gen-
+    1. Introduction                                                 eral Intelligence.” This encompasses language comprehen-
+                                                                    sion, knowledge retrieval, and reasoning. Such capabilities
+    Remarkable progress in autonomous driving has been wit-         could greatly enhance the safety, controllability, and explan-
+    nessed in recent years with an increasing number of com-        ability of autonomous agents. In this work, we seek to an-
+    mercial autonomous vehicles (AVs) deployed on public            swer the question for the first time:        Can we build cognitive
+    roads. Generally, state-of-the-art autonomous driving sys-      autonomous driving systems on top of LLMs, that can inter-
+    tems can be categorized into two primary approaches: 1)         act with human passengers or navigation software simply
+    a modular approach where the system is decomposed into          by natural language?”
+    several sub-modules such as perception, prediction, and                           Making autonomous systems understand natural lan-
+                                                                    guage opens profound opportunities for advanced reasoning
+     Corresponding author.                                          in complex scenarios and efficient interaction with humans,
+
+        1
+
+addressing many previously non-trivial problems. To name        are integrated. A pre-training strategy specifically designed
+a few: 1) in long-tail unforeseen events and challenging ur-      for the driving task is also introduced for the multi-modal
+ban situations (e.g. complex and dense intersections) where        vision encoder. To facilitate the training of LMDrive in a
+modern AV systems typically struggle [41] or even incur se-         closed-loop setting, we develop a language-guided driving
+rious accidents [37], the language-aware AVs can easily sur-            dataset based on the CARLA simulator [12], which sim-
+vive by following navigation instructions from passengers          ulates the dynamic world and realistic challenging scenar-
+or navigation software.     2) AVs can adapt to passengers’     ios.   To better test the driving model’s capability in real-
+sudden notice (e.g. small objects that are easily missed by        istic conversation scenarios, where the instructions might
+perception systems) simply via natural language, which was           come from humans and navigation software, we 1) consider
+previously non-trial and required a large amount of hand-         both navigation instruction and notice instructions; 2) di-
+crafted rules.                                                     versify instructions into various phrases via prompt engi-
+Toward these appealing properties,          many pioneering          neering on LLMs; 3) incorporate misleading and unreason-
+works have explored the potential of using large language       able instructions which are infeasible due to safety concerns
+models to enhance the AV system’s reasoning abilities, in-      or traffic regulations; 4) extend the navigation instructions
+terpretability, and overall performance in open-loop set-           to include multiple consecutive segments, such as “Take a
+tings. One of the most common strategies [6, 11, 28, 32]        left here, then another left at the next one”.    Besides, we
+is to 1) first use LLMs to transform the scene perception re-         provide the corresponding LangAuto evaluation benchmark
+sults and navigation commands into textual descriptions; 2)        and the pre-trained LMDrive model for reproducibility, and
+feed these textural descriptions into LLMs to generate tex-       we hope these can facilitate further research in end-to-end
+tual driving decisions; and then 3) transfer textual driving    closed-loop language-based autonomous driving.
+decisions into executable control commands. While good                 To summarize, this paper makes the following contribu-
+preliminary results are shown, this type of approach, where     tions:
+different LLMs tackle sub-tasks individually, is hard to be           • We propose a novel end-to-end, closed-loop, language-
+trained in an end-to-end manner, loses the capability to scale             based autonomous driving framework, LMDrive, which
+with a large amount of data, and is not robust to perception           interacts with the dynamic environment via multi-modal
+errors and uncertainties. For example, since the LLMs in            multi-view sensor data and natural language instructions.
+the latter two stages do not have access to the sensor data,          • We provide a dataset with about 64K data clips, where
+inaccurate or missed detections in the first stage can lead        each clip includes one navigation instruction, several no-
+to large accumulative errors in the latter stages. Towards            tice instructions, a sequence of multi-modal multi-view
+addressing these issues, end-to-end language-based driving         sensor data, and control signals. The duration of the clip
+methods [46] have been proposed.      However, all of these      spans from 2 to 20 seconds.
+methods undergo training and evaluation in the open-loop               • We present the benchmark LangAuto for evaluating the
+setting, where actions are generated and evaluated against          autonomous agents that take language instructions as nav-
+the expert actions, but not executed in the actual environ-            igation inputs, which include misleading/long instruc-
+ments.      Notably, when executing navigation instructions      tions and challenging adversarial driving scenarios.
+such as “turn right”, the AV agent should not only gen-              • We conduct extensive closed-loop experiments to demon-
+erate a sequence of actions, but also consider the changes            strate the effectiveness of the proposed framework, and
+that the actions bring to the environment. The absence of               analyze different components of LMDrive to shed light
+closed-loop evaluation leads to insufficient consideration of    on continuing research along this direction.
+critical issues such as cumulative errors, human-robot inter-
+action, and temporal consistency of actions, which makes        2. Related Works
+the resulting methods difficult to scale beyond a short time    2.1. End-to-End Autonomous Driving
+horizon making them ineffective in actual systems. To the
+best of our knowledge, there is no existing paper that lever-    Much progress [7, 8] has been achieved recently in the field
+ages LLMs for closed-loop end-to-end autonomous driving.        of end-to-end autonomous driving.          UniAD [16] devised
+        In this work, we introduce LMDrive, an instruction-        a framework that incorporates full-stack driving tasks and
+following multi-modal LLM model for end-to-end closed-               utilizes query-unified interfaces to communicate between
+loop autonomous driving.        The proposed model can pro-     different tasks.         ThinkTwice [20] designed a Look Mod-
+cess camera-LiDAR sensor data, comprehend driving in-           ule to retrieve information from critical regions and utilize
+structions in natural language, and directly generate vehi-      the features to refine the coarse prediction. ReasonNet [35]
+cle control signals.     A pre-trained LLM model is adopted          exploited temporal and global information of the driving
+and kept frozen to maintain its reasoning capability.    To           scene to improve perception performance and benefit oc-
+adapt the LLM for autonomous driving, multiple camera-             clusion detection. InterFuser [34] proposed a transformer-
+LiDAR data encoders and learnable input/output adapters            based framework to fully fuse and process information from
+
+    2
+
+multi-modal multi-view sensors for comprehensive scene
+understanding. TCP [45] proposed an approach that inte-
+grates the two branches for trajectory planning and direct
+control by involving a novel multi-step prediction. LAV [3]     =               -
+introduced some supervisory tasks to learn an viewpoint-             Navigation instruction: Just move to the left and get ready to leave the highway.
+invariant representation which can provide a richer supervi-
+sion signal at training and more information for complex                > |   LN
+reasoning during inference.  Beyond the previously dis-         3
+cussed imitation training methods, several approaches have                  Navigation instruction: Turn left at the next T-junction
+sought to incorporate reinforcement learning strategies. La-                Notice instruction: Please watch out for the pedestrians up ahead.
+tent DRL [38] trained in a supervised way to get a latent       Figure 2. Two examples of the collected data with corresponding
+representation of the environment observation and conducts      labeled navigation instructions and optional notice instructions.
+reinforcement learning using the representation as the input.
+Roach [48] employed a reinforcement learning agent with                     1        =
+privileged access to environmental information and distills     Led         .                                                                 Follow
+a model as the final agent. ASAPRL [44] and TaEcRL [50]         ~~          |    Jil.                                                         Gitzo
+exploited abstracted skills to effectively improve reinforce-   m0
+ment learning efficiency and the final performance by facili-
+tating effective exploration and reward signaling. However,                 | [|
+                                                                     °          E  1     150      E                                               =
+these end-to-end methods lack the ability to verbally or tex-   Figure 3. Distribution of parsed clips in terms of clip length and
+tually interact with humans (passengers), and usually have      the corresponding navigation instruction type.
+low explanatility in the decision-making process.               as the input modality and fused vectorized object-level
+2.2. LLMs in Driving Tasks                                      2D scene representation to enable the LLM to answer the
+Emerging advancements     in  large language     models         questions based on the current environment.
+(LLMs) [10, 17, 19, 39, 40] have been witnessed over the                                        However, this line of work only considered the driving
+last few months. Furthermore, vision large language mod-        problem in the open-loop settings, and ignored questions
+els (VLLM) further introduce vision encoders and open the       such as cumulative error, temporal action consistency, and
+doors for LLMs to interpret not only textual data but also      end-to-end trainability, which are critical for bringing the
+images and data in other modalities [5, 25, 51]. In the field   models into actual closed-loop driving tasks.                              To the best
+of autonomous driving (AD), recent research has integrated      of our knowledge, we are the first language-based end-to-
+LLMs into the AD system for better explainability and           end autonomous driving method in the closed-loop setting.
+natural interaction with humans.     Some studies adopt         Relevant datasets, benchmarks, and trained models are also
+the visual language model approach, which can handle            open-sourced to facilitate further research in the commu-
+multi-modal input data and provide the textual description      nity.
+as well as the control signal for the driving scenarios. For    3. Dataset generation
+example, DRIVEGPT4 [46] proposed a multimodal LLM
+framework, which takes a sequence of frames as input, then      We aim to develop an intelligent driving agent that can gen-
+generates responses to human inquiries and predicts control     erate driving actions based on three sources of input:                              1)
+signals for the next step. However, since the framework         sensor data (multi-view camera and LiDAR), so that the
+lacks an input command, the predicted control can not           agent can generate actions that are aware of and compliant
+follow the specific navigation command, which denotes           with the current scene; 2) navigation instructions (e.g. lane
+that the framework is hard to deploy in real scenarios.         changing, turning), so that the agent can drive to meet the
+Meanwhile, more researchers focus on transforming the           requirement in natural language (instruction from humans
+driving situations into textual descriptions as the input for   or navigation software); and 3) human notice instruction,
+the LLM, for directly interpreting and reasoning about          so that the agent can interact with humans and adapt to hu-
+comprehensive driving situations In this thread of works,       man’s suggestions and preferences (e.g. pay attention to ad-
+GPT-Driver [28] reformulated motion planning as the task        versarial events, deal with long-tail events, etc). In this sec-
+of natural language modeling by converting heterogeneous        tion, we describe how to generate the multi-modal dataset
+scene input to language tokens. LanguageMPC [32] lever-         needed to train the agent, and the prompt design for the nav-
+aged a LLM to reason the complex scenarios and output           igation instruction and human notice instruction.                             Specifi-
+high-level driving decisions. Then the method tunes a           cally, we choose the CARLA [12] as the simulator, because
+parameter matrix to convert the decision into the low-level     it can simulate a realistic dynamic closed-loop world and
+control signals. LLM-Driver [6] utilized the numeric vector     it is widely adopted in the field of end-to-end autonomous
+
+    3
+
+ Type     Three randomly chosen instructions of each instruction type                      Instruction design. We consider three types of navigation
+          Maintain your current course until the upcoming intersection.                  instructions (follow, turn, and others) along with one type
+ Follow   In [x] meters, switch to left lane.                                           of notice instruction, consisting of a total of 56 different
+          Ease on to the left and get set to join the highway.                           instructions. Table 1 shows some examples and the full list
+          After [x] meters, take a left.
+ Turn     At the next intersection, just keep heading straight, no turn.                 can be found in supplementary material. To enable the agent
+          You’ll be turning left at the next T-junction, alright?                    to drive in realistic instructional settings where the instruc-
+          Feel free to start driving.                                                tions come from navigation software or humans, we
+ Others   Slow down now.                                                             •  Diversifying the instructions:      Considering the inherent
+          Head to the point, next one’s [x] meters ahead, [y] meters left/right.         richness of natural language, for each type of instruction,
+          Watch for walkers up front.
+ Notice   Just a heads up, there’s a bike ahead.                                           we utilized ChatGPT API to generate eight different vari-
+          Please be aware of the red traffic signal directly in front of you.                ants, each carrying the same semantic meaning but vary-
+Table 1. Examples of considered navigation instructions (follow,                               ing in phrasing. This enables more comprehensive cov-
+turn, others) and notice instructions. [x] and [y] represent the float                      erage and flexibility in language interpretation, accom-
+number for a specific distance.                                                                modating the diverse ways the same instruction can be
+                                                                                        conveyed.
+driving. The data collection consists of two stages: 1) col-                         •  Incorporating misleading  instructions: in        real-world
+lecting sensor data and control signals with an expert agent;                                  cases, the navigation software or passengers may give
+and 2) parsing and labeling collected data with instructions.                           misleading instructions to the AV that violate traffic rules
+Sensor and control data collection.                             We utilize a rule-      or raise safety concerns.      For example, on a single-lane
+based expert agent [34] to create a dataset including about                                  road, following an instruction “Change to left lane” is
+3M driving frames. Since the expert agent can access the                                dangerous.            To improve the robustness of our model
+privileged information in the CARLA, this dataset will in-                                against misleading instructions, we simulate these scenar-
+clude camera data, LiDAR data, and control actions for each                          •  ios and add them to our dataset.
+frame. To enhance the diversity of the collected dataset, the                               Connecting multiple instructions: In many cases, the in-
+agent runs on 2.5k routes, 8 towns, and 21 kinds of environ-                             structions may consist of two to three consecutive instruc-
+mental conditions (e.g.     weather, time of the day). We use                               tions, such as “Turn right at this intersection, then go
+four RGB cameras (left, front, right, rear) and one LiDAR.                               straight to the next intersection and turn right again.” We
+The side cameras are angled at 60◦.                            Besides, we center-          also construct some consecutive complex instruction data
+crop the front image as an additional focus-view image to                               to simulate real navigation-based driving scenarios.
+capture the status of the distant traffic light. The LiDAR has                       4. LMDrive methodology
+64 channels and generates 600K points per second.
+Parsing and language annotation.                              In the second stage,   In this work,  we propose LMDrive,             a framework that
+we parse the collected data into clips, and label each clip                                can understand and follow high-level driving instructions
+with proper navigation instructions and optional notice in-                                through natural language. As illustrated in Figure 4, LM-
+structions. The parsing process takes a sequence of frames                                    Drive is composed of two major components: 1) a vision
+as input, and segments these frames into clips, where each                                 encoder that processes multi-view multi-modal sensor data
+clip corresponds to one navigation instruction. For instance,                                (camera and LiDAR) for scene understanding and generat-
+if the agent started to turn left at frame T0                         and ended at        ing visual tokens; 2) a large language model and its asso-
+frame Tn, we will label (T0, Tn) as a new clip with the in-                                ciated component (tokenizer, Q-Former, and adapters) that
+struction “Hang a left at the next crossroads”. Besides, if                             takes in the visual tokens and language instruction, to pre-
+an adversarial event1     occurs at time                       Ta, we will add one      dict the control signal and whether the given instruction is
+notice instruction into this clip, simulating a real-life sce-                       completed.         We will introduce the vision encoder in Sec-
+nario where a passenger or a side assistance system would                                tion 4.1, and the language model with its associated compo-
+communicate with the driver when an emergency happens.                               nents in Section 4.2. Finally, we describe the training details
+As shown in Figure 2, each clip includes sensor data, con-                           in Section 4.3.
+trol signals, the corresponding navigation instruction, and                          4.1. Vision encoder
+optional notice instructions. The distribution of the parsed                                  In the visual language community [5, 25, 51], the most
+clips in terms of clip length and corresponding instruction                                     common way to align vision and language could be us-
+is shown in Figure 3. In our dataset, we collect 64K parsed                               ing pre-trained CLIP models [31] to encode image features.
+clips and 464K notice instructions.                                                          However, the large flops and parameter size of the CLIP
+          1The adversarial events include bad road conditions, the front vehicle’s       models increase the difficulty of its deployment in AV sys-
+sudden brake, unexpected entities rushing into the road from occluded re-            tems.          Also, AV perception systems are usually in 3D to
+gions, vehicles running a red traffic light, etc.                                            include LiDAR input. Hence, inspired by InterFuser [34]
+
+              4
+
+Instruction Completed?  ✘ ✘    ✓
+    Control Signal  Adapter T₀Adapter T₁  …...  Adapter Tₙ
+
+
+        Large Language Model
+
+                                     Adapter                        Adapter     …..           …..                               Adapter
+                Tokenizer                                                                     Tokenizer
+                                    Q-Former                        Q-Former                                                    Q-Former
+    Turn left at the next intersection      Vision Encoder     Vision Encoder             Watch for walkers up front            Vision Encoder
+          Navigation Instruction                                                    Notice Instruction
+                                                                                                  (Optional)
+        Multi-view RGB & LiDAR                           T₀                     T₁                                                  Tₙ
+
+    Figure 4. The structure of the proposed LMDrive model, which consists of two major components: 1) a vision encoder that processes
+    multi-view multi-modal sensor data (camera and LiDAR) for scene understanding and generating visual tokens; 2) a large language model
+    and its associated component (tokenizer, Q-Former, and adapters) that processes all the historic visual tokens and the language instructions
+    (navigation instruction and optional notice instruction), to predict the control signal and whether the given instruction is completed.
+
+    and TF++ [18], we design a multi-view multi-modality vi-                                    Vision Encoder     Visual Tokens     Prediction Headers
+    sion encoder to encode/fuse the sensor data. As shown in                              2D  Transformer             key
+    Figure 5, the vision encoder consists of the sensor encoding                    BackBone                 Encoder   &
+                                                                                                                     value
+    part which encodes image and LiDAR input respectively,            Multi-view Input                                     BEV        CenterPoint    BEV Map
+    and a BEV decoder that fuses image and point cloud fea-                                   3D query
+    tures to generate visual tokens which are then passed to the                          BackBone            C×H ×W       Traffic Light  MLP  Traffic light status
+    language model. Notably, the vision encoder is pre-trained        LiDAR Input         Traffic Light query  query   t1   Waypoint
+    on perception tasks by adding additional prediction heads,                            Waypoint queries     query        Waypoint      GRU
+                                                                                                                       tN   Waypoint  Target point Future waypoints
+    then the encoder is frozen for later use by the large language
+    model.                                                           Figure 5.                                  The detailed structure of the vision encoder, which
+                                                                     takes as input the multi-view multi-modality sensor data. In the
+    Sensor encoding.    For each image input, we apply a 2D          pre-training stage, the vision encoder is appended with predic-
+    backbone ResNet [15] to extract the image feature map.           tion headers to perform pre-training tasks (object detection, traf-
+    The feature map is then flattened into one-dimensional to-       fic light status classification, and future waypoint prediction). In
+    kens. For a comprehensive understanding of the global con-       the instruction-finetuning stage and inference stage, the prediction
+    text from multiple viewpoints, tokens from different views       headers are discarded, and the vision encoder is frozen to generate
+    will be fused by a standard Kenc-layer transformer encoder,      visual tokens to feed into the LLM.
+    each layer containing Multi-Headed Self-Attention [42],          Specifically, the BEV decoder is designed as a standard
+    MLP blocks and layer normalization [1].   For the LiDAR          transformer with Kdec                          layers.                The BEV point cloud fea-
+    input, we adopt a 3D backbone PointPillars [21] to pro-          tures are fed into the BEV decoder as H × W                                         queries to
+    cess the raw point cloud data into ego-centered LiDAR fea-       attend to the multi-view image features and generate BEV
+    tures, where each pillar encompasses points within a 0.25m       tokens. We also feed N learnable queries and 1 learnable
+    × 0.25m area. PointNet [30] is then used to aggregate fea-       query into the BEV decoder to generate N waypoint point
+    tures and downsample the feature map to C ×H ×W , which          tokens and 1 traffic light token respectively. Thus the three
+    subsequently serve as BEV queries.                               types of visual tokens (BEV, waypoint, and traffic light) will
+    BEV decoder. The encoded sensor features above are then          contain rich scene information and will be then presented to
+    passed into the BEV decoder to generate visual tokens.           the large language model.
+
+                                                                    5
+
+
+
+
+
+
+
+
+
+
+Decoder
+  BEV
+
+                                                                                                                                ……
+
+Pre-training with prediction headers. we consider three Action prediction. After receiving a sequence of instruc-
+vision encoder pre-training tasks: object detection, future tional and visual tokens, the LLM predicts the action tokens.
+waypoint prediction, and traffic light status classification. One another 2-layer MLP adapter is then applied to predict
+For object detection, the BEV tokens will pass through a future waypoints, as well as a flag to indicate whether the
+one-stage CenterPoint [47] to predict the bounding boxes given instruction has been completed. Note that to enhance
+and velocity of the objects in an H m × W m area. For the supervision signal, we will also conduct prediction for
+waypoint prediction, we pass the N waypoint tokens along every historic frame during training, and only the prediction
+with the navigation waypoint into the GRU network [9] se- of the latest frame will be executed at inference time. To get
+quentially to predict N future waypoint. For the traffic light the final control signal, which includes braking, throttling,
+status classification, a 2-layer MLP is applied to the traffic and steering, following LBC [4], we use two PID controllers
+light token. Three corresponding loss terms are considered: for latitudinal and longitudinal control to track the heading
+1) the detection loss as in InterFuser [35]; 2) the l1 way- and velocity of predicted waypoints respectively.
+point loss; and 3) the cross-entropy traffic light state loss. Training objectives. When finetuning the LLM and its as-
+Note that these prediction headers are only used in the pre- sociated components, we consider two loss terms: 1) the
+training of the vision encoder, and will be discarded in the l
+training of the LLMs and inference of the whole model. 1 waypoint loss; 2) the classification loss (cross-entropy),
+        which determines if the current frame finishes the given in-
+4.2. LLM for instruction-following auto driving struction.
+As illustrated in Figure 4, in our framework, the LLM func- 4.3. Training details
+tions as the “brain” throughout the entire driving procedure, LMDrive’s training consists of two stages: 1) the vision en-
+processing sensor tokens generated by the frozen vision en- coder pre-training stage; and 2) the instruction-finetuning
+coder for each frame, comprehending natural language in- stage, to align the instruction/vision and control signal.
+structions, generating the necessary control signal, and pre- Vision encoder pre-training stage. The vision encoder
+dicting whether the given instruction is completed. Specif- takes a single frame’s sensor data as input, and we use
+ically, we choose LLaMA [39] as the language backbone, the dataset collected in Section 3 for training. Specifically,
+which has been widely adopted in many language [14, 49] since the instruction annotation process will drop some
+and vision [25, 51] instruction-tuning models. We also have frames, we use the raw dataset before the instruction an-
+three associated components to bridge LLM with instruc- notation for the vision encoder pre-training, which includes
+tion, visual information input, and action prediction: 1) a data of around 3M frames. Only the vision encoder is pre-
+tokenizer, 2) a Q-Former, 3) two adapters. trained with perception tasks for scene understanding.
+Instruction and visual tokenization. Given the naviga- Instruction-finetuning stage. The entire system is trained
+tion instruction and optional notice instruction, we apply the for end-to-end autonomous driving under the guidance of
+LLaMA tokenizer [39] to convert the instruction into tex- the instruction, where the Q-Former and Adapters are train-
+tual tokens. Note that the duration of executing one instruc- able and the other components are frozen. While our LM-
+tion would span from a few seconds to a few minutes, and Drive takes a sequence of frames as input, during train-
+our model is deployed in the closed-loop setting. Thus at ing we set a fixed sequence length Tmax for building up
+each frame, we utilize all historic sensor information (with batch data. The training utilizes the instruction-following
+maximum limit Tmax) to depress cumulative error and im- data generated in Section 3. To enable the model to reject
+prove the temporal consistency of the model. Specifically, misleading instructions, we label the corresponding data as
+for each frame’s multi-view multi-modality sensor input, ‘completed’ after the misleading instruction is given for
+we utilize the vision encoder pre-trained in the previous about 1 second. Since the dataset is collected at a high
+section to generate visual tokens (H × W BEV tokens, N frequency (∼10Hz), the data in adjacent frames are highly
+waypoint tokens, and one traffic light token). However, the similar. To encourage efficient training, following video
+number of visual tokens (e.g. 406 tokens for each frame) prediction methods [13, 33, 43], we sample the training
+quickly grows too large for the LLM because usually hun- frames in a fixed interval, and apply temporal augmentation
+dreds of frames are needed to complete one instruction. To which randomly shifts the training frames either forward or
+overcome this, we follow BLIP-2 [22] to use the Q-Former backward, with the random shift less than the fixed interval.
+to reduce the number of visual tokens. Specifically, for
+each frame, we employ M learnable queries to attend to the 5. LangAuto Benchmark
+visual tokens via cross-attention layers, which can reduce
+each frame’s visual token number to M . Subsequently, we We propose the LangAuto (Language-guided Autonomous
+use a 2-layer MLP adapter to convert the tokens extracted Driving) CARLA benchmark, the first benchmark that eval-
+by the Q-Former to share the same dimension as the lan- uates closed-loop driving performance under language in-
+guage token, which can then be fed into the LLM. structions. Compared with the previous CARLA bench-
+
+        6
+
+   LLM Backbone                       LangAuto                     LangAuto-Short                 LangAuto-Tiny
+       DS ↑                             RC ↑       IS ↑       DS ↑      RC ↑       IS ↑      DS ↑      RC ↑       IS ↑
+   Random Init.         10.7±3.8      16.2±4.9  0.63±0.04   14.2±4.4  20.1±4.4  0.72±0.04  20.1±4.1  24.7±5.1  0.75±0.03
+   LLaMA [39]           31.3±1.5      37.1±1.6  0.82±0.01   42.8±7.2  49.1±8.5  0.87±0.03  52.2±5.3  57.8±8.0  0.91±0.05
+   LLaMA2 [40]          32.8±2.1      40.1±2.2  0.81±0.02   44.8±6.2  53.5±5.5  0.84±0.02  56.1±4.1  64.2±4.7  0.87±0.04
+   Vicuna [49]          33.5±1.9      39.3±1.9  0.83±0.02   45.3±4.9  54.3±3.9  0.83±0.03  55.5±3.9  63.1±4.2  0.88±0.04
+    Vicuna-v1.5 [49] 34.0±3.8 39.0±3.3 0.85±0.06 47.0±4.3 56.5±2.4 0.83±0.04 59.0±2.6 69.9±2.3 0.84±0.02
+    LLaVA-v1.5 [24] 36.2±2.3 46.5±4.3 0.81±0.03 50.6±1.7 60.0±3.4 0.84±0.04 66.5±3.6 77.9±2.3 0.85±0.02
+Table 2. Performance comparison of 6 LLM backbones on the LangAuto benchmark. We report the metrics for 3 evaluation runs.
+
+   Module design            DS ↑      RC ↑         IS ↑        expected to reject these misleading instructions and execute
+  Baseline (LLaVA-v1.5)    36.2±2.3   46.5±4.3  0.81±0.03      safe actions that are compliant to the current scene, until the
+   w/o Q-Former            31.7±3.5   41.2±4.4  0.79±0.02      next correct instruction is spawned.
+  w/o using BEV tokens     33.9±3.9   45.9±5.1  0.72±0.03      Metrics. We consider three major metrics introduced by the
+  w/o visual pre-training  16.9±5.1   24.1±4.7  0.70±0.04      CARLA LeaderBoard [36]: route completion (RC), infrac-
+        Table 3. Ablation study on the module design.          tion score (IS), and driving score (DS). The route comple-
+                                                               tion refers to the percentage of the total route length that has
+  mark, Town05 [29] and Longest6 [8] that navigate the agent   been completed. It only takes into account the distance trav-
+     with discrete driving commands or target waypoints, our   eled along the predetermined route, where each segment of
+   benchmark only provides the AV with a navigation instruc-   the predetermined route corresponds to a navigation instruc-
+tion and optional notice instructions in natural language.     tion. If the agent deviates too far from the route, the agent
+      Specifically, the LangAuto benchmark covers all 8 pub-   is regarded as violating the instruction, and this episode is
+      licly available towns in CARLA to include various sce-   marked as a failure and terminated.      The infraction score
+narios (e.g. highways, intersections, roundabouts).       We   measures infractions triggered by the agent.      When colli-
+  also consider 16 kinds of environmental conditions, encom-   sions or traffic rule violations occur, the infraction score is
+    passing the combinations of 7 weather conditions (Clear,   decayed by a corresponding discount factor.       The driving
+        Cloudy, Wet, MidRain, WetCloudy, HardRain, SoftRain)   score is the product of the route completion ratio and the in-
+   and 3 daylight conditions (Night, Noon, Sunset). Besides,   fraction score, describing both driving progress and safety.
+ LangAuto consists of three tracks to fully test the agent’s   It is generally recognized as the primary ranking metric.
+instruction-following abilities:
+   • LangAuto track: For each route, navigation instructions   6. Experiments
+     are given and updated to the agent based on the agent’s   6.1. Experiment Setup
+ current position.      We also divide this track into three
+  sub-tracks with different route lengths, to better distin-   We implement and evaluate our approach on the open-
+ guish the performance.        LangAuto where the routes are   source CARLA simulator of version 0.9.10.1 [12].          For
+      longer than 500 meters, LangAuto-Short where the route   the 2D backbone and 3D backbone of the vision encoder,
+         length is between 150 and 500 meters, and LangAuto-   ResNet-50 [15] backbone is pre-trained on ImageNet, and
+   Tiny where the route length is shorter than 150 meters.     PointPillars [21] is trained from scratch. C, H, W, N are set
+       • LangAuto-Notice track: Based on the LangAuto track,   as 256, 50, 50, 5 respectively. For the Q-former token num-
+    we additional add notice instructions to the agent. This   ber M , we empirically found that M = 4 tokens achieve de-
+  setting simulates real cases where passengers or other as-   cent performance. During the instruction-finetuning stage,
+    sistance systems can give real-time notice in long-trail   we sample the training frames in a fixed interval of 2. Be-
+     complex or adversarial scenarios, which is usually hard   cause each parsed clip typically contains multiple notice in-
+   for the AV system to handle by itself. Ideally, the agent   structions, to avoid overfitting to notice following and gen-
+    that can comprehend and leverage instruction can achieve   erating over-conservative behaviors, during training we ran-
+ better performance.                                           domly removed notices for 75% of the clips.       For the re-
+• LangAuto-Sequential track:           Based on the LangAuto   maining clips, we ensure that a maximum of one notice is
+      track, we merge 10% of consecutive 2 to 3 instructions   included. We refer readers to the appendix for more details.
+ into a single long instruction.     This setting mimics the
+   realistic scenarios where the multi-sentence instructions   6.2. Quantitative Results
+ come from the passengers or navigation software.              LLM backbones. In Table 2, we evaluate our method with
+   Note that misleading instructions will be randomly (∼ 5%)   different pretrained or randomly initialized LLM models of
+  and intermittently given to the driving agent, which lasts   7B parameters: LLaMA [39] and LLaMA2 [40] were pre-
+for a certain duration (1-2 seconds).   The driving agent is   trained with large public language datasets; Vicuna [49]
+
+                                          7
+
+          LLM Backbone  Benchmark Type     Infraction  Vehicle  Pedestrian  Layout    Red light Offroad  Blocked
+    Score ↑ Collisions ↓ Collisions ↓ Collisions ↓ Violations ↓ Infractions ↓ Infractions ↓
+
+          LLaVA-v1.5       LangAuto         0.81         0.33      0.03      0.50       0.92      0.36     0.22
+                       LangAuto-Notice      0.87         0.17      0.02      0.31       0.50      0.17     0.27
+          Vicuna-v1.5      LangAuto         0.85         0.30      0.03      0.43       1.18      0.24     0.19
+                       LangAuto-Notice      0.91         0.15      0.01      0.28       0.56      0.26     0.19
+
+Table 4. Performance comparison on LangAuto and LangAuto-Notice benchmarks. The metrics (except infraction score) are normalized
+by the driven distance (km).
+
+ LLM Backbone  Benchmark Type              DS ↑   RC ↑   IS ↑
+ LLaVA-v1.5       LangAuto                 36.2   46.5   0.81
+            LangAuto-Sequential            34.0   43.7   0.81
+ Vicuna-v1.5      LangAuto                 34.0   39.0   0.85
+            LangAuto-Sequential            31.9   37.1   0.84     Left view             Front view      Right view
+Table 5.  Performance comparison on LangAuto and LangAuto-         Your next action is  a left turn,
+Sequential benchmarks.                                            just ahead.                                     predicted
+                                                                                                                  waypoints
+                                                                   Next intersection,   go straight.
+and Vicuna-v1.5 [49] are additionally finetuned with hu-           Hang a right   up  front. (misleading
+man conversation data; LLaVA-v1.5 [24] incorporate multi-         instruction)              ego car
+modal data (e.g. language, images) for training. We observe      Figure 6. An example of how our LMDrive predicts future way-
+that LLaVA-v1.5 [24] surpasses the other LLM models,             points, given sensor inputs and varied navigational instructions.
+which demonstrates the importance of adopting pretrained         Under the first two instructions, our model predicts different way-
+multi-modal LLMs for instruction-following autonomous            points accordingly. The third instruction is a misleading one (turn
+driving.    Besides, the models finetuned with instruction       right on a left-only lane). The model appropriately rejects the in-
+data perform better than others (Vicuna-v1.5 > LLaMA2            correct instruction, generating a slower speed and a safe path that
+≈ Vicuna > LLaMA). We also test a randomly initial-              is compliant with the scenario.
+ized 7B LLM model, which struggles to drive properly
+with the same amount of training data, which demonstrates        where some consecutive 2 to 3 navigation instructions are
+the necessity of finetuning pretrained LLM for instruction-      merged together to a long and complex instruction.    This
+following driving.                                               setting additionally requires the agent to be able to be tem-
+Module Design. In Table 3, we conduct ablation studies on        porally aware of which instruction has been completed and
+different components. First, instead of reducing the num-        which has not.        Our agents based on LLaVA and Vicuna
+ber of BEV tokens with the Q-Former, we directly down-           both have a drop in the driving score and route completion
+sample the BEV features to 4 × 4, then feed them into the        ratio.
+LLM (denoted as “w/o Q-Former”).           The average driving
+score dropped from 36.2 to 31.7.     Second, excluding the       7. Conclusion
+BEV tokens input into LLM decoder (denoted as “w/o using
+BEV tokens” results in a decreased infraction score (0.81 to     In this paper, we introduced LMDrive, a language-guided,
+0.72). One explanation is that the BEV tokens are important      end-to-end, closed-loop autonomous driving framework.
+for detecting and reasoning the surrounding obstacles and        LMDrive incorporates natural language instructions along
+road structures.   Third, we remove the pre-training stage       with multi-modal sensor data, enabling human-like inter-
+of the vision encoder and directly train it from scratch in      action and navigation in complex driving scenarios.     We
+the instruction-finetuning stage. The driving score drops to     also propose the language-guided driving dataset, compris-
+16.9 (denoted as “w/o visual pre-training”), demonstrating       ing around 64K multi-modal data clips along with corre-
+the importance of our proposed vision encoder pre-training.      sponding navigation instructions. We established the Lan-
+LangAuto-Notice Benchmark.     The LangAuto-Notice               gAuto benchmark for evaluating autonomous driving sys-
+benchmark provides some notice instructions to the agent         tems considering natural language instructions. The effec-
+when adversarial events happen. As shown in Table 4, our         tiveness of LMDrive was demonstrated through extensive
+agents can effectively leverage the information of the no-       closed-loop experiments, underlining the potential of im-
+tice in real-time, resulting in a significant decrease in both   proving the interaction of autonomous vehicles with hu-
+collisions and traffic rule violations.                          mans and the environment. Our work serves as an encourag-
+                                                                 ing starting point for further exploration and developments
+LangAuto-Sequential Benchmark. In Table 5, we demon-             in the field of language-based closed-loop end-to-end au-
+strate the effect of the LangAuto-Sequential benchmark           tonomous driving.
+
+                                                      8
+
+References                                                         dialogue model for academic research.    Blog post, April, 1,
+        [1] Jimmy Lei Ba, Jamie Ryan Kiros, and Geoffrey E Hin-    2023. 6
+     ton. Layer normalization. arXiv preprint arXiv:1607.06450,      [15] Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun.
+ 2016. 5                                                           Deep residual learning for image recognition. In     Proceed-
+    [2] Sergio Casas, Cole Gulino, Simon Suo, Katie Luo, Renjie    ings of the IEEE conference on computer vision and pattern
+   Liao, and Raquel Urtasun. Implicit latent variable model for    recognition, pages 770–778, 2016. 5, 7, 1
+ scene-consistent motion forecasting.    In    Computer Vision–     [16] Yihan Hu, Jiazhi Yang, Li Chen, Keyu Li, Chonghao Sima,
+          ECCV 2020: 16th European Conference, Glasgow, UK, Au-    Xizhou Zhu, Siqi Chai, Senyao Du, Tianwei Lin, Wenhai
+       gust 23–28, 2020, Proceedings, Part XXIII 16, pages 624–    Wang, et al. Planning-oriented autonomous driving. In Pro-
+ 641. Springer, 2020. 1                                            ceedings of the IEEE/CVF Conference on Computer Vision
+[3] Dian Chen and Philipp Kr¨ahenb¨uhl. Learning from all vehi-    and Pattern Recognition, pages 17853–17862, 2023. 1, 2
+        cles. In Proceedings of the IEEE/CVF Conference on Com-   [17] Bernhard Jaeger, Kashyap Chitta, and Andreas Geiger. Hid-
+       puter Vision and Pattern Recognition, pages 17222–17231,    den biases of end-to-end driving models. 2023. 3
+ 2022. 3, 1                                                       [18] Bernhard Jaeger, Kashyap Chitta, and Andreas Geiger. Hid-
+[4] Dian Chen, Brady    Zhou,  Vladlen  Koltun, and     Philipp    den biases of end-to-end driving models.       arXiv preprint
+     Kr¨ahenb¨uhl. Learning by cheating. In Conference on Robot    arXiv:2306.07957, 2023. 5
+ Learning, pages 66–75. PMLR, 2020. 6                             [19] Xiaosong Jia, Yulu   Gao, Li      Chen,   Junchi     Yan,
+         [5] Keqin Chen, Zhao Zhang, Weili Zeng, Richong Zhang,    Patrick Langechuan Liu, and Hongyang Li.        Driveadapter:
+ Feng Zhu,     and Rui Zhao.     Shikra:      Unleashing multi-    Breaking the coupling barrier of perception and planning
+ modal llm’s referential dialogue magic.         arXiv preprint    in end-to-end autonomous driving.     In   Proceedings of the
+ arXiv:2306.15195, 2023. 3, 4                                      IEEE/CVF International Conference on Computer Vision,
+  [6] Long Chen, Oleg Sinavski, Jan H¨unermann, Alice Karnsund,    pages 7953–7963, 2023. 3
+          Andrew James Willmott, Danny Birch, Daniel Maund, and       [20] Xiaosong Jia, Penghao Wu, Li Chen, Jiangwei Xie, Con-
+   Jamie Shotton. Driving with llms: Fusing object-level vector    ghui He, Junchi Yan, and Hongyang Li.         Think twice be-
+    modality for explainable autonomous driving. arXiv preprint    fore driving: Towards scalable decoders for end-to-end au-
+ arXiv:2310.01957, 2023. 2, 3                                      tonomous driving.    In      Proceedings of the IEEE/CVF Con-
+      [7] Li Chen, Penghao Wu, Kashyap Chitta, Bernhard Jaeger,    ference on Computer Vision and Pattern Recognition, pages
+ Andreas     Geiger, and     Hongyang Li.   End-to-end      au-    21983–21994, 2023. 2
+ tonomous driving: Challenges and frontiers.     arXiv preprint      [21] Alex H Lang, Sourabh Vora, Holger Caesar, Lubing Zhou,
+ arXiv:2306.16927, 2023. 2                                         Jiong Yang, and Oscar Beijbom. Pointpillars: Fast encoders
+ [8] Kashyap Chitta, Aditya Prakash, Bernhard Jaeger, Zehao Yu,    for object detection from point clouds.  In    Proceedings of
+ Katrin Renz, and Andreas Geiger.       Transfuser:   Imitation    the IEEE/CVF conference on computer vision and pattern
+      with transformer-based sensor fusion for autonomous driv-    recognition, pages 12697–12705, 2019. 5, 7
+ ing.         IEEE Transactions on Pattern Analysis and Machine      [22] Junnan Li, Dongxu Li, Silvio Savarese, and Steven Hoi.
+ Intelligence, 2022. 2, 7                                          Blip-2:        Bootstrapping language-image pre-training with
+     [9] Kyunghyun Cho, Bart Van Merri¨enboer, Caglar Gulcehre,    frozen image encoders and large language models.        arXiv
+          Dzmitry Bahdanau, Fethi Bougares, Holger Schwenk, and    preprint arXiv:2301.12597, 2023. 6, 1
+ Yoshua Bengio.       Learning phrase representations using rnn        [23] Zhiqi Li, Wenhai Wang, Hongyang Li, Enze Xie, Chong-
+ encoder-decoder for statistical machine translation.     arXiv    hao Sima, Tong Lu, Yu Qiao, and Jifeng Dai.        Bevformer:
+ preprint arXiv:1406.1078, 2014. 6                                 Learning bird’s-eye-view representation from multi-camera
+[10] Hyung  Won Chung,      Le Hou,  Shayne Longpre,     Barret    images via spatiotemporal transformers.      In European con-
+          Zoph, Yi Tay, William Fedus, Yunxuan Li, Xuezhi Wang,    ference on computer vision, pages 1–18. Springer, 2022. 1
+ Mostafa Dehghani,      Siddhartha Brahma,  et al.      Scaling      [24] Haotian Liu, Chunyuan Li, Yuheng Li, and Yong Jae Lee.
+ instruction-finetuned  language models.     arXiv     preprint    Improved baselines with visual instruction tuning.      arXiv
+ arXiv:2210.11416, 2022. 3
+[11] DriveLM   Contributors.   Drivelm:  Drive on     language.    preprint arXiv:2310.03744, 2023. 7, 8
+                       https://github.com/OpenDriveLab/DriveLM,    [25] Haotian Liu, Chunyuan Li, Qingyang Wu, and Yong Jae Lee.
+ 2023. 2                                                           Visual instruction tuning.   arXiv preprint arXiv:2304.08485,
+   [12] Alexey Dosovitskiy, German Ros, Felipe Codevilla, Anto-    2023. 3, 4, 6
+      nio Lopez, and Vladlen Koltun. Carla: An open urban driv-   [26] Ilya Loshchilov and Frank Hutter.     Sgdr:      Stochas-
+    ing simulator. In Conference on robot learning, pages 1–16.    tic gradient descent with warm restarts.       arXiv preprint
+ PMLR, 2017. 2, 3, 7                                               arXiv:1608.03983, 2016. 1
+   [13] Christoph Feichtenhofer, Haoqi Fan, Jitendra Malik, and   [27] Ilya Loshchilov and Frank Hutter.    Decoupled weight de-
+ Kaiming He.   Slowfast networks for video recognition.      In    cay regularization. In International Conference on Learning
+        Proceedings of the IEEE/CVF international conference on    Representations, 2018. 1
+ computer vision, pages 6202–6211, 2019. 6                        [28] Jiageng Mao,  Yuxi Qian, Hang Zhao,         and Yue Wang.
+     [14] Xinyang Geng, Arnav Gudibande, Hao Liu, Eric Wallace,    Gpt-driver:  Learning to drive with gpt.       arXiv preprint
+ Pieter Abbeel, Sergey Levine, and Dawn Song.          Koala: A    arXiv:2310.01415, 2023. 2, 3
+
+                                                9
+
+  [29] Aditya Prakash, Kashyap Chitta, and Andreas Geiger. Multi-   In       European conference on computer vision, pages 20–36.
+         modal fusion transformer for end-to-end autonomous driv-   Springer, 2016. 6
+         ing. In Conference on Computer Vision and Pattern Recog-      [44] Letian Wang, Jie Liu, Hao Shao, Wenshuo Wang, Ruobing
+ nition (CVPR), 2021. 7                                             Chen, Yu Liu, and Steven L Waslander. Efficient reinforce-
+   [30] Charles R Qi, Wei Liu, Chenxia Wu, Hao Su, and Leonidas J   ment learning for autonomous driving with parameterized
+      Guibas. Frustum pointnets for 3d object detection from rgb-   skills and priors.     arXiv preprint arXiv:2305.04412, 2023.
+        d data. In Proceedings of the IEEE conference on computer   3
+ vision and pattern recognition, pages 918–927, 2018. 5, 1           [45] Penghao Wu, Xiaosong Jia, Li Chen, Junchi Yan, Hongyang
+[31] Alec Radford,   Jong Wook Kim, Chris Hallacy,         Aditya   Li, and Yu Qiao.     Trajectory-guided control prediction for
+            Ramesh, Gabriel Goh, Sandhini Agarwal, Girish Sastry,   end-to-end autonomous driving: A simple yet strong base-
+       Amanda Askell, Pamela Mishkin, Jack Clark, et al. Learning   line.      Advances in Neural Information Processing Systems,
+        transferable visual models from natural language supervi-   35:6119–6132, 2022. 3
+     sion. In International conference on machine learning, pages    [46] Zhenhua Xu, Yujia Zhang, Enze Xie, Zhen Zhao, Yong Guo,
+ 8748–8763. PMLR, 2021. 4                                           Kenneth KY Wong, Zhenguo Li, and Hengshuang Zhao.
+        [32] Hao Sha, Yao Mu, Yuxuan Jiang, Li Chen, Chenfeng Xu,   Drivegpt4: Interpretable end-to-end autonomous driving via
+               Ping Luo, Shengbo Eben Li, Masayoshi Tomizuka, Wei   large language model.        arXiv preprint arXiv:2310.01412,
+ Zhan, and Mingyu Ding.         Languagempc:       Large language   2023. 2, 3
+ models as decision makers for autonomous driving.          arXiv  [47] Tianwei Yin, Xingyi Zhou, and Philipp Krahenbuhl. Center-
+ preprint arXiv:2310.03026, 2023. 2, 3                              based 3d object detection and tracking. In     Proceedings of
+    [33] Hao Shao, Shengju Qian, and Yu Liu. Temporal interlacing   the IEEE/CVF conference on computer vision and pattern
+ network. AAAI, 2020. 6                                             recognition, pages 11784–11793, 2021. 6
+      [34] Hao Shao, Letian Wang, Ruobing Chen, Hongsheng Li, and   [48] Zhejun Zhang, Alexander Liniger, Dengxin Dai, Fisher Yu,
+ Yu Liu.          Safety-enhanced autonomous driving using inter-   and Luc Van Gool.         End-to-end urban driving by imitat-
+       pretable sensor fusion transformer. In Conference on Robot   ing a reinforcement learning coach.    In      Proceedings of
+ Learning, pages 726–737. PMLR, 2023. 2, 4                          the IEEE/CVF international conference on computer vision,
+       [35] Hao Shao, Letian Wang, Ruobing Chen, Steven L Waslan-   pages 15222–15232, 2021. 3
+       der, Hongsheng Li, and Yu Liu. Reasonnet: End-to-end driv-  [49] Lianmin Zheng, Wei-Lin   Chiang, Ying  Sheng,      Siyuan
+        ing with temporal and global reasoning. In Proceedings of   Zhuang, Zhanghao Wu, Yonghao Zhuang, Zi Lin, Zhuohan
+           the IEEE/CVF Conference on Computer Vision and Pattern   Li, Dacheng Li, Eric. P Xing, Hao Zhang, Joseph E. Gonza-
+ Recognition, pages 13723–13733, 2023. 1, 2, 6                      lez, and Ion Stoica.     Judging llm-as-a-judge with mt-bench
+[36] CARLA team.            Carla autonomous driving leaderboard.   and chatbot arena, 2023. 6, 7, 8
+ https://leaderboard.carla.org/, 2020.                        Ac-        [50] Tong Zhou, Letian Wang, Ruobing Chen, Wenshuo Wang,
+ cessed: 2021-02-11. 7                                              and Yu Liu.  Accelerating reinforcement learning for au-
+[37] Trisha Thadani. Cruise recalls all its driverless cars after   tonomous driving using task-agnostic and ego-centric mo-
+ pedestrian hit and dragged. The Washintong Post. 2                 tion skills. arXiv preprint arXiv:2209.12072, 2022. 3
+       [38] Marin Toromanoff, Emilie Wirbel, and Fabien Moutarde.      [51] Deyao Zhu, Jun Chen, Xiaoqian Shen, Xiang Li, and Mo-
+           End-to-end model-free reinforcement learning for urban   hamed Elhoseiny.     Minigpt-4:     Enhancing vision-language
+ driving using     implicit affordances.  In Proceedings       of   understanding with advanced large language models.      arXiv
+           the IEEE/CVF conference on computer vision and pattern   preprint arXiv:2304.10592, 2023. 3, 4, 6
+ recognition, pages 7153–7162, 2020. 3
+[39] Hugo Touvron,    Thibaut Lavril, Gautier Izacard,     Xavier
+        Martinet, Marie-Anne Lachaux, Timoth´ee Lacroix, Baptiste
+         Rozi`ere, Naman Goyal, Eric Hambro, Faisal Azhar, et al.
+ Llama:            Open and efficient foundation language models.
+ arXiv preprint arXiv:2302.13971, 2023. 3, 6, 7
+      [40] Hugo Touvron, Louis Martin, Kevin Stone, Peter Albert,
+ Amjad Almahairi,     Yasmine Babaei,          Nikolay Bashlykov,
+          Soumya Batra, Prajjwal Bhargava, Shruti Bhosale, et al.
+       Llama 2: Open foundation and fine-tuned chat models. arXiv
+ preprint arXiv:2307.09288, 2023. 3, 7
+[41] Jordan Valinsky.     ‘complete meltdown’: Driverless cars in
+ san francisco stall causing a traffic jam. CNN Business. 2
+     [42] Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszko-
+       reit, Llion Jones, Aidan N Gomez, Łukasz Kaiser, and Illia
+     Polosukhin. Attention is all you need. In Advances in neural
+ information processing systems, pages 5998–6008, 2017. 5
+         [43] Limin Wang, Yuanjun Xiong, Zhe Wang, Yu Qiao, Dahua
+        Lin, Xiaoou Tang, and Luc Van Gool. Temporal segment net-
+       works: Towards good practices for deep action recognition.
+
+     10
+
+Town06  Town04  Town03  Town01
+
+
+
+
+
+
+
+
+
+
+LMDrive: Closed-Loop End-to-End Driving with Large Language Models
+                      Supplementary Material
+
+
+
+
+    WetNoon  WetSunset  CloudyNight    Town01    Town02
+
+
+
+
+    CloudyNoon    MidRainyNoon  HardRainNoon
+
+                      Town03
+
+    ClearSunset   MidRainSunset  ClearNight      Town04
+
+
+
+
+    ClearNoon      WetCloudyNoon      HardRainNight                             Town06
+    Figure 7. The visualization of some weather and daylight condi-
+    tions used in the LangAuto Benchmark.
+                                                                    Town05
+
+    A. Implementation Details
+    Model details For the vision encoder, we use Kenc         = 1
+    encoder layers and Kdec       = 3 decoder layers. The feature
+    of the 5-th stage in the ResNet is employed as the extracted
+    feature map, then we apply an MLP layer to convert its di-      Town07      Town10
+    mension to 768, which is the feature dimension of the fol-
+    lowing Q-Former. Following LAV [3], we build a simpli-         Figure 8. The visualization of eight town maps used in the Lan-
+    fied version of PointNet [30] with several MLP layers and      gAuto Benchmark.
+    Batch Normalization layers to encode LiDAR point cloud
+    data. For the Q-Former, we utilize the model architecture
+    and pre-trained weights from the BLIP-2 [22]. In our work,     input is scaled to 160 and then takes a 128 × 129 center
+    the visual tokens fed into the Q-Former include 400 BEV        patch. For the LiDAR sensor, the rotation frequency is 10Hz
+    tokens, 5 future waypoint tokens and 1 traffic light token.    and the upper/lower field-of-view is 10/-30. The number of
+    Sensor configuration We use one front-facing camera, two       channels is 64.
+    side-facing cameras, and one back-facing camera to collect     Training details We first introduce the details of the vision
+    RGB images. Each camera has a resolution of 800 × 600          encoder pretraining. We adopt the AdamW optimizer [27]
+    and a 100◦ horizontal field of view (FOV). The two side        and a cosine learning rate scheduler [26] for the training.
+    cameras are angled at 60◦. For the font image, we scale the    The initial learning rate set for the transformer encoder and
+    shorter side of the front camera input to 256 and crop its     3D backbone is BatchSize ×5e−4. And BatchSize ×2e−4 is
+                                                                   the learning rate for the 2D backbone because the backbone
+    center patch of 224 × 224. For the focusing view image,             512        512
+    we directly crop the center of the front camera input to get   is initialized with the ImageNet pre-train weights. We train
+    a 128 × 128 patch which can capture distance traffic light     the models for 35 epochs with the first 5 epochs for warm-
+    status. For the other images, the shorter side of the camera   up [15]. We used random scaling from 0.9 to 1.1 and color
+
+                      1
+
+Sample rate  DS ↑      RC ↑       IS ↑                                  Notice Data %                 DS ↑       RC ↑              IS ↑
+     1     49.5±1.5  58.5±2.7  0.83±0.03                                    0                         45.2±2.8   67.1±2.5      0.68±0.03
+     2     50.6±1.7  60.0±3.4  0.84±0.04                                    25                        50.6±1.7   60.0±3.4      0.84±0.04
+     4     46.0±2.1  59.5±2.7  0.79±0.03                                    100                       49.1±1.9   58.2±2.4      0.83±0.04
+Table 6. Ablation study on the different choices of the sample rate.   Table 7. Ablation study on the usage rate of notice instructions.
+The experiment is conducted on the LangAuto-Short benchmark            The experiment is conducted on the LangAuto-Short benchmark
+with the backbone of LLaVA-v1.5.                                       with the backbone of LLaVA-v1.5.
+
+                                                                        Benchmark Type                LangAuto   LangAuto-Short  LangAuto-Tiny
+jittering to augment the collected RGB images.                          Avg. Driving Distance (m)      635.8     305.9               122.4
+Then we introduce the training details in the instruction-              Avg. Navigation Instructions    20.3      10.8                5.1
+finetuning stage.   We also adopt the cosine learning rate              Avg. Notice Instructions        5.8       3.3                 1.7
+scheduler and the initial learning rate is 1e−4 for a batchsize
+32. We train the models for 15 epochs with the first 2000 it-           Table 8. Comparative Analysis of Different Benchmark Tracks
+eration steps for warm-up. The weight decay is set to 0.07.
+The maximum historic horizon Tmax is set to 40, and we                 D. Instruction Details
+will truncate the data clip to keep the recent 40 frames if its
+number of frames exceeds 40.                                           Our work considers 56 different types of navigation and no-
+                                                                       tice instructions, and we use ChatGPT to generate eight dif-
+B. Additional Experiments                                              ferent phrases for the same navigation instruction. Table 9
+In this section, we delve further into our method by conduct-          shows an example where we generate eight phrases for the
+ing additional ablation studies. First, we assess our method-          navigation instruction ’Turn Right’. We present the full list
+ology using a variety of sample rates in Table 6. The term             of 56 different types of navigation and notice instructions
+”sample rate” represents the fixed interval at which train-            in Table 10.     Table 11 demonstrates how we generate the
+ing frames are sampled. When the sample rate is set at 1,              misleading instructions. The first column is the driving sce-
+the horizon becomes narrow, which prevents the application             nario in which the agent is located, and the second column
+of temporal augmentation, and consequently leads to a de-              represents the possible misleading instructions generated by
+crease in performance. Conversely, setting the sample rate             our framework. For example, when the AV is on a single-
+at 4 can create an excessively large gap between two con-              lane road, the misleading instruction “Change your route to
+secutive frames, which might obtain a poor driving score.              the left-hand lane” violates the traffic rules and raises safety
+A sample rate of 2 achieves a good trade-off.                          concerns. In Table 12, we show some examples of the con-
+     Second, we conduct ablation studies on the usage rate             nected instructions.
+of notice instructions as shown in Table 7. In our method,              Instruction     Eight instructions of one kind of instruction
+we randomly removed 75% notice instructions in the data                                 After [x] meters, execute a right turn.
+clips to avoid overfitting. It’s worth noting that we use the                           After [x] meters, take a right.
+LangAuto-Short here, rather than LangAuto-Notice, where                                 Right in [x] meters.
+the AV can not receive any notice instruction. We first re-             Turn right      After [x] meters, hang a right.
+move all notice data, and get a worse driving score and in-                             In [x] meters, prepare to turn right.
+fraction score. This suggests that incorporating notice in-                             Continue for [x] meters, then turn right.
+structions during training may improve the AV’s ability to                              Go [x] meters, then just take a right.
+                                                                                        After [x] meters, a right turn is required.
+both attend to and understand adverse events, thus reduc-
+ing collisions. However, when we tried to include all notice           Table 9. Eight different phrazes of one “turn” instruction generated
+data, we found it did not enhance performance.   Utilizing             by the ChatGPT API.
+25% of the instructions achieves a good trade-off.
+
+C. Benchmark Details
+In Figure 7, we show the 12 different environmental con-
+ditions (16 conditions are used in our benchmark in to-
+tal). In Figure 8, we show all 8 town maps we used in this
+work. In Table 8, we list the basic statistical information of
+the LangAuto benchmarks across various tracks (LangAuto,
+LangAuto-Short, LangAuto-Tiny).
+
+    2
+
+Type     One randomly chosen instruction of each instruction type
+         Transition to the left lane for travel.
+         You might want to switch to the right lane.
+         In about [x] meters, you’ll want to switch to the left lane.
+         In [x] meters, reposition to the right lane.
+         Keep going on this road, you’re doing great!
+         Continue on the highway.
+         Maintain your course along this route for precisely [x] meters.
+Follow   Cruise down the highway for about [x] meters.
+         Continue in a straight line along your current path.
+         Keep going straight until you reach the next junction, you’re on the right track!
+         Preserve your current trajectory for exactly [x] meters.
+         Stay straight for [x] meters until the next intersection.
+         Veering to the left, prepare to enter the highway.
+         Execute a right maneuver, prepare for highway exit.
+         In [x] meters, slide left and plan to hop off the highway.
+         In [x] meters, proceed to the right, prepare for immediate highway departure.
+         Prepare to turn left up ahead.
+         Proceed ahead and make a right turn.
+         Continue for [x] meters, then turn left.
+         After [x] meters, execute a right turn.
+         You’re going to be turning left at the next junction, alright?
+         It is mandatory to take a right turn at the imminent intersection.
+         Straight through the next crossroads.
+         After navigating [x] meters, a left turn at the intersection is obligatory.
+         After moving forward [x] meters, prepare to make a right turn at the intersection.
+         [x] meters more, then straight on at the intersection, piece of cake.
+         When you reach the next traffic signal, you will need to turn left.
+         Please execute a right turn upon reaching the upcoming traffic signal.
+Turn     Please maintain your course straight at the next traffic signal.
+         Just another [x] meters, then you’ll be turning left at the light, okay?
+         After [x] meters, take a right at the light.
+         After traversing [x] meters, it’s crucial to continue straight at the traffic signal.
+         Next T-junction, turn left.
+         At the forthcoming T-intersection, execute a right turn.
+         Just keep on going straight through the next T-junction, sound good?
+         In [x] meters, hang a left at the T.
+         After [x] meters, take a right at the T, no biggie.
+         After a distance of [x] meters, maintaining a straight course at the T-intersection is imperative.
+         Find your way out at the first exit on the roundabout, please.
+         Depart at the second exit on the roundabout.
+         Shoot out on the third exit.
+         Feel free to start driving.
+         Please implement an immediate reduction in your speed.
+Others   Hit the brakes, stop now.
+         Drive freely.
+         Please navigate towards the designated point, which is [x] meters in front of you and [y] meters to your left/right.
+         Please watch out for the pedestrians up ahead.
+         Attention is required for the bicycle ahead.
+         Watch for the car that’s just stopped up front.
+         Be mindful of the vehicle crossing on a red light to your left.
+Notice   Car ran red light ahead.
+         Please be alert of the uneven road surface in the vicinity ahead.
+         Watch for the tunnel coming up.
+         Just a heads up, there’s a red light ahead.
+         Green light ahead.
+         Be mindful of the yellow light ahead.
+
+Table 10. Full list of the 56 different types of navigation instructions and notice instructions considered in our framework.
+
+
+
+
+
+         3
+
+     Driving Scenarios                        One randomly chosen instruction of each misleading type
+                                              Change your route to the left-hand lane.
+                                              Transition to the right lane for travel.
+                                              Proceed ahead and make a left turn.
+     Single-lane Road                         A right turn is required up ahead.
+                                              Hang a left at the next crossroads.
+                                              Depart at the first exit on the roundabout.
+                                              Roll out on the second exit.
+                                              It is necessary for you to take the third exit on the roundabout.
+                                              Maintain your course along the highway.
+                Non-highway Road              Slide left and plan to hop on the highway.
+                                              Ease on to the right and get set to quit the highway.
+                                              First exit.
+    Non-roundabout Road                       No sweat, just hit the second exit on the roundabout.
+                                              It is necessary for you to take the third exit on the roundabout.
+                                              Just up ahead, take a left.
+                                              Your next action is a right turn, just ahead.
+                                              Execute a left maneuver, prepare for highway entry.
+    Non-intersection Road                     Right, ready to exit.
+                                              Carefully navigate to the first exit as you approach the roundabout.
+                                              You are required to take the second exit on the roundabout.
+                                              Third exit.
+                                              You’ll be turning left at the next T-junction, alright?
+     T-Intersection (Left Turn Prohibited)    Transition to the left lane for travel.
+                                              You might want to switch to the right lane.
+                                              A right turn is mandatory at the upcoming T-intersection.
+     T-Intersection (Right Turn Prohibited)   Change your route to the left-hand lane.
+                                              Just head for the right lane.
+                  When turning                Please adjust your course to the left-most lane.
+                                              Reposition to the right lane.
+
+    Table 11. Full list of the misleading instructions and their corresponding driving scenarios.
+
+
+
+
+
+
+
+
+
+     Driving Scenarios               Examples of connected instructions
+Two consecutive instructions         (1) Prepare to turn right up ahead. (2) Proceed along this route.
+                                     (1) Maintain your course along this route. (2) Left, ready to enter.
+                                     (1) It’s critical to keep straight at the forthcoming T-intersection.
+                                     (2) Keep cruising down this road. (3) At the next traffic signal, you should make a right turn.
+    Three consecutive instructions   (1) At the forthcoming T-intersection, execute a right turn.
+                                     (2) Just head for the left lane.(3) Maintain your course along this route.
+                                     (1) Keep going on this road, you’re doing great! (2) Right ahead. (3) Right, ready to exit.
+
+    Table 12. Examples of the connected navigation instructions considered in the LangAuto benchmark.
+
+
+
+
+
+
+                                              4
+

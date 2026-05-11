@@ -1,0 +1,231 @@
+Operational Design Domain (ODD)
+Standardisation activities:
+BSI PAS 1883 and ISO 34503
+
+
+
+    Dr Siddartha Khastgir CEng MIMechE
+    Head of Verification & Validation, Intelligent Vehicles
+    WMG, University of Warwick, UK
+    UK Expert – ISO TC204/WG14, ISO TC22/SC33/WG9
+
+
+    ASAM OpenODD Ideation workshop
+    23 April 2020
+
+Agenda
+
+  Introduction
+  Ongoing standardisation projects
+  Conclusions
+
+   Operational Design Domain (ODD)
+
+
+
+“Operating conditions under which a given driving automation system or
+feature thereof is specifically designed to function, including, but not limited
+to, environmental, geographical, and time-of-day restrictions, and/or the
+requisite presence or absence of certain traffic or roadway characteristics.”
+        - SAE J3016 (2018)
+
+Evaluation continuum
+
+  We needed to create new facilities and capability, desirable to industry
+  This was through our proposed continuum of approaches: simulation,
+   simulated environment and real-world trials/testing and deployment
+
+  Public Environments Controlled Environments Modelling and Simulation
+
+        i
+MIDLANDS Saw
+FUTURE 2 : |
+MOBILITY | wp —
+
+Why is ODD important?
+
+ Number of miles driven?
+
+
+11 Billion miles₁
+To demonstrate with 95% confidence that AVs are
+20% better than human drivers
+
+
+
+
+
+
+
+
+
+
+1 N. Kalra and S. M. Paddock, “Driving to safety: How many miles of driving would it take to demonstrate autonomous vehicle reliability?,” Transp. Res. Part A
+Policy Pract., vol. 94, no. December, pp. 182–193, 20163
+
+Why is ODD important?
+
+  Number of miles driven?
+  Types of scenarios experienced?
+
+         wh
+       we      on                a
+   in    oi        :             |
+
+
+i    ~~  =
+
+Why is ODD important?
+
+  Number of miles driven?
+  Types of scenarios experienced?
+  Types of scenarios as a function of ODD
+
+Introduction        50     |     Gl.
+  Crowded landscape              NS
+  Niche areas
+Major committees:        @] ASAM
+  BSI (UK): PAS 1883 (1880-83)    4
+  ISO: TC 204 WG14, TC22 SC33
+   (WG9/WG16)
+  ASAM: OPENLabel, OPENOntology,
+  OPENODD?        INTERNATIONAL.
+   SAE: ORAD
+  UL: 4600        \
+  UNECE        y UNECE
+
+BSI PAS 1883: ODD Taxonomy bsi
+        Gl.
+
+“This PAS provides requirements for the minimum hierarchical taxonomy for specifying an Operational Design
+Domain (ODD) to enable the safe deployment of an automated driving system (ADS). The ODD comprises the
+static and dynamic attributes within which an ADS is designed to function safely.
+
+This PAS is applicable to Level 3 and level 4 ADS.
+
+NOTE For more information on Level 3/4 ADS see SAE J3016.
+
+This PAS is for use by trialling organizations developing safety cases for automated vehicle trials and testing.
+This PAS is also for use by manufacturers of Level 3/4 ADS to define the operating capability. It is also of interest
+to insurers, regulators, service providers, national, local and regional government to enable them to understand
+possible ADS deployments and capabilities.
+
+This PAS does not cover the basic test procedures for attributes of the ODD. It does not cover the monitoring
+requirements of the ODD attributes.”
+
+
+
+    Siddartha Khastgir (UK) – Lead author
+        SWMG
+
+BSI PAS 1883: ODD Taxonomy
+
+
+
+
+
+ s cenery                 Environmental      Dynamic
+                          conditions     4   elements
+
+ Zones                    Weather           Traffic
+ Drivable area            Particulates      Subject vehicle
+ Junctions                Illumination
+ Special structures       Connectivity
+
+ Fixed road structures
+
+ Temporary road structures
+
+
+ Siddartha Khastgir (UK) – Lead author
+                                             THE  OF
+                                             UNIVERSITY
+                                                WARWICK
+
+BSI PAS 1883: ODD Taxonomy
+
+ Project started: October 2019
+ Around 20 member PAS steering committee: OEMs, tier-1, simulation
+  suppliers, Research organisation, local authorities etc.
+ Public consultation: 17 March – 14 April 2020
+ Target publication: June/July 2020 (freely available)
+
+ISO 34503: ODD Taxonomy    ISO
+                           LOY
+
+  Building on PAS 1883
+  Under the aegis of ISO TC22 SC33 WG9
+     Convenorship: CATARC, China
+  Ensure attributes have international relevance
+
+  Main additions:
+      Measurability of environmental elements
+      Format for ODD definition (across the evaluation continuum)
+         Restrictive format
+         Extensible
+
+
+
+        Siddartha Khastgir (UK) & Kunimichi Hatano (JP) – Lead authors OWMG
+
+ISO 34503: ODD Taxonomy                                                                                                   ISO
+                                                                                                                           NS
+
+ Main additions:
+    Measurability of environmental elements
+    Format for ODD definition (across the evaluation continuum)
+                                                                                    we     allow [motorways, radial roads, distributor roads].
+       Restrictive format                                                      For road type,
+       Extensible                                                              We do not allow [minor roads).
+                                                                                    at least                             lanes with at
+                              bute                 (M)        TTT               For lane specification               allow
+                                                  Motorways
+                                                                          Yes   We do not allow [bus lane, cycle lane,   tram lane, emergency lane].
+                              Road type “| Radial roads (A)   A          Tves   For lane type we allowwe[traffic lane].  2      least [3.7m] width.  |
+                                                                          Yes
+                                        [Minor roads     |                 No  [For direction of travel, we allow        drive]      |
+                                        Number of lanes.          os,
+                                        [Cane  dimensions         Minin 37m
+                              Lane      Lan
+                                               pm            | Cycle lane  No
+                                                                            -
+                                                                         | No
+                                                             Emergencylane
+
+
+                                                              ves
+
+
+      Siddartha Khastgir (UK) & Kunimichi Hatano (JP) – Lead authors                                                     OWMG
+
+   Summary
+
+        Connected and Autonomous Vehicles standardisation is gaining
+        traction internationally (both countries and organisations).
+
+Safety is paramount for all countries
+
+Operational Design Domain definition is fundamental for ensuring
+safety
+Existing BSI and ISO committees are working on standardisation of > usd i if " [xi
+ODD taxonomy and ODD definition format. We need to ensure we pus
+align and complement various standardisation initiatives. ad
+
+Success will be dependent upon suitable collaboration and data ie
+sharing, nationally and internationally.
+
+  Thank you…
+  Discussion… —  ®@):
+
+
+   SR,
+
+
+         2        NL
+=                                TY  Add
+     3   fr                       3  ne : 3  8  ==   \
+                                                     a
+             Clg                                      @siddkhastgir
+     Siddartha Khastgir CEng MIMechE
+     S.Khastgir.1@warwick.ac.uk                       wMaG
+

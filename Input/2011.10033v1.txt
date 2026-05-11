@@ -1,0 +1,748 @@
+arXiv:2011.10033v1 [cs.CV] 19 Nov 2020
+
+
+
+
+
+
+
+
+
+
+Cylindrical and Asymmetrical 3D Convolution Networks
+               for LiDAR Segmentation
+
+    Xinge Zhu†∗ Hui Zhou†∗  Tai Wang†  Fangzhou Hong‡
+    Yuexin Ma§   Wei Liᵒ  Hongsheng Li†  Dahua Lin†
+
+    †Chinese University of Hong Kong §ShanghaiTech University
+    oInceptio   ‡Nanyang Technological University
+
+
+        Abstract standing for autonomous driving planning and execution, in
+        which LiDAR segmentation is crucial for driving-scene un-
+   State-of-the-art methods for large-scale driving-scene derstanding. It aims to identify the pre-defined categories
+LiDAR segmentation often project the point clouds to 2D of each 3D point, such as car, truck, pedestrian, etc., which
+space and then process them via 2D convolution. Although provides point-wise perception information of the overall
+this corporation shows the competitiveness in the point 3D scene.
+cloud, it inevitably alters and abandons the 3D topology Recently, the advances in deep learning have signifi-
+and geometric relations. A natural remedy is to utilize the cantly pushed forward the state of the art in image seg-
+3D voxelization and 3D convolution network. However, we mentation. Some existing LiDAR segmentation approaches
+found that in the outdoor point cloud, the improvement ob- follow this route to project the 3D point clouds onto a 2D
+tained in this way is quite limited. An important reason is space and process them via 2D convolution networks, in-
+the property of the outdoor point cloud, namely sparsity and cluding range image based [27, 42] and bird’s-eye-view im-
+varying density. Motivated by this investigation, we pro- age based [51]. However, this group of methods lose and
+pose a new framework for the outdoor LiDAR segmentation, alter the accurate 3D geometric information during the 3D-
+where cylindrical partition and asymmetrical 3D convolu- to-2D projection (as shown in the top row of Fig. 1a).
+tion networks are designed to explore the 3D geometric pat- A natural alternative is to utilize the 3D partition and 3D
+tern while maintaining these inherent properties. Moreover, convolution networks to process the point cloud and main-
+a point-wise refinement module is introduced to alleviate the tain their 3D geometric relations. However, in our initial at-
+interference of lossy voxel-based label encoding. We eval- tempts, we directly apply the 3D voxelization [14, 9] and 3D
+uate the proposed model on two large-scale datasets, i.e., convolution networks to outdoor LiDAR point cloud, only
+SemanticKITTI and nuScenes. Our method achieves the 1st to find very limited performance gain (as shown in Fig. 1b).
+place in the leaderboard of SemanticKITTI 1 and outper- Our investigation into this issue reveals a key difficulty of
+forms existing methods on nuScenes with a noticeable mar- outdoor LiDAR point cloud, namely sparsity and varying
+gin, about 4%. Furthermore, the proposed 3D framework density, which is also the key difference to indoor scenes
+also generalizes well to LiDAR panoptic segmentation and with dense and uniform-density points. However, previ-
+LiDAR 3D detection. ous 3D voxelization methods consider the point cloud as
+        a uniform one and split them via the uniform cube, while
+1. Introduction neglecting the varying-density property of outdoor point
+        cloud. Consequently, this effect to apply the 3D partition
+   3D LiDAR sensor has become an indispensable device to outdoor point cloud is met with fundamental difficulty.
+in modern autonomous driving vehicles. It captures more Motivated by these findings, we propose a new frame-
+precise and farther-away distance measurements of the sur- work to outdoor LiDAR segmentation that consists of two
+rounding environments than conventional visual cameras. key components, i.e., 3D cylindrical partition and asymmet-
+The measurements of the sensor naturally form 3D point rical 3D convolution networks, which maintain the 3D ge-
+clouds that can be used to realize a thorough scene under- ometric information and handle these issues from partition
+   1The method is in the 1st place before CVPR deadline. ∗ denotes the and networks, respectively. Here, cylindrical partition re-
+equal contribution and code at https://github.com/xinge008/ sorts to the cylinder coordinates to divide the point cloud
+Cylinder3D. Corresponding email: zhuxinge123@gmail.com dynamically according to the distance (Regions that are far
+
+        1
+
+                                                           mIoU
+
+                                                           67.8    Ours
+Range Image           2D Convolution    Involved Points
+                                                           58.5
+                          3DVoxel
+                                                           55.9
+                                                           54.3    PolarNet SAD
+LiDAR Point Cloud     Cubic Partition  Point Distribution  53.9    RandLA
+                                                           52.2
+                          RangeNet
+
+
+     LiDAR Point Cloud      Cylindrical Partition      Point Distribution        2D      3D
+    (a)                                                             (b)
+Figure 1: (a) Range Image (2D projection) v.s. Cubic Partition v.s. Cylindrical Partition. From top row, it can be found that
+range image abandons the 3D topology, where 2d convolution processes points in different locations (far away from each
+other in green circles). From bottom part, cylindrical partition generates the more balanced point distribution than cubic
+partition (89% v.s. 61% cells containing points). (b) Applying the regular 3D voxel partition and 3D convolution directly
+(i.e., 3DVoxel) gets limited performance gain compared to projection-based (2D) methods [51, 16, 27, 45], while our method
+achieves a remarkable performance gain by further tackling the inherent difficulty of outdoor LiDAR point clouds (showing
+results on SemanticKITTI dataset).
+
+away from the origin have much sparse points, thus requir-      (3) The proposed method achieves the state of art on Se-
+ing a larger cell), which produces a more balanced point        manticKITTI and nuScenes, and also shows strong gener-
+distribution (as shown in Fig. 1a); while asymmetrical 3D       alization capability on LiDAR panoptic segmentation and
+convolution networks strengthen the horizontal and verti-       LiDAR 3D detection.
+cal kernels to match the point distribution of objects in the
+driving scene and enhance the robustness to the sparsity.       2. Related Work
+Moreover, voxel based methods might divide the points
+with different categories into the same cell and cell label     Indoor-scene Point Cloud Segmentation.             Indoor-
+encoding would inevitably cause the information loss. To        scene point clouds carry out some properties, including gen-
+alleviate the interference of lossy label encoding, a point-    erally uniform density, small number of points, and small
+wise module is introduced to further refine the features ob-    range of the scene. Mainstream methods [29, 36, 44, 41, 37,
+tained from voxel-based network. Overall, the corporation       24, 12, 50, 46, 38, 28, 30] of indoor point cloud segmenta-
+of these components well maintains the geometric relation       tion learn the point features based on the raw point directly,
+and tackle the difficulty of outdoor point cloud, thus im-      which are often based on the pioneering work, i.e., Point-
+proving the effectiveness of 3D frameworks.                     Net, and promote the effectiveness of sampling, grouping
+We evaluate the proposed method   on     two    large-          and ordering to achieve the better performance.    Another
+scale outdoor datasets, including SemanticKITTI [2] and         group of methods utilize the clustering algorithm [41, 37]
+nuScenes [5]. Our method achieves the 1st place in the          to extract the hierarchical point features. However, these
+leaderboard of SemanticKITTI and also outperforms the ex-       methods focusing on indoor point cloud are limited to adapt
+isting methods on nuScenes with a large margin. We also         to the outdoor point cloud under the property of varying
+extend the proposed cylindrical partition and asymmetrical      density and large range of scenes, and the large number of
+3D convolution networks to LiDAR panoptic segmentation          points also result in the computational difficulties for these
+and LiDAR 3D detection.  Experimental results show its          methods when deploying from indoor to outdoor.
+strong generalization capability and scalability.               Outdoor-scene Point Cloud Segmentation.           Most ex-
+The contributions of this work mainly lie in three as-          isting outdoor-scene point cloud segmentation methods [16,
+pects: (1) We reposition the focus of outdoor LiDAR seg-        10, 27, 1, 48, 20] focus on converting the 3D point cloud
+mentation from 2D projection to 3D structure, and further       to 2D grids, to enable the usage of 2D Convolutional Neu-
+investigate the inherent properties (difficulties) of outdoor   ral Networks.       SqueezeSeg [42], Darknet [2], Squeeze-
+point cloud.   (2) We introduce a new framework to ex-          Segv2 [43], and RangeNet++ [27] utilize the spherical pro-
+plore the 3D geometric pattern and tackle these difficulties    jection mechanism, which converts the point cloud to a
+caused by sparsity and varying density, through cylindri-       frontal-view image or a range image, and adopt the 2D con-
+cal partition and asymmetrical 3D convolution networks.         volution network on the pseudo image for point cloud seg-
+
+                          2
+
+                Cylindrical Partition                                                       Voxel-wise Loss
+                                             AD     AD     AD         AU     AU AU DDCM
+
+                                         Cylindrical Features
+    Point Cloud
+
+                                                                                            Point-wise Loss
+
+     AD Asymmetrical DownSample Block        A     Asymmetrical Residual Block     DDCM Dimension-Decomposition based Context Modeling
+                              Conv3D                           Input                              Input
+         Input       A      (Stride=2)                                                  3x1x1
+                                             3x1x3
+     AU Asymmetrical UpSample Block                                                     Sigmoid  Sigmoid   Sigmoid
+         Input  DeConv3D        +        A
+              (Stride=2)
+                                                                      3x1x3
+                        Low-level Features                                                          x
+    Figure 2: (1): Top half is the overall framework. Here, LiDAR point cloud is fed into MLP to get the point-wise features
+    and then these features are reassigned based on the cylinderical partition. Asymmetrical 3D convolution networks are then
+    used to generate the voxel-wise outputs. Finally, a point-wise module is introduced to refine these outputs. (2): Bottom
+    half elaborates four components, including Asymmetrical Downsample block (AD), Asymmetrical Upsample blcok (AU),
+    Asymmetrical residual block (A) and Dimension-Decomposition based Context Modeling (DDCM).
+
+    mentation. PolarNet [51] follows the bird’s-eye-view pro-         rate the low-level features. With the great success of U-Net
+    jection, which projects point cloud data into bird’s-eye-view     on 2D benchmarks and its good flexibility , many studies for
+    representation under the polar coordinates. However, these        LiDAR segmentation adapt the U-Net to the 3D space [9].
+    3D-to-2D projection methods inevitably loss and alter the         We also follow this structure to construct our asymmetrical
+    3D topology and fails to model the geometric information.         3D convolution networks.
+     3D Voxel Partition.     3D voxel partition is another rou-
+    tine of point cloud encoding [15, 35, 14, 9, 25]. It converts a   3. Methodology
+    point cloud into 3D voxels, which mainly retains the 3D ge-       3.1. Framework Overview
+    ometric information. OccuSeg [15], SSCN [14] and SEG-
+    Cloud [35] follow this line to utilize the voxel partition and              In the context of semantic segmentation, given a point
+    apply regular 3D convolutions for LiDAR segmentation. It          cloud, our task is to assign the semantic label to each point.
+    is worth noting that while the aforementioned efforts have        Based on the comparison between 2D and 3D representa-
+    shown encouraging results, the improvement in the outdoor         tion and investigation of the inherent properties of outdoor
+    LiDAR point cloud remains limited. As mentioned above,            LiDAR point cloud, we desire to obtain a framework which
+    a common issue is that these methods neglect the inherent         explores the 3D geometric information and handles the dif-
+    properties of outdoor LiDAR point cloud, namely, sparsity         ficulty caused by sparsity and varying-density. To this end,
+    and varying density. Compared to these methods, our pro-          we propose a new outdoor segmentation approach based on
+    posed method resorts to the 3D cylindrical partition and          the 3D partition and 3D convolution networks. To handle
+    asymmetrical 3D convolution networks to tackle these dif-         these difficulties of outdoor LiDAR point cloud, namely
+    ficulties.                                                        sparsity and varying density, we first employ the cylindrical
+             Network Architectures for Segmentation. Fully Con-       partition to generate the more balanced point distribution
+    volutional Network [23] is the fundamental work in the            (more robust to varying density), then apply the asymmet-
+    deep-learning era.       Built upon the FCN, many works aim       rical 3D convolution networks to power the horizontal and
+    to improve the performance via exploring the dilated con-         vertical weights, thus well matching the object point distri-
+    volution, multi-scale context modeling and attention mod-         bution in driving scene and enhancing the robustness to the
+    eling, including DeepLab[6, 7] and PSP [52]. Recent work          sparsity.
+    utilizes the neural architecture search to find the more ef-                As shown in the top half of Fig. 2, the framework con-
+    fective backbone for the segmentation [22, 33]. Moreover,         sists of two major components, including cylindrical parti-
+    U-Net [31] proposes a symmetric architecture to incorpo-          tion and asymmetrical 3D convolution networks.     The Li-
+
+                                                                 3
+
+
+
+
+
+
+
+
+
+
+    MLP
+
+    MLP
+
+    MLP
+
+
+
+
+
+
+
+
+
+                                         1x3x3
+
+                                             +
+
+                                         1x3x3
+
+
+
+
+
+
+
+
+
+    MLP
+
+    MLP                                  +
+
+    MLP
+
+
+
+
+
+
+
+
+
+
+1x3x1
+
+
+
+
+
+
+
+
+
+
+                                                                                        1x1x3
+
+20%    207 20.3                                                                     z (x,y,z)  z (⇢⇢,✓✓,z)
+15%                                                                              y    x      ⇢⇢   ✓✓
+                                                                                    Cartesian  Cylinder   Cylindrical Partition
+                                                                                 Coordinate   Coordinate
+10%                   9.1
+                                                                  Point Cloud                              Cylindrical Features
+ 5%                      5.9  3.9
+                          1.6    2.1 0.5  1.3
+ 0%    0-10m          10-20m  20-30m 30-40m 40-50m0.2             Figure 4:     The pipeline of cylindrical partition. We first
+                        Cylinder     Cube                         transform the Cartesian coordinate to Cylinder coordinate
+Figure 3: The proportion of non-empty cells at different dis-     and then assign the point-wise features to the structured rep-
+tances between cylindrical and cubic partition (The results       resentation based on the cylindrical partition.
+are calculated on the training set of SemanticKITTI). It can
+be found that cylinder partition makes a higher non-empty         axis) and azimuth θ (angle from x-axis to y-axis) are cal-
+proportion and more balanced point distribution, especially       culated.     Then cylindrical partition performs the split on
+for farther-away regions.                                         these three dimensions, note that in the cylinder coordinate,
+                                                                  more farther-away region, larger cell.    Point-wise features
+                                                                  obtained from the MLP are reassigned based on the result
+DAR point cloud is first divided by the cylindrical parti-        of this partition to get the cylindrical features. After these
+tion and the features extracted from MLP is then reassigned       steps, we unroll the cylinder from 0-degree and get the 3D
+based on this partition. Asymmetrical 3D convolution net-         cylindrical representation R ∈ C × H × W × L, where C
+works are then used to generate the voxel-wise outputs. Fi-       denotes the feature dimension and H, W, L mean the radius,
+nally, a point-wise module is introduced to alleviate the in-     azimuth and height. Subsequent asymmetrical 3D convolu-
+terference of lossy cell-label encoding, thus refining the out-   tion networks will be performing on this representation.
+puts. In the following sections, we will present these com-
+ponents in detail.                                                3.3. Asymmetrical 3D Convolution Network
+3.2. Cylindrical Partition                                             Since the driving-scene point cloud carries out the spe-
+                                                                  cific object shape distribution, including car, truck, bus, mo-
+        As mentioned above, outdoor-scene LiDAR point cloud       torcycle and other cubic objects, we aim to follow this ob-
+possesses the property of varying density, where nearby           servation to enhance the representational power of a stan-
+region has much greater density than farther-away region.         dard 3D convolution. Moreover, recent literature [40, 11]
+Therefore, uniform cells splitting the varying-density points     also shows that the central crisscross weights count more
+would fall into an imbalanced distribution (for example,          in the square convolution kernel.      In this way, we devise
+larger proportion of empty cells). While in the cylinder co-      the asymmetrical residual block to strengthen the horizon-
+ordinate system, it utilizes the increasing grid size to cover    tal and vertical responses and match the object point dis-
+the farther-away region, and thus more evenly distributes         tribution.        Based on the proposed asymmetrical residual
+the points across different regions and gives an more bal-        block, we further build the asymmetrical downsample block
+anced representation against the varying density. We per-         and asymmetrical upsample block to perform the down-
+form a statistic to show the proportion of non-empty cells        sample and upsample operation.         Moreover, a dimension-
+across different distances in Fig. 3. It can be found that with   decomposition based context modeling (termed as DDCM)
+the distance goes far, cylindrical partition maintains a bal-     is introduced to explore the high-rank global context in
+anced non-empty proportion due to the increasing grid size        decomposite-aggregate strategy.        We detail these compo-
+while cubic partition suffers the imbalanced distribution, es-    nents in the bottom of Fig. 2
+pecially in the farther-away regions (about 6 times less than
+cylindrical partition).  Moreover, unlike these projection-       Asymmetrical Residual Block           Motivated by the obser-
+based methods project the point to the 2D view, cylindrical       vation and conclusion in [40, 11], the asymmetrical residual
+partition maintains the 3D grid representation to retain the      block strengthens the horizontal and vertical kernels, which
+geometric structure.                                              matches the point distribution of object in the driving scene
+  The workflow is illustrated in Fig. 4. We first transform       and explicitly makes the skeleton of the kernel powerful,
+the points on Cartesian coordinate system to the Cylinder         thus enhancing the robustness to the sparsity of outdoor Li-
+coordinate system. This step transforms the points (x, y, z)      DAR point cloud. We use the Car and Motorcycle as the
+to points (ρ, θ, z), where radius ρ (distance to origin in x-y    example to show the asymmetrical residual block in Fig. 5,
+
+                          4
+
+
+
+
+
+
+
+
+
+
+                      MLP
+
+
+
+                      MLP
+
+
+
+                      MLP
+
+                                                                ideal encoding majority encoding minority encoding
+                                                                1.00
+
+                                                                0.98
+
+                                                                0.96
+
+                                                                0.94
+
+        (a) Car    (b) Motorcycle                               0.92
+    Figure 5: An illustration of asymmetrical residual block,   0.90
+    where two asymmetrical kernels are stacked to power the     0.88
+    skeleton. It can be observed that asymmetrical residual
+    block focuses on the horizontal and vertical kernels.       0.86
+
+
+where 3D convolutions are performing on the cylindrical
+grids. Moreover, the proposed asymmetrical residual block Figure 6: Upper bound of mIoU with different label encod-
+also saves the computation and memory cost compared to ing methods (i.e., majority and minority encoding). It can
+the regular square-kernel 3D convolution block. By incor- be found that no matter what encoding methods are, the in-
+porating the asymmetrical residual block, the asymmetri- formation loss always occurs, which is also the reason for
+cal downsample block and upsample block are designed point-wise refinement.
+and our asymmetrical 3D convolution networks are built via
+stacking these downsample and upsample blocks. after 3D convolution networks as the input, and fuses them
+        together to refine the output.
+Dimension-Decomposition based Context Modeling
+Since the global context features should be high-rank to 3.5. Objective Function
+have enough capacity to capture the large context vari- The total objective of our method consists of two compo-
+eties [49], it is hard to construct these features directly. nents, including voxel-wise loss and point-wise loss. It can
+We follow the tensor decomposition theory [8] to build the be formulated as L = L
+high-rank context as a combination of low-rank tensors, loss (Lvoxel voxel + Lpoint. For the voxel-wise
+where we use three rank-1 kernels to obtain the low-rank ), we follow the existing methods [10, 16] and
+features and then aggregate them together to get the final use the weighted cross-entropy loss and lovasz-softmax [4]
+global context. loss to maximize the point accuracy and the intersection-
+        over-union score, respectively. For point-wise loss (Lpoint),
+3.4. Point-wise Refinement Module we only use the weighted cross-entropy loss to supervise
+        the training. During inference, the output from point-wise
+   Partition-based methods predict one label for each cell. refinement module is used as the final output. For the op-
+Although partition-based methods effectively explore the timizer, Adam with an initial learning rate of 1e−3 is em-
+large-range point cloud, however, this group of method, in- ployed.
+cluding cube-based and cylinder-based, inevitably suffers
+from the lossy cell-label encoding, e.g., points with dif- 4. Experiments
+ferent categories are divided into same cell, and this case In this section, we first provide the detailed experimen-
+would cause the information loss. We make a statistic tal setup, then evaluate the proposed method on two large-
+to show the effect of different label encoding methods in scale datasets, i.e., SemanticKITTI and nuScenes. Further-
+Fig. 6, where majority encoding means using the major cat- more, extensive ablation studies are conducted to validate
+egory of points inside a cell as the cell label and minority each component. In the end, we extend our method to Li-
+encoding indicates using the minor category as the cell la- DAR panoptic segmentation and 3D detection to verify its
+bel. It can be observed that both of them cannot reach the scalability and generalization ability.
+100 percent mIoU (ideal encoding) and inevitably have the
+information loss. Here, the point-wise refinement module 4.1. Dataset and Metric
+is introduced to alleviate the interference of lossy cell-label
+encoding. We first project the voxel-wise features to the SemanticKITTI [2] is a large-scale driving-scene dataset
+point-wise based on the point-voxel mapping table. Then for point cloud segmentation, including semantic segmen-
+the point-wise module takes both point features before and tation and panoptic segmentation. It is derived from the
+
+        5
+
+
+
+
+
+
+
+
+
+
+    car
+    bicycle
+    motorcycle
+    person
+    parking
+    sidewalk
+    fence
+    trunk
+    pole
+    vegetation
+    road
+
+    Table 1: Results of our proposed method and state-of-the-art LiDAR Segmentation methods on SemanticKITTI test set. Note
+    that all results are obtained from the literature, where post-processing, flip & rotation test ensemble, etc. are also applied.
+
+
+
+
+
+     Methods       mIoU
+ TangentConv [34]  35.9  86.8   1.3   12.7  11.6  10.2  17.1  20.2  0.5   82.9  15.2  61.7  9.0   82.8  44.2  75.5  42.5  55.5  30.2  22.2
+  Darknet53 [2]    49.9  86.4   24.5  32.7  25.5  22.6  36.2  33.6  4.7   91.8  64.8  74.6  27.9  84.1  55.0  78.3  50.1  64.0  38.9  52.2
+ RandLA-Net [16]   50.3  94.0   19.8  21.4  42.7  38.7  47.5  48.8  4.6   90.4  56.9  67.9  15.5  81.1  49.7  78.3  60.3  59.0  44.2  38.1
+ RangeNet++ [27]   52.2  91.4   25.7  34.4  25.7  23.0  38.3  38.8  4.8   91.8  65.0  75.2  27.8  87.4  58.6  80.5  55.1  64.6  47.9  55.9
+  PolarNet [51]    54.3  93.8   40.3  30.1  22.9  28.5  43.2  40.2  5.6   90.8  61.7  74.4  21.7  90.0  61.3  84.0  65.5  67.8  51.8  57.5
+SqueezeSegv3 [45]  55.9  92.5   38.7  36.5  29.6  33.0  45.6  46.2  20.1  91.7  63.4  74.8  26.4  89.0  59.4  82.0  58.7  65.4  49.6  58.9
+  Salsanext [10]   59.5  91.9   48.3  38.6  38.9  31.9  60.2  59.0  19.4  91.7  63.7  75.8  29.1  90.2  64.2  81.8  63.6  66.5  54.3  62.1
+   KPConv [36]     58.8  96.0   32.0  42.5  33.4  44.3  61.5  61.6  11.8  88.8  61.3  72.7  31.6  95.0  64.2  84.8  69.2  69.1  56.4  47.4
+  FusionNet [48]   61.3  95.3   47.5  37.7  41.8  34.5  59.5  56.8  11.9  91.8  68.8  77.1  30.8  92.5  69.4  84.5  69.8  68.5  60.4  66.5
+   KPRNet [19]     63.1  95.5   54.1  47.9  23.6  42.6  65.9  65.0  16.5  93.2  73.9  80.6  30.2  91.7  68.4  85.7  69.8  71.2  58.7  64.1
+TORANDONet [13] 63.1 94.2 55.7 48.1 40.0 38.2 63.6 60.1 34.9 89.7 66.3 74.5 28.7 91.3 65.6 85.6 67.0 71.5 58.0 65.9
+   SPVNAS [33]     66.4   -     -      -     -     -     -     -     -     -     -     -     -     -     -     -     -     -     -     -
+       Ours        67.8  97.1   67.6  64.0  59.0  58.6  73.9  67.9  36.0  91.4  65.1  75.5  32.3  91.0  66.5  85.4  71.8  68.5  62.6  65.6
+
+    Table 2: Results of our proposed method and other LiDAR Segmentation methods on nuScenes validation set.
+
+
+
+
+
+   Methods      mIoU
+RangeNet++ [27] 65.5 66.0 21.3 77.2 80.9 30.2 66.8 69.6 52.1 54.2 72.3 94.1 66.6 63.5 70.1 83.1 79.8
+PolarNet [51]   71.0   74.7   28.2   85.3   90.9   35.1   77.5   71.3   58.8   57.4   76.1   96.5   71.1   74.7   74.0   87.3   85.7
+Salsanext [10]  72.2   74.8   34.1   85.9   88.4   42.2   72.4   72.2   63.1   61.3   76.5   96.0   70.8   71.2   71.5   86.7   84.4
+     Ours       76.1   76.4   40.3   91.2   93.8   51.3   78.0   78.9   64.9   62.1   84.4   96.8   71.6   76.4   75.4   90.5   87.4
+
+
+    KITTI Vision Odometry Benchmark and collected in Ger-            4.2. Results on SemanticKITTI
+    many with the Velodyne-HDLE64 LiDAR. The dataset con-
+    sists of 22 sequences, splitting sequences 00 to 10 as train-      In this experiment, we compare the results of our pro-
+    ing set (where sequence 08 is used as the validation set), and   posed method with existing state-of-the-art LiDAR segmen-
+    sequences 11 to 21 as test set. 19 classes are remained for      tation methods on SemanticKITTI test set.    As shown in
+    training and evaluation after merging classes with different     Table 1, our method outperforms all existing methods in
+    moving status and ignore classes with very few points.           term of mIoU. Compared to the projection-based methods
+                                                                     on 2D space, including Darknet53 [2], SqueezeSegv3 [45],
+    nuScenes [5]  It collects 1000 scenes of 20s duration with       RangeNet++ [27] and PolarNet [51], our method achieves
+    32 beams LiDAR sensor.       The number of total frames is       8% ∼ 17% performance gain in term of mIoU due to the
+    40,000, which is sampled at 20Hz. They also officially split     modeling of 3D geometric information. Compared to some
+    the data into training and validation set. After merging sim-    voxel partition and 3D convolution based methods, includ-
+    ilar classes and removing rare classes, total 16 classes for     ing FusionNet [48], TORANDONet [13] (multi-view fu-
+    the LiDAR semantic segmentation are remained.                    sion based method) and SPVNAS [33] (utilizing the neu-
+     For both two datasets, cylindrical partition splits these       ral architecture search for LiDAR segmentation), the pro-
+    point clouds into 3D representation with the size = 480 ×        posed method also performs better than these 3D convo-
+    360 × 32, where three dimensions indicate the radius, angle      lution based methods, where the cylindrical partition and
+    and height, respectively.                                        asymmetrical 3D convolution networks well handle the dif-
+    Evaluation Metric      To evaluate the proposed method, we       ficulty of driving-scene LiDAR point cloud that is neglected
+    follow the official guidance to leverage mean intersection-      by these methods.
+    over-union (mIoU) as the evaluation metric defined in [2, 5],    4.3. Results on nuScenes
+    which can be formulated as: IoUi =   T P
+    T Pi, F Pi, F Ni                T Pi+F Pii+F N   i   where         Since nuScenes dataset does not release the evaluation
+                  represent true positive, false positive, and
+    false negative predictions for class i and the mIoU is the       server for LiDAR segmentation, we report the results on
+    mean value of IoUi over all classes.                             the validation set, where RangeNet++ and Salsanext per-
+
+                                                              6
+
+
+
+
+
+
+
+
+
+
+ barrier          car
+ bicycle          bicycle
+ bus              motorcycle
+ car              truck
+                  other-vehicle
+
+ construction     person
+
+ motorcycle       bicyclist
+ pedestrian       motorcyclist
+ traffic-cone     road
+ trailer          parking
+ truck            sidewalk
+                  other-ground
+
+ driveable        building
+
+ other            fence
+ sidewalk         vegetation
+ terrain          trunk
+ manmade          terrain
+ vegetation       pole
+                  traffic
+
+Table 3: Ablation studies for network components on Se-               Input        Input    Input
+manticKITTI validation set. PR denotes the point-wise re-
+finement module.                                                  3x3x3         3x1x1        3x1x3
+Baseline  Cylinder Asym-CNN     DDCM        PR mIoU                             1x1x1
+   3                                           58.1                             3x1x1        3x1x3
+   3         3                                 61.0
+   3         3        3                        63.8                        (1)        (2)    (3)
+   3         3        3                   3    65.2
+   3         3        3                   3  3 65.9               Figure 7:   We design three blocks for ablation studies of
+                                                                  asymmetrical residual block, including (1) regular residual
+form the post-processing. As shown in Table 2, our method         block , (2) 1D-asymmetrical residual block without height
+achieves better performance than existing methods in all          and (3) the proposed asymmetrical residual block.
+categories. Specifically, the proposed method obtains about       Table 4: Ablation studies for asymmetrical residual block.
+4% ∼ 7% performance gain than projection-based meth-
+ods. Moreover, for these categories with sparse points, such                Methods                         mIoU
+as bicycle and pedestrian, our method significantly outper-
+forms existing approaches, which also demonstrates the ef-                  Regular residual block          61.0
+fectiveness of the proposed method to tackle the sparsity                   1D-Asymmetrical residual block  62.0
+and varying density.                                                        Asymmetrical residual block     63.8
+4.4. Ablation Studies
+In this section, we perform the thorough ablation exper-          also strengthens the horizontal and vertical kernels in one-
+iments to investigate the effect of different components in       dimension.
+our method. We also design several variants of asymmet-                We conduct the ablation studies on SemanticKITTI val-
+rical residual block to verify our claim that strengthening       idation set. Note that we use the cylindrical partition as the
+the horizontal and vertical kernels power the representation      partition method and stack these proposed variants to build
+ability for driving-scene point cloud.                            the 3D convolution networks. We report the results in Ta-
+                                                                  ble 4. It can be found that although the 1D-Asymmetrical
+Effects of Network Components      In this part, we make          residual block only powers the horizontal and vertical ker-
+several variants of our model to validate the contributions of    nels in one-dimension without considering the height, it still
+different components. The results on SemanticKITTI vali-          achieves 1.3% gain in term of mIoU, which demonstrates
+dation set are reported in Table 3. Baseline method denotes       the effectiveness of horizontal and vertical kernel strength-
+the framework using 3D voxel partition and 3D convolu-            ening.   After taking the height into the consideration, the
+tion networks. It can be observed that cylindrical partition      proposed asymmetrical residual block further matches the
+performs much better than cubic-based partition with about        object distribution in driving scene and powers the skeleton
+3% mIoU gain and asymmetrical 3D convolution networks             of kernels to enhance the robustness to the sparsity. From
+also significantly boost the performance about 3% improve-        Table 4, the proposed asymmetrical residual block signif-
+ment, which demonstrates that both cylindrical partition and      icantly boosts the performance with about 3% improve-
+asymmetrical 3D convolution networks are crucial in the           ments, where large improvement can be observed on some
+proposed method. Furthermore, dimension-decomposition             instance categories (about 10% gain), including truck, per-
+based context modeling delivers the effective global context      son and motorcycle, because it matches the point distribu-
+features, which yields an improvement of 1.4%. Point-wise         tion of object and enhances the representational power.
+refinement module further pushes forward the performance
+based on the strong model, about 0.7%.                            4.5. Generalization Analyses
+Variants of Asymmetrical Residual Block    To verify the            In this section, we extend the proposed cylindrical par-
+effectiveness of the proposed asymmetrical residual block,        tition and asymmetrical 3D convolution networks to other
+we design several variants of asymmetrical residual block         LiDAR-based tasks, including LiDAR panoptic segmen-
+to investigate the effect of horizontal and vertical kernel en-   tation and LiDAR 3D detection.    These experimental re-
+hancement (as shown in Fig. 7). The first variant is the regu-    sults demonstrate the generalization ability of our proposed
+lar residual block without any asymmetrical structure. The        method and its effectiveness on LiDAR point cloud process-
+second one is the 1D-asymmetrical residual block, which           ing. In what follows, we will describe these two tasks and
+utilizes the 1D asymmetrical kernels without height and           present how we adapt the proposed model in details.
+
+                                              7
+
+
+
+
+
+
+
+
+
+
+3x3x3
+
+    +
+
+
+
+
+1x3x1
+
+    +
+
+1x3x1
+
+
+1x3x3
+
+    +
+
+1x3x3
+
+        Table 5: LiDAR panoptic segmentation results on the validation set of SemanticKITTI.
+    Method              PQ    PQ†    RQ    SQ   PQᵀʰ   RQᵀʰ  SQᵀʰ  PQSt  RQSt  SQSt  mIoU
+KPConv [36] + PV-RCNN [32] 51.7 57.4 63.1 78.9 46.8 56.8 81.5 55.2 67.8 77.1 63.1
+    PointGroup [17]     46.1  54.0  56.6  74.6  47.7   55.9  73.8  45.0  57.1  75.1  55.7
+    LPASD [26]          36.5  46.1   -     -     -     28.2   -     -     -     -    50.7
+    Ours                56.4   62   67.1  76.5  58.8   66.8  75.8  54.8  67.4  77.1  63.5
+
+
+    Table 6: LiDAR 3D detection results on nuScenes dataset.         methods [26, 17]. In terms of PQ, we have about 4.7% point
+    CyAs denotes the Cylindrical partition and Asymmetrical          improvement, and particularly for the thing categories, our
+    3D convolution networks.                                         method significantly outperforms state-of-the-art in terms
+     Methods                          mAP          NDS               of PQTh and PQSt with a large margin of 10% points. Ex-
+                                                                     perimental results demonstrate the effectiveness of the pro-
+     PointPillar [21]                 30.5         45.3              posed method and its good generalization ability.
+     PP + Reconfig [39]               32.5         50.6              Generalize to LiDAR 3D Detection          LiDAR 3D detec-
+     SECOND [47]                      31.6         46.8              tion aims to localize and classify the multi-class objects
+     SECOND + CyAs                    36.4         51.7              in the point cloud.     SECOND [47] first utilizes the 3D
+     SSN [53]                         46.3         56.9              voxelization and 3D convolution networks to perform the
+     SSN + CyAs                       47.7         58.2              single-stage 3D detection.  In this experiment, we follow
+                                                                     SECOND method and replace the regular voxelization and
+    Generalize to LiDAR Panoptic Segmentation            Panop-      3D convolution with the proposed cylindrical partition and
+    tic segmentation is first proposed in [18] as a new task, in     asymmetrical 3D convolution networks, respectively. Sim-
+    which semantic segmentation is performed for background          ilarly, to verify its scalability, we also extend the proposed
+    classes and instance segmentation for foreground classes         modules to SSN [53].     The experiments are conducted on
+    and these two groups of category are also termed as stuff        nuScenes dataset and the cylindrical partition also gener-
+    and things classes, respectively.  Behley et al. [3] extend      ates the 480 × 360 × 32 representation. For the evaluation
+    the task to LiDAR point clouds and propose the LiDAR             metrics, we follow the official metrics defined in nuScenes,
+    panoptic segmentation. In this experiment, we conduct the        i.e., mean average precision (mAP) and nuScenes detection
+    panoptic segmentation on SemanticKITTI dataset and re-           score (NDS).
+    port results on the validation set. For the evaluation met-      The results are shown in Table 6. PP + Reconfig [39] is a
+    rics, we follow the metrics defined in [3], where they are       partition enhancement approach based on PointPillar [21],
+    the same as that of image panoptic segmentation defined in       while our SECOND + CyAs performs better with similar
+    [18] including Panoptic Quality (PQ), Segmentation Qual-         backbone, which indicates the superiority of the cylindrical
+    ity (SQ) and Recognition Quality (RQ) which are calculated       partition. We then extend the proposed method (i.e., CyAs)
+    across all classes. PQ† is defined by swapping PQ of each        to two baseline methods, termed as SECOND + CyAs and
+    stuff class to its IoU and averaging over all classes like PQ    SSN + CyAs, respectively. By comparing these two mod-
+    does. Since the categories in panoptic segmentation contain      els with their extensions, it can be observed that the pro-
+    two groups, i.e., stuff  and things, these metrics are also      posed Cylindrical partition and Asymmetrical 3D convolu-
+    performed separately on these two groups, including PQTh,        tion networks boost the performance consistently, even for
+    PQSt, RQTh, RQSt, SQTh and SQSt, where Panoptic Quality          the strong baseline i.e., SSN, which demonstrates the effec-
+    (PQ) is usually used as the first criteria.                      tiveness and scalability of our model.
+       In this experiment, we use the proposed cylindrical par-      5. Conclusion
+    tition as the partition method and asymmetrical 3D con-
+    volution networks as the backbone. Moreover, a semantic            In this paper, we have proposed a cylindrical and asym-
+    branch is used to output the semantic labels for stuff cate-     metrical 3D convolution networks for LiDAR segmentation,
+    gories, and an instance branch is introduced to generate the     where it maintains the 3D geometric relation. Specifically,
+    instance-level features and further extract their instance IDs   two key components, the cylinder partition and asymmet-
+    for things categories through heuristic clustering algorithms    rical 3D convolution networks, are designed to handle the
+    (we use mean-shift in the implementation).                       inherent difficulties in outdoor LiDAR point cloud, namely
+    We report the results in Table 5.      It can be found that      sparsity and varying density, effectively and robustly. We
+    our method achieves much better performance than existing        conduct the extensive experiments and ablation studies,
+
+                                                       8
+
+            where the model achieves the 1st place in SemanticKITTI    tic segmentation with diamond inception module.         arXiv
+       and state-of-the-art in nuScenes, and keeps good generaliza-    preprint arXiv:2008.10544, 2020. 6
+           tion ability to other LiDAR based tasks, including LiDAR   [14] Benjamin Graham,  Martin  Engelcke,  and Laurens      Van
+panoptic segmentation and LiDAR 3D detection.                          Der Maaten.         3d semantic segmentation with submanifold
+                                                                       sparse convolutional networks. In CVPR, pages 9224–9232,
+References                                                             2018. 1, 3
+                                                                      [15] Lei Han, Tian Zheng, Lan Xu, and Lu Fang.        Occuseg:
+        [1] I˜nigo Alonso, Luis Riazuelo, Luis Montesano, and Ana C    Occupancy-aware 3d instance segmentation. In CVPR, pages
+      Murillo.  3d-mininet:       Learning a 2d representation from    2940–2949, 2020. 3
+      point clouds for fast and efficient 3d lidar semantic segmen-       [16] Qingyong Hu, Bo Yang, Linhai Xie, Stefano Rosa, Yulan
+      tation. arXiv preprint arXiv:2002.10893, 2020. 2                 Guo, Zhihua Wang, Niki Trigoni, and Andrew Markham.
+         [2] Jens Behley, Martin Garbade, Andres Milioto, Jan Quen-    Randla-net: Efficient semantic segmentation of large-scale
+      zel, Sven Behnke, Cyrill Stachniss, and Jurgen Gall.      Se-    point clouds. In CVPR, pages 11108–11117, 2020. 2, 5, 6
+         mantickitti: A dataset for semantic scene understanding of     [17] Li Jiang, Hengshuang Zhao, Shaoshuai Shi, Shu Liu, Chi-
+      lidar sequences. In ICCV, pages 9297–9307, 2019. 2, 5, 6         Wing Fu, and Jiaya Jia. Pointgroup: Dual-set point grouping
+    [3] Jens Behley, Andres Milioto, and Cyrill Stachniss. A bench-    for 3d instance segmentation. In CVPR, pages 4867–4876,
+         mark for lidar-based panoptic segmentation based on kitti.    2020. 8
+      arXiv preprint arXiv:2003.02371, 2020. 8                           [18] Alexander Kirillov, Kaiming He, Ross Girshick, Carsten
+ [4] Maxim     Berman,     Amal Rannen Triki,     and Matthew     B    Rother, and Piotr Doll´ar. Panoptic segmentation. In CVPR,
+      Blaschko.     The lov´asz-softmax loss: A tractable surrogate    pages 9404–9413, 2019. 8
+        for the optimization of the intersection-over-union measure   [19] Deyvid Kochanov,  Fatemeh Karimi Nejadasl,       and Olaf
+      in neural networks. In CVPR, pages 4413–4421, 2018. 5            Booij.      Kprnet: Improving projection-based lidar semantic
+       [5] Holger Caesar, Varun Bankiti, Alex H Lang, Sourabh Vora,    segmentation. arXiv preprint arXiv:2007.12668, 2020. 6
+               Venice Erin Liong, Qiang Xu, Anush Krishnan, Yu Pan,   [20] Loic Landrieu and Martin Simonovsky.    Large-scale point
+      Giancarlo Baldan, and Oscar Beijbom.         nuscenes: A mul-    cloud semantic segmentation with superpoint graphs.        In
+      timodal dataset for autonomous driving.        arXiv preprint    CVPR, pages 4558–4567, 2018. 2
+      arXiv:1903.11027, 2019. 2, 6                                       [21] Alex H Lang, Sourabh Vora, Holger Caesar, Lubing Zhou,
+         [6] Liang-Chieh Chen, George Papandreou, Iasonas Kokkinos,    Jiong Yang, and Oscar Beijbom. Pointpillars: Fast encoders
+           Kevin Murphy, and Alan L Yuille. Deeplab: Semantic image    for object detection from point clouds.  In       CVPR, pages
+         segmentation with deep convolutional nets, atrous convolu-    12697–12705, 2019. 8
+      tion, and fully connected crfs.  IEEE transactions on pattern      [22] Chenxi Liu, Liang-Chieh Chen, Florian Schroff, Hartwig
+      analysis and machine intelligence, 40(4):834–848, 2017. 3        Adam, Wei Hua, Alan L Yuille, and Li Fei-Fei.           Auto-
+        [7] Liang-Chieh Chen, Yukun Zhu, George Papandreou, Florian    deeplab: Hierarchical neural architecture search for semantic
+      Schroff, and Hartwig Adam.        Encoder-decoder with atrous    image segmentation. In CVPR, pages 82–92, 2019. 3
+          separable convolution for semantic image segmentation. In    [23] Jonathan Long, Evan Shelhamer, and Trevor Darrell. Fully
+      ECCV, pages 801–818, 2018. 3                                     convolutional networks   for  semantic  segmentation.      In
+             [8] Wanli Chen, Xinge Zhu, Ruoqi Sun, Junjun He, Ruiyu    CVPR, pages 3431–3440, 2015. 3
+      Li,     Xiaoyong Shen, and Bei Yu.        Tensor low-rank re-      [24] Yecheng Lyu, Xinming Huang, and Ziming Zhang. Learning
+      construction for semantic segmentation.        arXiv preprint    to segment 3d point clouds in 2d image space.  In       CVPR,
+      arXiv:2008.00490, 2020. 5                                        pages 12255–12264, 2020. 2
+ [9]  Ozg¨¨   un C¸ ic¸ek, Ahmed Abdulkadir, Soeren S Lienkamp,       [25] Hsien-Yu Meng,   Lin Gao,  Yu-Kun    Lai, and      Dinesh
+      Thomas Brox, and Olaf Ronneberger.     3d u-net:     learning    Manocha.        Vv-net: Voxel vae net with group convolutions
+      dense volumetric segmentation from sparse annotation.      In    for point cloud segmentation.  In      ICCV, pages 8500–8508,
+      MICCAI, pages 424–432. Springer, 2016. 1, 3                      2019. 3
+       [10] Tiago Cortinhal, George Tzelepis, and Eren Erdal Aksoy.   [26] A. Milioto, J. Behley, C. McCool, and C. Stachniss. LiDAR
+        Salsanext: Fast, uncertainty-aware semantic segmentation of    Panoptic Segmentation for Autonomous Driving. 2020. 8
+      lidar point clouds for autonomous driving, 2020. 2, 5, 6           [27] Andres Milioto, Ignacio Vizzo, Jens Behley, and Cyrill
+                                                                       Stachniss.   Rangenet++:     Fast and accurate lidar semantic
+          [11] Xiaohan Ding, Yuchen Guo, Guiguang Ding, and Jungong    segmentation. In IROS, pages 4213–4220. IEEE, 2019.    1,
+          Han. Acnet: Strengthening the kernel skeletons for power-    2, 6
+          ful cnn via asymmetric convolution blocks. In ICCV, pages          [28] Quang-Hieu Pham, Thanh Nguyen, Binh-Son Hua, Gemma
+      1911–1920, 2019. 4                                               Roig, and Sai-Kit Yeung.     Jsis3d:  joint semantic-instance
+     [12] Francis Engelmann, Martin Bokeloh, Alireza Fathi, Bastian    segmentation of 3d point clouds with multi-task pointwise
+      Leibe, and Matthias Nießner.       3d-mpa: Multi-proposal ag-    networks and multi-value conditional random fields.        In
+          gregation for 3d semantic instance segmentation. In CVPR,    CVPR, pages 8827–8836, 2019. 2
+      pages 9031–9040, 2020. 2                                         [29] Charles R Qi, Hao Su, Kaichun Mo, and Leonidas J Guibas.
+        [13] Martin Gerdzhev, Ryan Razani, Ehsan Taghavi, and Bing-    Pointnet: Deep learning on point sets for 3d classification
+      bing Liu. Tornado-net:       multiview total variation seman-    and segmentation. In CVPR, pages 652–660, 2017. 2
+
+                  9
+
+[30] Xiaojuan Qi, Renjie Liao, Jiaya Jia, Sanja Fidler, and Raquel   segv3:   Spatially-adaptive convolution for efficient point-
+ Urtasun.          3d graph neural networks for rgbd semantic seg-   cloud segmentation. arXiv preprint arXiv:2004.01803, 2020.
+ mentation. In ICCV, pages 5199–5208, 2017. 2                        2, 6
+   [31] Olaf Ronneberger, Philipp Fischer, and Thomas Brox. U-net:  [46] Xu Yan, Chaoda Zheng,   Zhen Li, Sheng Wang,         and
+ Convolutional networks for biomedical image segmentation.           Shuguang Cui.      Pointasnl: Robust point clouds processing
+ In MICCAI, pages 234–241. Springer, 2015. 3                         using nonlocal neural networks with adaptive sampling. In
+      [32] Shaoshuai Shi, Chaoxu Guo, Li Jiang, Zhe Wang, Jianping   CVPR, pages 5589–5598, 2020. 2
+ Shi, Xiaogang Wang, and Hongsheng Li.             Pv-rcnn: Point-   [47] Yan Yan, Yuxing Mao, and Bo Li. Second: Sparsely embed-
+ voxel feature set abstraction for 3d object detection.         In   ded convolutional detection. Sensors, 18(10):3337, 2018. 8
+ CVPR, pages 10529–10538, 2020. 8                                 [48] Feihu Zhang, Jin Fang, Benjamin Wah, and Philip Torr. Deep
+  [33] Haotian Tang, Zhijian Liu, Shengyu Zhao, Yujun Lin, Ji Lin,   fusionnet for point cloud semantic segmentation.       ECCV,
+ Hanrui Wang, and Song Han. Searching efficient 3d archi-            2020. 2, 6
+ tectures with sparse point-voxel convolution.      arXiv preprint        [49] Hang Zhang, Han Zhang, Chenguang Wang, and Junyuan
+ arXiv:2007.16100, 2020. 3, 6                                        Xie.  Co-occurrent features in semantic segmentation.     In
+    [34] Maxim Tatarchenko, Jaesik Park, Vladlen Koltun, and Qian-   CVPR, pages 548–557, 2019. 5
+ Yi Zhou. Tangent convolutions for dense prediction in 3d. In         [50] Jiazhao Zhang, Chenyang Zhu, Lintao Zheng, and Kai Xu.
+ CVPR, pages 3887–3896, 2018. 6                                      Fusion-aware point convolution for online semantic 3d scene
+         [35] Lyne Tchapmi, Christopher Choy, Iro Armeni, JunYoung   segmentation. In CVPR, pages 4534–4543, 2020. 2
+ Gwak, and Silvio Savarese.             Segcloud: Semantic segmen-  [51] Yang Zhang, Zixiang Zhou, Philip David, Xiangyu Yue, Ze-
+ tation of 3d point clouds. In           3DV, pages 537–547. IEEE,   rong Xi, Boqing Gong, and Hassan Foroosh. Polarnet: An
+ 2017. 3                                                             improved grid representation for online lidar point clouds se-
+         [36] Hugues Thomas, Charles R Qi, Jean-Emmanuel Deschaud,   mantic segmentation. In CVPR, pages 9601–9610, 2020. 1,
+ Beatriz Marcotegui, Franc¸ois Goulette,            and Leonidas J   2, 3, 6
+ Guibas.           Kpconv: Flexible and deformable convolution for      [52] Hengshuang Zhao, Jianping Shi, Xiaojuan Qi, Xiaogang
+ point clouds. In ICCV, pages 6411–6420, 2019. 2, 6, 8               Wang, and Jiaya Jia. Pyramid scene parsing network.       In
+[37] Petar Veliˇckovi´c, Guillem  Cucurull, Arantxa      Casanova,   CVPR, pages 2881–2890, 2017. 3
+ Adriana Romero, Pietro Lio, and Yoshua Bengio. Graph at-          [53] Xinge Zhu, Yuexin Ma, Tai Wang, Yan Xu, Jianping Shi, and
+ tention networks.          arXiv preprint arXiv:1710.10903, 2017.   Dahua Lin.     Ssn: Shape signature networks for multi-class
+ 2                                                                   object detection from point clouds. ECCV, 2020. 8
+       [38] Lei Wang, Yuchun Huang, Yaolin Hou, Shenman Zhang, and
+ Jie Shan. Graph attention convolution for point cloud seman-
+ tic segmentation. In CVPR, pages 10296–10305, 2019. 2
+      [39] Tai Wang, Xinge Zhu, and Dahua Lin. Reconfigurable vox-
+ els: A new representation for lidar-based point clouds. Con-
+ ference on Robot Learning, 2020. 8
+         [40] Wenhai Wang, Enze Xie, Xiang Li, Wenbo Hou, Tong Lu,
+ Gang Yu, and Shuai Shao. Shape robust text detection with
+ progressive scale expansion network. In CVPR, pages 9336–
+ 9345, 2019. 4
+[41] Yue Wang, Yongbin Sun,       Ziwei Liu,       Sanjay E Sarma,
+ Michael M Bronstein, and Justin M Solomon.                Dynamic
+ graph cnn for learning on point clouds.          Acm Transactions
+ On Graphics (tog), 38(5):1–12, 2019. 2
+         [42] Bichen Wu, Alvin Wan, Xiangyu Yue, and Kurt Keutzer.
+ Squeezeseg: Convolutional neural nets with recurrent crf for
+ real-time road-object segmentation from 3d lidar point cloud.
+ In ICRA, pages 1887–1893. IEEE, 2018. 1, 2
+       [43] Bichen Wu, Xuanyu Zhou, Sicheng Zhao, Xiangyu Yue, and
+ Kurt Keutzer. Squeezesegv2: Improved model structure and
+ unsupervised domain adaptation for road-object segmenta-
+ tion from a lidar point cloud.   In ICRA, pages 4376–4382.
+ IEEE, 2019. 2
+       [44] Wenxuan Wu, Zhongang Qi, and Li Fuxin. Pointconv: Deep
+ convolutional networks on 3d point clouds. In CVPR, pages
+ 9621–9630, 2019. 2
+         [45] Chenfeng Xu, Bichen Wu, Zining Wang, Wei Zhan, Peter
+ Vajda, Kurt Keutzer, and Masayoshi Tomizuka.             Squeeze-
+
+                                      10
+

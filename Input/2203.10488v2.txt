@@ -1,0 +1,487 @@
+arXiv:2203.10488v2 [cs.RO] 12 Sep 2022
+
+
+
+
+
+
+
+
+
+
+Inferring Articulated Rigid Body Dynamics
+             from RGBD Video
+
+Eric Heiden1, Ziang Liu2, Vibhav Vineet3, Erwin Coumans1, Gaurav S. Sukhatme4
+
+
+              Abstract— Being able to reproduce physical phenomena rang-
+         ing from light interaction to contact mechanics, simulators are      -
+               becoming increasingly useful in more and more application                                    g
+    domains where real-world interaction     or labeled     data     are                        H
+         difficult to obtain. Despite recent progress, significant human              |
+        effort is needed to configure simulators to accurately reproduce                        J          -—  »
+              real-world behavior. We introduce a pipeline that combines     =                      -
+      inverse rendering with differentiable simulation to create digital      i-
+            twins of real-world articulated mechanisms from depth or RGB          [
+            videos. Our approach automatically discovers joint types and          N                             \
+estimates their kinematic parameters, while the dynamic prop-
+erties of the overall mechanism are tuned to attain physically
+accurate simulations. Control policies optimized in our derived
+simulation transfer successfully back to the original system, as Fig. 1: Experimental setup. A Panda robot arm pushing an
+we demonstrate on a simulated system. Further, our approach articulated system consisting of wooden toy construction parts via a
+accurately reconstructs the kinematic tree of an articulated cylindrical tip. The motion is recorded by an Intel RealSense L515
+mechanism being manipulated by a robot, and highly nonlinear LiDAR sensor.
+dynamics of a real-world coupled pendulum mechanism.
+    Website: https://eric-heiden.github.io/video2sim                        difficult to find the correct simulation settings that yield the
+         I. INTRODUCTION                                                      most accurate results. Despite recent advances in bridging the
+                    From occupancy grids to modern SLAM pipelines, scene          sim2real gap (see [2] for an overview), deriving a Unified
+             representations in robotics are becoming increasingly capa-             Robot Description Format (URDF) file or analogous scene
+                  ble of informing complex behaviors. Approaches such as           specifications poses a challenge when a real-world system
+                 Kimera [1] are equipping robots with a world model that    needs to be simulated accurately.
+            allows them to intelligently reason about spatiotemporal and          We tackle the problem of automatically finding the correct
+                 semantic concepts of the world around them. While still       simulation description for real-world articulated mechanisms.
+           centered around metric world representations, the interest in              Given a depth or RGB video of an articulated mechanism
+    dynamics-aware representations is increasing.                                   undergoing motion, our pipeline determines the kinematic
+                  Simulators, especially those that incorporate dynamics     topology of the system, i.e. the types of joints connecting the
+           models, are world representations that can potentially repro-        rigid bodies and their kinematic properties, and the dynami-
+           duce a vast range of behavior in great detail. Provided these       ~ cal properties that explain the observed physical behavior.
+             models are calibrated correctly, they can generalize excep-               Relying on camera input our pipeline opens the avenue
+               tionally well compared to most purely data-driven models.          to future work integrating simulators more firmly into the
+                They are an indispensable tool in the design of machines        representation stack that robots can use to reason about the
+           where the cost of prototyping hardware makes iterating in the            physical world around them and make high-level decisions
+             real world prohibitively expensive. Robot control pipelines         leveraging semantic information that the simulator encodes.
+                are often trained and developed in simulation due to the              By inferring the number of rigid objects and their re-
+              orders of magnitudes of speed-ups achievable by simulating           lationship to each other without manually specifying such
+            many interaction scenarios in parallel faster than real time         articulations upfront, our work extends previous works that
+    without causing damage in the early phases of training.                   tackle system identification, i.e. the estimation of dynamical
+              Nonetheless, it remains a challenge to leverage such tools             properties of a known model of the physical system. Our
+              for real-world robotic tasks. Not only is there a sim2real    proposed pipeline consists of the following four steps:
+               gap due to inherent model incompleteness, but it is often              1) We identify the type and segmentation mask of rigid
+     1NVIDIA, Santa Clara, USA eheiden@nvidia.com                            shapes in one frame of the video.
+     2Stanford University, Stanford, USA                                       2) We instantiate a differentiable rasterizer on a scene that
+     3Microsoft Research, Redmond, USA                                               consists of the previously identified shapes. Given the
+     4Google Research, Mountain View, USA                                                depth image sequence from the real system, we opti-
+      4G.S. Sukhatme holds concurrent appointments as a Professor at the                mize the 3D poses of such rigid bodies via gradient-
+  University of Southern California (USC) and as an Amazon Scholar. This
+paper describes work performed at USC and is not associated with Amazon.     based optimization.
+     This work was supported by a Google PhD Fellowship.                             3) We identify the types of joints connecting the rigid
+
+                                         Graph NN [3], [4]      gradSim [5]  VRDP [6]  Galileo [7]  ScrewNet [8]  Ours
+                      Infers joint topology  implicitly                                                  X         X
+                      Articulated physics        X                   X                                             X
+                      Differentiable physics     X                   X          X                                  X
+                      Differentiable rendering                       X                                             X
+                      Real-world ground-truth    X                                          X            X         X
+                      Pixel-based observations                       X          X           X            X         X
+    TABLE I: Comparison of selected inference and modeling approaches that reduce the gap between the real and simulated world.
+
+           bodies based on their motion, and determine the kine-         Our work is closer to VRDP [6], a pipeline that leverages
+     matic properties of the mechanism.                             differentiable simulation to learn the parameters underlying
+  4) We infer the dynamical simulation parameters through rigid body dynamics. Contrary to our approach, VRDP does
+      a gradient-based Bayesian inference approach that not consider articulated objects. Galileo [7] infers physi-
+     combines differentiable rendering and simulation.              cal dynamics from video via Markov Chain Monte Carlo
+  Our experiments demonstrate the effectiveness of our (MCMC) that samples a simulator as likelihood function,
+proposed pipeline, as well as show the benefits of learning which, in contrast to our work, is not evaluated in image
+a physical simulator for control applications, and prediction space but on low-dimensional pose tracking data and requires
+    of the behavior of real articulated systems.                    the full simulation with all objects to be manually specified.
+                      II. RELATED WORK                              C. Differentiable simulation
+          In Tab. I we provide a high-level overview of selected        Differentiable simulation has gained increasing attention,
+    related works.                                                  as it allows for the use of efficient gradient-based optimiza-
+    A. Articulation inference                                       tion algorithms to tune simulation parameters or control
+          Inferring the type and parameters of joints by observ-    policies [24], [25], [26], [5], as well as LiDAR sensor
+         ing moving bodies has been an important area in robotic    models [27].
+       perception, where affordances of objects need to be known      A particularly related prior work is gradSim [5] that, as in
+    for a robot to interact with them. This has motivated inter-    our approach, combines a differentiable physics engine with
+     active perception approaches, where action selection is in-    a differentiable renderer to solve inverse problems from high-
+formed by particle filtering [9] or recursive Bayesian filtering    dimensional pixel inputs. As in the other related works on
+     (RBF) [10]. The latter approach builds on earlier work [11]    differentiable simulators in this review, the simulator needs
+         that we adapt in our approach to find the parameters of    to have been set up manually before any optimization can
+     revolute and prismatic joints given the motion of the rigid    begin. This entails that a URDF or other scene description
+    transforms of the objects in the scene (see Sec. III-C).        format has to be provided that encodes the system topol-
+     Articulation inference often hinges on accurate pose track-    ogy and parameters. In this work, we introduce a method
+          ing of the rigid bodies, which is why many early works    that automatically discovers the joint connections between
+      relied on fiducial markers to accurately track objects and    rigid bodies from a mechanism observed through high-level
+    subsequently infer articulations [12], [13], [14]. We do not    inputs, such as depth or RGB camera images.
+       require markers but do need to have accurate 3D meshes of
+       the objects to be tracked in our approach. Learning-based        III. APPROACH
+        approaches, such as ScrewNet [8] and DUST-net [15] infer        In the following we describe the pipeline of our approach,
+    single articulations from depth images, whereas our approach    which we summarize in Fig. 2.
+     recovers multiple articulations between an arbitrary number
+ of rigid objects in the scene. In [16] and [17] signed distance    A. Geometry identification
+   fields are learned in tandem with the articulation of objects
+         to infer kinematic 3D geometry, without considering the             In the first phase, we use Detectron2 [28], an object
+    dynamics of the system.                                         detection and instance segmentation network, to find the
+    B. Learning simulators                                          geometry instances and their segmentation masks in each
+                                                                    frame of the input video. We found input images with three
+          Our approach instantiates a simulation from real-world    channels per pixel necessary to yield accurate results, so
+ observations, where the inference of articulations is the first    that we converted depth images to normal maps via finite
+     step. Alternative approaches propose different pipelines to    differencing in pixel space. We generated two datasets in this
+       the problem of learning a simulator. Entirely data-driven    work to train Detectron2: a synthetic set of normal maps
+          physics models often leverage graph neural networks to    of primitive shapes (capsules, boxes, spheres) of various
+   discover constraints between particles or bodies ([18], [19],    sizes and in various pose configurations, and a dataset of
+      [20]). Physics-based machine learning approaches introduce    camera images for our real-robot experiment in Sec. IV-C.
+       a physics-informed inductive bias for learning models for    An exemplar segmentation map predicted by Detectron2 on
+    dynamical systems from data [21], [22], [23].                   our Craftsman experiment is shown in Fig. 3.
+
+                                                                          Fig. 3:       Segmentation map prediction. Detectron2 segmentation
+                                                                          map predicted from an RGB image of a mechanism made of
+                                                                          wooden parts from the Craftsman toolkit (see Sec. IV-C). The three
+                                                                          pieces and their mesh types (either long 6 or short 3) have been
+                                                                          correctly identified.
+                                                                          from Fig. 1), this may be the floor plane which is necessary
+                                                                          for contact mechanics. Furthermore, the camera pose needs
+                                                                          to be known upfront, and the 3D meshes of the objects in
+                                                                          the mechanism have to be given.
+
+        C. Joint identification and kinematic tracking
+        We use the rigid pose trajectories to infer the types of
+        joints that connect the rigid bodies, as well as the joint
+        parameters (such as axis of rotation, pivot point, etc.).
+        We follow a RANSAC approach [30] that yields robust
+        results despite noisy pose predictions. For each pair of rigid
+        bodies, we set up one RANSAC estimator per joint type
+        (model equations follow below): revolute, prismatic, and
+        static (fixed) joint. We select the joint model with the least
+        model error found after the RANSAC iterations. Given the
+        guess for the joint type and its parameters, we compute the
+        joint positions q over time.
+        Given the sequence of world transforms T0i of all rigid
+        bodies i in the scene, in the joint identification step we
+Fig. 2: Pipeline. Our proposed simulation inference approach determine for each unique pair of rigid bodies i and j the
+derives an articulated rigid body simulation from pixel inputs. The relative transform Ti j[t] at each time step t. In the following,
+shown exemplary results generated by the phases in this diagram T.r denotes the 3D axis-angle rotation vector, and T.p the
+    stem from the cartpole inference experiment from Sec. IV-A.           translation vector of a rigid pose T .
+    B. Rigid body tracking                                                pointa) Revolute joint model:        Determine joint axis s, pivot
+               Given the segmentation map from the first step, we track                 p and joint angle q from two consecutive transforms:
+    the poses of the rigid bodies over time. We leverage nvd-              ∆r = Ti j[t+1].r − Ti j[t].r  ∆p = Ti j[t+1].p − Ti j[t].p
+    iffrast [29], an efficient, GPU-driven differentiable rasterizer,          ∆r
+    to generate an observation x (can be either a depth or RGB             s = ‖∆r‖             p = Ti j[t].p + ∆r × ∆p    q = ‖∆r‖
+    color image) given the 3D vertices of the object meshes                                              ‖∆r‖2
+    i ∈ 1, . . . , M   corresponding to the rigid bodies of interest in    b) Prismatic joint model:      Determine joint axis s         and
+    the scene. Such 3D vertices are transformed based on the              joint position q from two consecutive transforms:
+    world poses T0i of the shapes we want to track. To solve the               ∆p = T j[t+1].p − T j[t].p
+    inverse rendering problem, i.e., finding object poses given                                 i        i
+    pixel inputs, we minimize the L2 distance between the real                 s =              ∆p       q = s · T j[t+1].p
+    image and the simulated rendering at each frame of the input                               ‖∆p‖         i
+    video:                                                                     c) Static joint model:   The static joint is parameterized
+    minimize[T₀₁,T₀₂,...,T₀M] ‖ frast([T01, T02, . . . , T0M]) − x‖2,     by the relative transform Ti j between bodies i and j.
+                                                                                        Algorithm 1 summarizes our inference approach to de-
+    where     frast  denotes the differentiable rasterizer function.      termine the articulations between rigid bodies given their
+                  Note that our approach requires the background of the   observed motions. We first find the most likely joint types
+    scene, i.e., the static bodies not part of the system, to be          and corresponding joint parameters between unique pairs of
+    instantiated in the simulator if they influence the dynamics.         rigid bodies via RANSAC for the three different joint models
+    In the case of a table-top manipulation task (e.g., the one           (revolute, prismatic and static). If no joint model could be
+
+    Step 0  Step 10  Step 20  Step 30  Step 40 [=  A  an    an
+
+
+
+
+                     (a) Body transforms       (b) Inferred articulation (c) Reconstructed mechanism  (d) Joint positions
+                 Fig. 4: Inference of articulations in a complicated mechanism consisting of static and revolute joints.
+    Algorithm 1 Determine articulation of observed motion              Note that since the joint models have been determined for
+  iInput: world transform sequence T0i for each rigid body a particular ordering of unique pairs of rigid bodies (to
+     = 1..n                                                            avoid duplicate computation), the direction the spanning tree
+     C = 0n×n                                                          imposes on the particular connection may require the joint
+     for body i ∈ {1..n} do                                            model (e.g., in the case of revolute joints, the joint axis and
+      for body       j ∈ {i+1..n} do                                   pivot point) to be inverted.
+         Calculate relative transform sequence Ti j                          Given the root node’s sequence of world transforms T0i, we
+        Determine joint parameters θ joint for revolute (r), determine the most likely joint model again via RANSAC. If
+  prismatic (p), static (s) joint type given Ti j via RANSAC, such a model has been found, the corresponding articulated
+     as well as their respective model errors cr, cp, cs               mechanism  is considered     fixed-base and gets       connected
+                   if RANSAC found at least one joint candidate then   through this joint to the world. If no such joint model could
+                 C[i, j] = C[ j, i] = min{cr, cp, cs}                  be found, the articulation is floating-base and needs to be
+
+        degrees of freedom corresponding to a rigid-body motion,
+        elseMemorize θ joint∗ of candidate with lowest cost considered as such in the world model (either by adding
+                 C[i, j] = C[ j, i] = ∞                                or via a flag that ensures the mechanism is simulated as a
+         end if                                                        floating-base system).
+      end for                                                          D. Simulation parameter estimation
+     end for                                                                   Thus far, the pipeline was dedicated to the inference of
+               Determine minimum spanning forest on C, retrieve root   the kinematic properties of the mechanism we observed.
+     bodies Iroot                                                      Having found the joint topology and approximate transforms
+     for body i ∈ Iroot  do                                            between the bodies in the system, we will now consider the
+      Construct kinematic tree A rooted at body i, with dynamics of the mechanism. This entails finding simulation
+  parent-child connections from the corresponding minimum parameters and an initial state vector that yield a mo-
+  spanning tree and respective memorized joint parameters tion, which, when rendered via our differentiable rasterizer,
+      Find joint candidate θ joint         via RANSAC given T0i        closely matches the given image sequence.
+      if RANSAC found at least one joint candidate then                           Leveraging Bayesian inference, we infer the dynamical
+      elseAttach A to world via lowest-cost joint model.  θ joint∗     and (optionally, for fine-tuning) kinematic parameters, such
+         Attach A to world via free joint floating-base case           as joint axes and pivot points, of the mechanism. We model
+      end if                                                           the inference problem as a Hidden Markov Model (HMM)
+     end for                                                           where the observation sequence X = [x1, . . . , xT ] of T  video
+     return world model consisting of articulations                    frames is derived from latent states st (t ∈ [1..T ]). We assume
+                                                                       the observation model is a deterministic function which
+          found that matches the relative transform sequence between   is realized by the differentiable rasterization engine that
+    two rigid bodies, they are considered to be disconnected.          turns a system state st into an observation image xt     (either
+        depth or RGB color). The states are advanced through the
+  Having computed the cost matrix C of the joint model dynamics model which we assume is fully dependent on
+errors from the previous RANSAC estimation, we find the the previous state and the simulation parameter vector θ .
+minimum spanning forest via Prim’s algorithm that we run In our model, this transition function is assumed to be the
+on each component of the undirected graph described by differentiable simulator that implements the articulated rigid-
+the weighted adjacency matrix C. We select the root node body dynamics equations and contact models. We use the
+i from each minimum spanning tree as the top-level body Tiny Differentiable Simulator [31] that implements end-to-
+in the kinematic tree to which all the rigid bodies within end differentiable contact models and articulated rigid-body
+the same component are connected via the previously found dynamics following Featherstone’s formulation [32]. For an
+joint models according to the hierarchy of the spanning tree. articulated rigid body system, the parameters θ may include
+
+the masses, inertial properties and geometrical properties of
+the bodies in the mechanism, as well as joint and contact
+friction coefficients.
+  Following Bayes’ law, the posterior p(θ |X ) over sim-
+ulation parameters θ ∈ RM is calculated via p(θ |DX ) ∝
+p(DX |θ )p(θ ).
+  We leverage the recently introduced Constrained Stein
+Variational Gradient Descent (CSVGD) algorithm [33]
+that adds constraints to the gradient-based, nonparametric
+Bayesian inference method SVGD. Such constraint handling
+allows us to enforce parameter limits and optimize simulation Fig. 5: Parameter posterior distribution of the two link masses
+parameters via multiple shooting. This technique splits up the of the cartpole. Inference from depth video via the multiple-
+trajectory into shooting windows for which the start states shooting Bayesian inference approach CSVGD. The red lines and
+need to be learned. Defect constraints are introduced that stars indicate the ground-truth parameters.
+enforce continuity at the start and end states of adjacent
+    shooting windows. Despite requiring extra variables to be op-                       Adam         Ours        CMA-ES        MCMC          GT
+    timized, multiple shooting significantly improves the conver-        Parameter error:
+    gence of gradient-based parameter inference approach when            NMAE          0.299        0.161        0.369        0.328          0
+    parameters need to be inferred from long time horizons.              Average control reward (mean±std dev):
+                                                                         Swing-up   0.222±0.072  0.235±0.059  0.190±0.104  0.229±0.071  0.230±0.077
+                                                                         Balancing  0.734±0.081  0.742±0.081  0.779±0.073  0.744±0.128  0.751±0.093
+    E. Limitations                                                      TABLE II: Top section:         normalized mean absolute error on the
+                 We assume the possible geometric shapes of the rigid   inferred parameters of the various methods compared against the
+    bodies of interest in the scene are known, so that they can be      true parameters. Bottom section: average reward statistics obtained
+    rendered. The sensor remains at a static pose, its intrinsics       from 10 training runs of the MPPI controller evaluated on the Bullet
+    are known. The mechanism to be simulated must be in the             cartpole system from Sec. V-C on the swing-up and balancing tasks.
+    viewport at least at the beginning of the video. The tracking       from the Emcee [36] library. We select the particle with the
+    and inference currently does not run in real time.                  highest likelihood for the comparison in Tab. II.
+              IV. EXPERIMENTS
+    We evaluate our approach on three mechanisms.                       B. Rott’s Chaotic Pendulum
+    A. Simulated Cartpole                                                            In our next experiment, we aim to identify a real-world
+          In our first experiment we consider a simulated cartpole in   chaotic mechanism – a coupled pendulum first analyzed
+    the Bullet [34] physics engine, which allows us to evaluate         by Nikolaus Rott [37]. Rott’s mechanism consists of two
+    the accuracy of our method against the known ground-truth           pendula with resonant frequencies at approximately two to
+    simulation parameters. As shown through the exemplary               one. One L-shaped pendulum is attached to a fixed pivot
+    results in Fig. 2, we follow our pipeline to infer a realistic      via a revolute joint, and a single body is attached to this L-
+    simulation given a sequence of 200 depth images. The cart           shaped pendulum via another revolute joint. Given a video
+    and pole are correctly identified by Detectron2 as a box and        taken with an RGB camera of such a mechanism, we aim to
+    capsule, which are then tracked via our inverse rendering           reconstruct a digital twin in simulation.
+    approach. The subsequent articulation inference step find the                   In the first step of our pipeline, we identify the rigid
+expected joint topology where the pole is connected through objects in the video by converting the RGB images to binary
+a revolute joint with the cart, which in turn is connected images with an appropriate threshold so that the background
+by a prismatic joint to the world. Finally, we infer the becomes white and the mechanism itself appears white. By
+simulation parameters related to the inertial properties of the applying a blur filter to the image, we obtain a fake depth
+two links (masses and inertia matrix diagonal entries). We which is sufficient for the Detectron2 network to identify
+visualize the posterior distribution found by CSVGD over the three links as capsules. We manually designate the
+the two link masses in Fig. 5, and compare the error over instances of the segmentation map found by Detectron2 to
+the inferred parameters compared to other methods in the pregenerated capsule shapes in our simulator.
+    top row of Tab. II, which demonstrates that our approach is                      Since we cannot rely on depth information to inform the
+able to closely recover the true parameter settings (shown in 3D poses of the rigid bodies, we assume the mechanism
+red). In particular, the gradient-based estimators Adam and to be a planar system. Therefore, the rigid body tracking
+CSVGD achieve a lower normalized (w.r.t. parameter limits) system is constructed such that each body only has three
+parameter error within 2000 optimization steps than the degrees of freedom (x, z position and yaw angle). We set up
+CMA-ES [35] and MCMC method. We choose 16 particles the rasterizer to produce RGB images (where the blue and
+both for CSVGD and CMA-ES. For MCMC, we also use red color has been manually assigned to the correct capsule
+16 particles via the parallel, smooth-step sampling scheme shapes upfront).
+
+                          (a) Simulation derived from RGB video              (b) Inferred articulation
+    Fig. 6:  Our proposed framework infers articulated rigid body dynamics simulations from video. In this example, Rott’s pendulum
+    is identified from real RGB camera footage of the system in motion. In (a), the original video is compared to the simulated motion in the
+    learned physics engine. In (b), the inferred joints are visualized on the left, where blue cylinders correspond to the axes of the revolute
+    joints. The estimated kinematic tree is shown on the right.
+
+                  Adam   Ours             CMA-ES  MCMC PhyDNet
+                         Cartpole depth image sequence
+     MSE        0.0015   0.0008     0.0018       0.0019  0.1665                  (a) Real motion
+     MAE        0.0073   0.0042     0.0089       0.0093  0.4056
+     SSIM       0.9136   0.9452     0.8908       0.8893  0.7985
+         Rott’s pendulum RGB image sequence
+     MSE        0.0112   0.0134     0.0122       0.0177  0.0054
+     MAE        0.0175   0.0219     0.0187       0.0274  0.0153
+     SSIM       0.8929   0.8370     0.8774       0.8001  0.9412                       (b) Inferred joints and positions
+TABLE III: Video forecasting performance. For each of the Fig. 8: Joint inference for the Craftsman system. The articulation
+experiments, the models were evaluated by observing the first 10 is inferred; the two revolute joints are indicated by blue cylinders
+    frames from the test dataset and predicting the next 150 frames.         in (b).
+                                    Ground truth                             image segmentation model is a mask R-CNN pretrained on
+
+                                                                             the COCO instance segmentation dataset [38]. We collected
+     Ground-truth                                                            a dataset of 30 RGB images of three Craftsman parts (two
+     Adam                                                                    different types of parts) in various spatial configurations for
+                                                                             finetuning Detectron2 on our domain.
+     Ours                                                                    Given  the instance segmentation    map, we extract            the
+                                                                             corresponding 3D point cloud segments for each instance
+     CMA-ES                                                                  (see Fig. 3) and use iterative closest point to estimate an
+     MCMC                                                                    initial pose of each shape from the construction kit. Given
+                                                                             this initialization, as before, the poses of the Craftsman parts
+     PhyDNet                                                                 are optimized through the differentiable rasterizer, where the
+    Fig. 7: Video forecasting results on the test dataset of a simulated     camera has been aligned in the simulator from a perspective-
+    cartpole. 150 frames must be predicted given the first 10 frames         n-point calibration routine. As shown in Fig. 8, we are able to
+    of the motion.                                                           discover the two revolute joints connecting the three links of
+                                                                             the mechanism, as well as the planar floating base (prismatic
+    C. Real articulated system                                               x, y and revolute z joints). The inferred joint positions allow
+                  In our final experiment we reconstruct a simulation from   the kinematic tree (shown in (b)) to move in a way that
+    a real-world articulated system being pushed by a robot                  closely matches the real motion (a).
+    on a table. We build an articulated mechanism with the                       V. A NALYSIS
+    “Craftsman” toy toolkit which contains wooden levers and
+    linkages. We command a Franka Emika Panda robot arm                               In this section we evaluate our approach in comparison to
+    equipped with a cylindrical tip at its end-effector to move              baselines in pose tracking, video forecasting and control.
+    sideways along the y direction by 60 cm over a duration of
+    20 s at a constant velocity.                                             A. Rigid Pose Tracking
+                       We record RGB and depth video with a RealSense L515               We investigate the accuracy of the rigid pose tracking
+LiDAR sensor. The depth images are aligned to the color phase in our approach on the simulated cartpole system
+images by considering the differing resolution and field-of- which provides us access to the true 6D poses (3D positions
+view of the two input modalities. Since the depth output from x, y, z, and 3D rotations rx, ry, rz in axis-angle form) of the
+the RealSense L515 LiDAR sensor does not have sufficient two rigid objects (cart and pole) in the system. As shown
+resolution to clearly identify the sub-centimeter parts of in Fig. 9, our inverse rendering approach leveraging gradient-
+the Craftsman construction kit, we choose the RGB image based optimization achieves a significantly higher accuracy
+stream as input to the instance segmentation model. The compared to a classical pose tracking approach, namely
+
+     0.4    Iterative Closest Point      0.4  Inverse Renderingxy    rxry      NMAE in the top section of Tab. II) our method finds, it is
+                                                                z      rz      able to outperform all the other inference approaches on all
+     0.2                                 0.2                                   of our video forecasting accuracy metrics.
+     0.0                                 0.0
+    −0.2                                 −0.2                                  C. Model-predictive control
+    −0.4                                 −0.4                                   Given the inferred simulator for the observed cartpole
+       7                                  7                                    system, we train a controller in simulation and investigate
+      65                                  65                                   how well it performs on the original system. We leverage
+       4                                  4                                    Model Predictive Path Integral (MPPI) [41], a model predic-
+      32                                  32                                   tive control (MPC) algorithm that has been shown to being
+       1                                  1                                    particularly suited to control nonlinear systems.
+     −10                                 −10                                    In the swing-up task, the cartpole is resting with its pole
+      −2
+            0 50         100    150   200 −2 0 50             100    150 200   pointing downwards. For the balancing task, the cart has a
+                        Step                                 Step              0.1 m s
+    Fig. 9: Comparison. The point-to-point iterative closest point (ICP)                −1 velocity applied to it, and the pole is at an angle
+    algorithm (left column) and our inverse rendering approach (right          of 20◦ from its upright position at the beginning. For both
+    column) are compared on the tracking of the rigid poses of the             tasks the goal is to bring it into an upright position while
+    cart (top row) and the pole (bottom row) in the simulated cartpole         keeping the cart and pole velocities as small as possible.
+    experiment from Sec. IV-A. The ground-truth coordinates of the 6D           The bottom two rows of Tab. II summarize the average
+    poses are shown in solid lines, the corresponding estimated results        rewards over a trajectory length of 200 steps (with time step
+    are indicated by dashed lines.                                             0.05 s) obtained by the MPPI controller running with 200
+    point-to-point iterative closest point (ICP). For ICP, we gen-             samples per step with a lookahead window length of 60 time
+    erate point clouds from the known object meshes via Poisson                steps. We compare the returns of the controller run on the
+    disk sampling [39], and align them to the point clouds from                inferred system with the most likely parameter configuration
+    the depth images in the cartpole dataset (given the initial                found by the different parameter inference algorithms. For
+    alignment at the first time step from our inverse rendering                reference, in the last column, we report the mean reward
+    tracking approach). ICP achieves an MAE over the 6D poses                  on the ground-truth cartpole simulation (GT). The inferred
+    of 0.755, compared to our inverse rendering approach which                 dynamics model with the parameters found by our CSVD
+    achieves a MAE of 0.024. The significantly higher accuracy                 method allow the MPPI controller to swing up the cartpole
+    in pose tracking is the enabler of our articulation inference              and maintain the pole in an almost upright position without
+    phase which relies on pose estimates with few outliers and                 falling back down. Similarly, the balancing task succeeds
+    overall low noise to clearly identify the different joint types.           after an initial phase where the pole swings downwards.
+    For example, even from small changes along the x axis (as
+    in the case of the cart in the top row of Fig. 9), the cart’s                     VI. CONCLUSIONS
+    prismatic joint can be correctly inferred due to the overall
+    low noise level in our pose estimates.                                             Our proposed pipeline allows the automatic inference of
+                                                                               articulated rigid-body simulations from video by leveraging
+    B. Video Forecasting                                                       differentiable physics simulation and rendering. Our results
+  In Tab. III, we compare the performance of our method on on a simulated system demonstrate that we can achieve accu-
+video forecasting against PhyDNet [40]. PhyDNet introduces rate trajectory predictions that benefit model-based control,
+“PhyCells” to disentangle physical dynamics knowledge while the learned parameters are physically meaningful. On a
+from residual information and generates PDE-constrained real-world coupled pendulum system, our approach predicts
+future frame predictions. We extract the first 195 frames the correct joint topology and results in a simulation that
+from the Rott’s pendulum video and generate 175 sequences accurately reproduces the real RGB video of the mechanism.
+of length 20 for training, and test on frames in the later In future work, we are planning to incorporate the learning
+part of the video. Given the first 10 frames of the sequence of geometric shapes, and improve our implementation and
+as input, PhyDNet predicts the next 150 frames, which algorithms to achieve real-time simulation inference.
+    we compare against the GT frames. The results indicate                          A
+    that purely vision-based model PhyDNet has an advantages                          CKNOWLEDGEMENTS
+    where the test dataset is close to the training data, as is                 We thank Chris Denniston and David Millard for their
+    the case in the videos of Rott’s pendulum where in both                    feedback and discussion around this work, as well as Vedant
+    cases the pendulum calmly swings back and forth. While                     Mistry for his contributions to an earlier prototype of our
+    outperforming our simulation-based approach on all metrics,                implementation. We are grateful to Maria Hakuba, Hansj¨org
+    including the Structural Similarity (SSIM) index, on the                   Frei and Christoph Sch¨ar for kindly permitting us to use their
+    cartpole test data the results clearly show an advantage                   video of Rott’s mechanism1 in this work.
+    of the strong inductive bias our simulation-based inference
+    approach provides. With the accurate parameters settings (see               1https://youtu.be/dhZxdV2naw8. Accessed on July 28, 2022.
+
+
+
+
+
+
+
+
+
+
+Pole    Cart
+
+                                 REFERENCES                                           [19]  Z. Xu, J. Wu, A. Zeng, J. B. Tenenbaum, and S. Song, “DensePhysNet:
+                                                                                            Learning dense physical object representations via multi-step dynamic
+ [1]  A. Rosinol, A. Violette, M. Abate, N. Hughes, Y. Chang, J. Shi,                       interactions,” Robotics: Science and Systems, Jun. 2019.
+      A.  Gupta,      and    L.  Carlone,    “Kimera:  From   slam    to    spatial   [20]  A. Sanchez-Gonzalez, J. Godwin, T. Pfaff, R. Ying, J. Leskovec, and
+      perception with 3d dynamic scene graphs,” The International Journal                   P. W. Battaglia, “Learning to simulate complex physics with graph
+      of Robotics Research,      vol.  40,  no. 12-14,  pp.  1510–1546,       2021.         networks,” 2020.
+      [Online]. Available: https://doi.org/10.1177/02783649211056674                  [21]  M. Raissi, P. Perdikaris, and G. E. Karniadakis, “Physics-informed
+ [2]  S. H¨ofer, K. E. Bekris, A. Handa, J. C. G. Higuera, F. Golemo,                       neural networks: A deep learning framework for solving forward and
+      M. Mozifian, C. G. Atkeson, D. Fox, K. Goldberg, J. Leonard, C. K.                    inverse problems involving nonlinear partial differential equations,”
+      Liu, J. Peters, S. Song, P. Welinder, and M. White, “Perspectives                     Journal of Computational Physics, vol. 378, pp. 686–707, 2019.
+      on sim2real transfer for robotics: A summary of the R: SS 2020                  [22]  M.  Lutter,  C.   Ritter, and  J. Peters,  “Deep Lagrangian      networks:
+      workshop,”              CoRR, vol. abs/2012.03806, 2020. [Online]. Available:         Using physics as model prior for deep learning,”            arXiv preprint
+      https://arxiv.org/abs/2012.03806                                                      arXiv:1907.04490, 2019.
+ [3]  A.  Sanchez-Gonzalez,      N.    Heess,   J. T.   Springenberg,  J.    Merel,   [23]  G. Sutanto, A. Wang, Y. Lin, M. Mukadam, G. Sukhatme, A. Rai,
+      M. Riedmiller, R. Hadsell, and P. Battaglia, “Graph networks as                       and F.  Meier,      “Encoding     physical constraints in   differentiable
+      learnable physics engines for inference and control,”          arXiv preprint         Newton-Euler      algorithm,” ser.  Proceedings  of   Machine     Learning
+      arXiv:1806.01242, 2018.                                                               Research, A. M. Bayen, A. Jadbabaie, G. Pappas, P. A. Parrilo,
+ [4]  A. Sanchez-Gonzalez, J. Godwin, T. Pfaff, R. Ying, J. Leskovec, and                   B.  Recht,   C.   Tomlin,   and   M. Zeilinger,  Eds., vol.   120.     The
+      P. W. Battaglia, “Learning to simulate complex physics with graph                     Cloud: PMLR, 10–11 Jun 2020, pp. 804–813. [Online]. Available:
+      networks,” arXiv preprint arXiv:2002.09405, 2020.                                     http://proceedings.mlr.press/v120/sutanto20a.html
+ [5]  J. K. Murthy, M. Macklin, F. Golemo, V. Voleti, L. Petrini, M. Weiss,           [24]  F. de Avila Belbute-Peres, K. Smith, K. Allen, J. Tenenbaum, and J. Z.
+      B.  Considine,     J.  Parent-L´evesque,  K. Xie,  K.  Erleben,  L.    Paull,         Kolter, “End-to-end differentiable physics for learning and control,”
+      F. Shkurti, D. Nowrouzezahrai, and S. Fidler, “gradSim: Differentiable                in         Advances in Neural Information Processing Systems 31, 2018, pp.
+      simulation for system identification and visuomotor control,” in Inter-               7178–7189.
+      national Conference on Learning Representations, 2021.                          [25]  Y.-L. Qiao, J. Liang, V. Koltun, and M. C. Lin, “Scalable differentiable
+ [6]  M. Ding, Z. Chen, T. Du, P. Luo, J. B. Tenenbaum, and C. Gan, “Dy-                    physics for learning and control,” in      ICML, 2020.
+      namic visual reasoning by learning differentiable physics models from           [26]  M. Geilinger, D. Hahn, J. Zehnder, M. B¨acher, B. Thomaszewski, and
+      video and language,” in Advances In Neural Information Processing                     S. Coros, “Add: Analytically differentiable dynamics for multi-body
+      Systems, 2021.                                                                        systems with frictional contact,” in arXiv, 2020.
+ [7]  J. Wu, I. Yildirim, J. J. Lim, W. T. Freeman, and J. B. Tenenbaum,              [27]  E.  Heiden,   Z.   Liu, R.  K.    Ramachandran,  and   G.  S.    Sukhatme,
+      “Galileo: Perceiving physical object properties by integrating a physics              “Physics-based simulation of continuous-wave LIDAR for localiza-
+      engine with deep learning,” in Advances in Neural Information Pro-                    tion, calibration and tracking,” in International Conference on Robotics
+      cessing Systems, 2015, pp. 127–135.                                                   and Automation (ICRA).     IEEE, 2020.
+ [8]  A. Jain, R. Lioutikov, C. Chuck, and S. Niekum, “Screwnet: Category-            [28]  Y. Wu, A. Kirillov, F. Massa, W.-Y. Lo, and R. Girshick, “Detectron2,”
+      independent articulation model estimation from depth images using                     https://github.com/facebookresearch/detectron2, 2019.
+      screw theory,” in arXiv preprint, 2020.                                         [29]  S. Laine, J. Hellsten, T. Karras, Y. Seol, J. Lehtinen, and T. Aila,
+ [9]  K.  Hausman,     S.    Niekum,   S.   Osentoski,  and  G. S.        Sukhatme,         “Modular primitives for high-performance differentiable rendering,”
+      “Active articulation model estimation through interactive perception,”                ACM Transactions on Graphics, vol. 39, no. 6, 2020.
+      in              2015 IEEE International Conference on Robotics and Automation   [30]  M. A. Fischler and R. C. Bolles, “Random sample consensus: A
+      (ICRA).       IEEE,    May 2015,     p. 3305–3312.   [Online].     Available:         paradigm for model fitting with applications to image analysis and
+      http://ieeexplore.ieee.org/document/7139655/                                          automated cartography,” Commun. ACM, vol. 24, no. 6, p. 381–395,
+[10]  C. Eppner, R. Mart´ın-Mart´ın, and O. Brock, “Physics-based selection                 jun 1981. [Online]. Available: https://doi.org/10.1145/358669.358692
+      of informative actions for interactive perception,” in Proceedings of the       [31]  E. Heiden, D. Millard, E. Coumans, Y. Sheng, and G. S. Sukhatme,
+      IEEE International Conference on Robotics and Automation (ICRA),                      “NeuralSim:    Augmenting       differentiable simulators    with   neural
+      2018.                                                                                 networks,”    in          Proceedings of the IEEE International Conference
+[11]  R. Martin Martin and O. Brock, “Online interactive perception of                      on Robotics and Automation (ICRA),     2021.      [Online].     Available:
+      articulated objects with multi-level recursive estimation based on                    https://github.com/google-research/tiny-differentiable-simulator
+      task-specific priors,” in           2014 IEEE/RSJ International Conference on   [32]  R. Featherstone, Rigid Body Dynamics Algorithms.           Berlin, Heidel-
+      Intelligent Robots and Systems.         IEEE,  Sep  2014, p.       2494–2501.         berg: Springer-Verlag, 2007.
+      [Online]. Available: https://ieeexplore.ieee.org/document/6942902/              [33]  E.  Heiden,   C.   E.  Denniston,   D. Millard,  F.   Ramos,  and   G.  S.
+[12]  J. Sturm, C. Stachniss, and W. Burgard, “A probabilistic framework                    Sukhatme,    “Probabilistic   inference  of simulation  parameters     via
+      for learning kinematic models of articulated objects,” J. Artif. Int. Res.,           parallel differentiable simulation,” CoRR, vol. abs/2109.08815, 2021.
+      vol. 41, no. 2, p. 477–526, may 2011.                                                 [Online]. Available: https://arxiv.org/abs/2109.08815
+[13]  S. Niekum, S. Osentoski, C. G. Atkeson, and A. G. Barto, “Online                [34]  E. Coumans     et al., “Bullet physics library,”      Open source: bullet-
+      bayesian changepoint detection for articulated motion models,” in 2015                physics.org, vol. 15, no. 49, p. 5, 2013.
+      IEEE International Conference on Robotics and Automation (ICRA).                [35]  N. Hansen, “The cma evolution strategy: A tutorial,” 2016.
+      IEEE, 2015, pp. 1468–1475.                                                      [36]  D. Foreman-Mackey, D. W. Hogg, D. Lang, and J. Goodman, “emcee:
+[14]  Y. Liu, F. Zha, L. Sun, J. Li, M. Li, and X. Wang, “Learning articulated              The MCMC hammer,”              Publications of the Astronomical Society of
+      constraints from a one-shot demonstration for robot manipulation                      the Pacific,  vol.  125,  no.  925,  p. 306–312,  Mar   2013.    [Online].
+      planning,” IEEE Access, vol. 7, p. 172584–172596, 2019.                               Available: http://dx.doi.org/10.1086/670067
+[15]  A. Jain, S. Giguere, R. Lioutikov, and S. Niekum, “Distributional               [37]  N. Rott, “A multiple pendulum for the demonstration of non-linear
+      depth-based  estimation    of    object  articulation   models,”    in    5th         coupling,” Zeitschrift f¨ur angewandte Mathematik und Physik ZAMP,
+      Annual Conference on Robot Learning,           2021.  [Online].    Available:         vol. 21, no. 4, pp. 570–582, 1970.
+      https://openreview.net/forum?id=H1-uwiTbY9z                                     [38]  T.-Y. Lin, M. Maire, S. Belongie, J. Hays, P. Perona, D. Ramanan,
+[16]  J. Mu, W. Qiu, A. Kortylewski, A. Yuille, N. Vasconcelos, and                         P. Doll´ar, and C. L. Zitnick, “Microsoft coco: Common objects in
+      X. Wang, “A-sdf: Learning disentangled signed distance functions for                  context,” in             Computer Vision – ECCV 2014, D. Fleet, T. Pajdla,
+      articulated shape representation,”          arXiv preprint arXiv: 2104.07645,         B. Schiele, and T. Tuytelaars, Eds.     Springer International Publishing,
+      2021.                                                                                 2014, p. 740–755.
+[17]  A. Noguchi, U. Iqbal, J. Tremblay, T. Harada, and O. Gallo, “Watch it           [39]  C. Yuksel, “Sample elimination for generating poisson disk sample
+      move: Unsupervised discovery of 3d joints for re-posing of articulated                sets,” Computer Graphics Forum, vol. 34, no. 2, p. 25–32, 2015.
+      objects,” 2021.                                                                 [40]  V. L. Guen and N. Thome, “Disentangling physical dynamics from
+[18]  P. Battaglia, R. Pascanu, M. Lai, D. J. Rezende et al., “Interaction net-             unknown     factors for   unsupervised  video   prediction,”  CoRR,   vol.
+      works for learning about objects, relations and physics,” in Advances                 abs/2003.01460, 2020. [Online]. Available: https://arxiv.org/abs/2003.
+      in Neural Information Processing Systems, 2016, pp. 4502–4510.                        01460
+
+[41]  G. Williams, N. Wagener, B. Goldfain, P. Drews, J. M. Rehg, B. Boots,
+      and E. A. Theodorou, “Information theoretic mpc for model-based
+      reinforcement learning,” in 2017 IEEE International Conference on
+      Robotics and Automation (ICRA), 2017, pp. 1714–1721.
+

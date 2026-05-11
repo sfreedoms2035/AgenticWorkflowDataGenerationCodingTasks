@@ -1,0 +1,506 @@
+arXiv:2005.04259v1  [cs.CV]  8 May 2020
+
+
+
+
+
+
+
+
+
+
+VectorNet: Encoding HD Maps and Agent Dynamics from
+             Vectorized Representation
+
+    Jiyang Gao1∗ Chen Sun2∗ Hang Zhao¹ Yi Shen¹
+    Dragomir Anguelov 1 Congcong Li¹  Cordelia Schmid 2
+    1Waymo LLC     2     Google Research
+{jiyanggao, hangz, yshen, dragomir, congcongli}@waymo.com, {chensun, cordelias}@google.com
+
+
+
+        Abstract                                                                                Crosswalk
+
+         Behavior prediction in dynamic, multi-agent systems is          Lane                       Lane
+    an important problem in the context of self-driving cars,
+    due to the complex representations and interactions of road
+    components, including moving agents (e.g. pedestrians and
+    vehicles) and road context information (e.g. lanes, traffic
+    lights).    This paper introduces VectorNet, a hierarchical
+    graph neural network that first exploits the spatial locality                               Agent
+    of individual road components represented by vectors and                                    Trajectory
+    then models the high-order interactions among all compo-         Rasterized Representation              Vectorized Representation
+    nents.    In contrast to most recent approaches, which ren-      Figure 1. Illustration of the rasterized rendering (left) and vector-
+    der trajectories of moving agents and road context infor-        ized approach (right) to represent high-definition map and agent
+    mation as bird-eye images and encode them with convolu-          trajectories.
+    tional neural networks (ConvNets), our approach operates
+    on a vector representation. By operating on the vectorized
+    high definition (HD) maps and agent trajectories, we avoid       object detection and tracking, with the scene context, pro-
+    lossy rendering and computationally intensive ConvNet en-        vided as prior knowledge often in the form of High Defini-
+    coding steps.    To further boost VectorNet’s capability in      tion (HD) maps. Our goal is to build a system which learns
+    learning context features, we propose a novel auxiliary task     to predict the intent of vehicles, which are parameterized as
+    to recover the randomly masked out map entities and agent        trajectories.
+    trajectories based on their context. We evaluate VectorNet                  Traditional methods for behavior prediction are rule-
+    on our in-house behavior prediction benchmark and the re-        based, where multiple behavior hypotheses are generated
+    cently released Argoverse forecasting dataset. Our method        based on constraints from the road maps.          More recently,
+    achieves on par or better performance than the competitive       many learning-based approaches are proposed [5, 6, 10, 15];
+    rendering approach on both benchmarks while saving over          they offer the benefit of having probabilistic interpretations
+    70% of the model parameters with an order of magnitude           of different behavior hypotheses, but require building a rep-
+    reduction in FLOPs. It also outperforms the state of the art     resentation to encode the map and trajectory information.
+    on the Argoverse dataset.                                        Interestingly, while the HD maps are highly structured, or-
+                                                                     ganized as entities with location (e.g. lanes) and attributes
+                                                                     (e.g. a green traffic light), most of these approaches choose
+    1. Introduction                                                  to render the HD maps as color-coded attributes (Figure 1,
+           This paper focuses on behavior prediction in complex      left), which requires manual specifications; and encode the
+    multi-agent systems, such as self-driving vehicles. The core     scene context information with ConvNets, which have lim-
+    interest is to find a unified representation which integrates    ited receptive fields. This raise the question: can we learn
+    the agent dynamics, acquired by perception systems such as       a meaningful context representation directly from the struc-
+                                                                     tured HD maps?
+    ∗ equal contribution.                                                     We propose to learn a unified representation for multi-
+
+Input vectors  Polyline subgraphs  Global interaction graph  Supervision & Prediction
+
+
+Crosswalk     Map
+              Completion
+
+Lane Lane
+
+
+                                                                                  Agent
+                                                                                  Feature
+                                                                                                            Trajectory
+                                                                                                            Prediction
+
+    Agent     Agent
+Figure 2. An overview of our proposed VectorNet. Observed agent trajectories and map features are represented as sequence of vectors,
+and passed to a local graph network to obtain polyline-level features. Such features are then passed to a fully-connected graph to model
+the higher-order interactions. We compute two types of losses: predicting future trajectories from the node features corresponding to the
+moving agents and predicting the node features when their features are masked out.
+
+agent dynamics and structured scene context directly from                    supervised learning from sequential linguistic [11] and vi-
+their vectorized form (Figure 1, right). The geographic ex-                     sual data [27], we propose an auxiliary graph completion
+tent of the road features can be a point, a polygon, or a curve              objective in addition to the behavior prediction objective.
+in geographic coordinates.       For example, a lane boundary                     More specifically, we randomly mask out the input node
+contains multiple control points that build a spline; a cross-             features belonging to either scene context or agent trajecto-
+walk is a polygon defined by several points; a stop sign is                  ries, and ask the model to reconstruct the masked features.
+represented by a single point. All these geographic entities                  The intuition is to encourage the graph networks to better
+can be closely approximated as polylines defined by mul-                       capture the interactions between agent dynamics and scene
+tiple control points, along with their attributes. Similarly,    context. In summary, our contributions are:
+the dynamics of moving agents can also be approximated
+by polylines based on their motion trajectories.    All these                   • We are the first to demonstrate how to directly incor-
+polylines can then be represented as sets of vectors.                             porate vectorized scene context and agent dynamics in-
+           We use graph neural networks (GNNs) to incorporate     formation for behavior prediction.
+these sets of vectors.      We treat each vector as a node in                      • We propose the hierarchical graph network VectorNet
+the graph, and set the node features to be the start location     and the node completion auxiliary task.
+and end location of each vector, along with other attributes                       • We evaluate the proposed method on our in-house be-
+such as polyline group id and semantic labels. The context                          havior prediction dataset and the Argoverse dataset,
+information from HD maps, along with the trajectories of                         and show that our method achieves on par or better per-
+other moving agents are propagated to the target agent node                          formance over a competitive rendering baseline with
+through the GNN. We can then take the output node fea-                               70% model size saving and an order of magnitude re-
+ture corresponding to the target agent to decode its future                        duction in FLOPs. Our method also achieves the state-
+trajectories.                                                     of-the-art performance on Argoverse.
+      Specifically, to learn competitive representations with    2. Related work
+GNNs, we observe that it is important to constrain the con-
+nectivities of the graph based on the spatial and semantic       Behavior prediction for autonomous driving.                    Behavior
+proximity of the nodes. We therefore propose a hierarchi-                       prediction for moving agents has become increasingly im-
+cal graph architecture, where the vectors belonging to the                   portant for autonomous driving applications [7, 9, 19], and
+same polylines with the same semantic labels are connected                   high-fidelity maps have been widely used to provide context
+and embedded into polyline features, and all polylines are                   information. For example, IntentNet [5] proposes to jointly
+then fully connected with each other to exchange informa-                      detect vehicles and predict their trajectories from LiDAR
+tion. We implement the local graphs with multi-layer per-        points and rendered HD maps.                   Hong et al. [15] assumes
+ceptrons, and the global graphs with self-attention [30]. An                that vehicle detections are provided and focuses on behavior
+overview of our approach is shown in Figure 2.                                 prediction by encoding entity interactions with ConvNets.
+Finally,     motivated by  the recent success     of    self-                    Similarly, MultiPath [6] also uses ConvNets as encoder,
+
+but adopts pre-defined trajectory anchors to regress multi-        Next we present the hierarchical graph network which ag-
+ple possible future trajectories. PRECOG [23] attempts to          gregates local information from individual polylines and
+capture the future stochasiticity by flow-based generative         then globally over all trajectories and map features.    This
+models. Similar to [6, 15, 23], we also assume the agent de-       graph can then be used for behavior prediction.
+tections to be provided by an existing perception algorithm.       3.1. Representing trajectories and maps
+However, unlike these methods which all use ConvNets to
+encode rendered road maps, we propose to directly encode                  Most of the annotations from an HD map are in the form
+vectorized scene context and agent dynamics.                       of splines (e.g. lanes), closed shape (e.g. regions of inter-
+Forecasting multi-agent interactions.             Beyond the au-   sections) and points (e.g. traffic lights), with additional at-
+tonomous driving domain, there is more general interest to         tribute information such as the semantic labels of the an-
+predict the intents of interacting agents, such as for pedes-      notations and their current states (e.g. color of the traffic
+trians [2, 13, 24], human activities [28] or for sports play-      light, speed limit of the road).  For agents, their trajecto-
+ers [12, 26, 32, 33]. In particular, Social LSTM [2] models        ries are in the form of directed splines with respect to time.
+the trajectories of individual agents as separate LSTM net-        All of these elements can be approximated as sequences of
+works, and aggregates the LSTM hidden states based on              vectors: for map features, we pick a starting point and di-
+spatial proximity of the agents to model their interactions.       rection, uniformly sample key points from the splines at the
+Social GAN [13] simplifies the interaction module and pro-         same spatial distance, and sequentially connect the neigh-
+poses an adversarial discriminator to predict diverse futures.     boring key points into vectors; for trajectories, we can just
+Sun et al. [26] combines graph networks [4] with varia-            sample key points with a fixed temporal interval (0.1 sec-
+tional RNNs [8] to model diverse interactions. The social          ond), starting from t = 0, and connect them into vectors.
+interactions can also be inferred from data: Kipf et al. [18]      Given small enough spatial or temporal intervals, the result-
+treats such interactions as latent variables; and graph atten-     ing polylines serve as close approximations of the original
+tion networks [16, 31] apply self-attention mechanism to           map and trajectories.
+weight the edges in a pre-defined graph. Our method goes                   Our vectorization process is a one-to-one mapping be-
+one step further by proposing a unified hierarchical graph         tween continuous trajectories, map annotations and the vec-
+network to jointly model the interactions of multiple agents,      tor set, although the latter is unordered. This allows us to
+and their interactions with the entities from road maps.           form a graph representation on top of the vector sets, which
+Representation learning for sets of entities. Traditionally        can be encoded by graph neural networks.        More specifi-
+machine perception algorithms have been focusing on high-          cally, we treat each vector vi belonging to a polyline Pj as
+dimensional continuous signals, such as images, videos or          a node in the graph with node features given by
+audios. One exception is 3D perception, where the inputs                            v
+are usually in the form of unordered point sets, given by                               i = [dsi , dei , ai, j] ,            (1)
+depth sensors.         For example, Qi et al. propose the Point-   where dsi and dei are coordinates of the start and end points
+Net model [20] and PointNet++ [21] to apply permutation            of the vector, d itself can be represented as (x, y) for 2D
+invariant operations (e.g. max pooling) on learned point em-       coordinates or (x, y, z) for 3D coordinates; ai corresponds
+beddings. Unlike point sets, entities on HD maps and agent         to attribute features, such as object type, timestamps for tra-
+trajectories form closed shapes or are directed, and they          jectories, or road feature type or speed limit for lanes; j is
+may also be associated with attribute information. We there-       the integer id of Pj , indicating vi ∈ Pj .
+fore propose to keep such information by vectorizing the in-          To make the input node features invariant to the locations
+puts, and encode the attributes as node features in a graph.       of target agents, we normalize the coordinates of all vectors
+Self-supervised context modeling. Recently, many works             to be centered around the location of target agent at its last
+in the NLP domain have proposed modeling language con-             observed time step. A future work is to share the coordinate
+text in a self-supervised fashion [11, 22]. Their learned rep-     centers for all interacting agents, such that their trajectories
+resentations achieve significant performance improvement           can be predicted in parallel.
+when transferred to downstream tasks.          Inspired by these   3.2. Constructing the polyline subgraphs
+methods, we propose an auxiliary loss for graph represen-
+tations, which learns to predict the missing node features            To exploit the spatial and semantic locality of the nodes,
+from its neighbors. The goal is to incentivize the model to        we take a hierarchical approach by first constructing sub-
+better capture interactions among nodes.                           graphs at the vector level, where all vector nodes belonging
+                                                                   to the same polyline are connected with each other. Con-
+3. VectorNet approach                                              sidering a polyline P   with its nodes {v1, v2, ..., vP }, we
+                                                                   (                    ({     }))
+        This section introduces our VectorNet approach. We first   define a single layer of subgraph propagation operation as
+describe how to vectorize agent trajectories and HD maps.          vi(l+1) = ϕrel   genc(vi(l)), ϕagg genc(vj(l))            (2)
+
+          Output Node                                               where {p(l)i  } is the set of polyline node features, GNN(·)
+            Features                                                corresponds to a single layer of a graph neural network, and
+                                                                    A corresponds to the adjacency matrix for the set of poly-
+                                                                    line nodes.
+    Concat                                                                   The adjacency matrix A can be provided a heuristic,
+                                      Permutation                   such as using the spatial distances [2] between the nodes.
+                                      Invariant                     For simplicity, we assume A to be a fully-connected graph.
+                                      Aggregator                    Our graph network is implemented as a self-attention oper-
+                                                                    ation [30]:
+
+    Node Encoder                                                        GNN(P) = softmax (PQPTK) PV                          (5)
+                                                                    where P is the node feature matrix and PQ, PK and PV
+    Input Node                                                      are its linear projections.
+    Features                                                               We then decode the future trajectories from the nodes
+Figure 3. The computation flow on the vector nodes of the same      corresponding the moving agents:
+polyline.                                                                                 (     )
+                                                                        vifuture          = ϕtraj p(Li  t)                   (6)
+where vi(l) is the node feature for l-th layer of the subgraph      where Lt is the number of the total number of GNN layers,
+network, and vi(0) is the input features vi. Function genc(·)       and ϕtraj(·) is the trajectory decoder. For simplicity, we use
+transforms the individual node features, ϕagg(·) aggregates         an MLP as the decoder function. More advanced decoders,
+the information from all neighboring nodes, and ϕrel(·) is          such as the anchor-based approach from MultiPath [6], or
+the relational operator between node vi and its neighbors.          variational RNNs [8, 26] can be used to generate diverse
+In practice,  genc(·)          is a multi-layer perceptron (MLP)    trajectories; these decoders are complementary to our input
+whose weights are shared over all nodes;           specifically,    encoder.
+the MLP contains a single fully connected layer followed                     We use a single GNN layer in our implementation, so
+by layer normalization [3] and then ReLU non-linearity.             that during inference time, only the node features corre-
+ϕagg(·) is the maxpooling operation, and ϕrel(·) is a sim-          sponding to the target agents need to be computed. How-
+ple concatenation. An illustration is shown in Figure 3. We         ever, we can also stack multiple layers of GNN(·) to model
+stack multiple layers of the subgraph networks, where the           higher-order interactions when needed.
+weights for genc(·) are different. Finally, to obtain polyline          To encourage our global interaction graph to better cap-
+level features, we compute                                          ture interactions among different trajectories and map poly-
+    ({     })                                                       lines, we introduce an auxiliary graph completion task.
+    p = ϕagg vi(Lᵖ)                                          (3)    During training time, we randomly mask out the features
+                                                                    for a subset of polyline nodes, e.g. pi. We then attempt to
+where ϕagg(·) is again maxpooling.                                  recover its masked out feature as:
+           Our polyline subgraph network can be seen as a gener-                          (     )
+                                                                                      ˆi = ϕnode  pi(Lᵗ)                     (7)
+alization of PointNet [20]: when we set ds = de and let a                             p
+and l to be empty, our network has the same inputs and com-
+pute flow as PointNet. However, by embedding the order-             where ϕnode(·) is the node feature decoder implemented as
+ing information into vectors, constraining the connectivity         an MLP. These node feature decoders are not used during
+of subgraphs based on the polyline groupings, and encoding          inference time.
+attributes as node features, our method is particularly suit-       Recall that    pi      is a node from a fully-connected, un-
+able to encode structured map annotations and agent trajec-         ordered graph.   In order to identify an individual polyline
+tories.                                                             node when its corresponding feature is masked out, we
+                                                                    compute the minimum values of the start coordinates from
+3.3. Global graph for high-order interactions                       all of its belonging vectors to obtain the identifier embed-
+            We now consider modeling the high-order interactions    ding pidi . The inputs node features then become
+on the polyline node features {p1, p2, ..., pP } with a global                         p(0)i = [pi; pid]                     (8)
+interaction graph:                                                                                   i
+    {     }    ({     }               )                                 Our graph completion objective is closely related to the
+    p(l+1)i      = GNN     p(l)i      , A                    (4)    widely successful BERT [11] method for natural language
+
+processing, which predicts missing tokens based on bidi- map information. The future trajectories of the test set are
+rectional context from discrete and sequential text data. We held out. Unless otherwise mentioned, our ablation study
+generalize this training objective to work with unordered reports performance on the validation set.
+graphs. Unlike several recent methods (e.g. [25]) that gener- In-house dataset is a large-scale dataset collected for be-
+alizes the BERT objective to unordered image patches with havior prediction. It contains HD map data, bounding boxes
+pre-computed visual features, our node features are jointly and tracks obtained with an automatic in-house perception
+optimized in an end-to-end framework. system, and manually labeled vehicle trajectories. The to-
+3.4. Overall framework tal number of vehicle trajectories are 2.2M and 0.55M for
+        train and test sets. Each trajectory has a length of 4 sec-
+   Once the hierarchical graph network is constructed, we onds, where the (0, 1] second is the history trajectory used
+optimize for the multi-task training objective as observation, and (1, 4] seconds are the target future tra-
+        jectories to be evaluated. The trajectories are sampled from
+        L = Ltraj + αLnode (9) real world vehicles’ behaviors, including stationary, going
+        straight, turning, lane change and reversing, and roughly
+   where Ltraj is the negative Gaussian log-likelihood for preserves the natural distribution of driving scenarios. For
+the groundtruth future trajectories, Lnode is the Huber loss the HD map features, we include lane boundaries, stop/yield
+between predicted node features and groundtruth masked signs, crosswalks and speed bumps.
+node features, and α = 1.0 is a scalar that balances the two For both datasets, the input history trajectories are de-
+loss terms. To avoid trivial solutions for Lnode by lowering rived from automatic perception systems and are thus noisy.
+the magnitude of node features, we L2 normalize the poly- Argoverse’s future trajectories are also machine generated,
+line node features before feeding them to the global graph while In-house has manually labeled future trajectories.
+network.
+   Our predicted trajectories are parameterized as per-step 4.1.2 Metrics
+coordinate offsets, starting from the last observed location.
+We rotate the coordinate system based on the heading of the For evaluation we adopt the widely used Average Displace-
+target vehicle at the last observed location. ment Error (ADE) computed over the entire trajectories
+        and the Displacement Error at t (DE@ts) metric, where
+4. Experiments t ∈ {1.0, 2.0, 3.0} seconds. The displacements are mea-
+        sured in meters.
+   In this section, we first describe the experimental set-
+tings, including the datasets, metrics and rasterized + Con- 4.1.3 Baseline with rasterized images
+vNets baseline. Secondly, comprehensive ablation studies
+are done for both the rasterized baseline and VectorNet. We render N consecutive past frames, where N is 10 for
+Thirdly, we compare and discuss the computation cost, in- the in-house dataset and 20 for the Argoverse dataset. Each
+cluding FLOPs and number of parameters. Finally, we com- frame is a 400×400×3 image, which has road map infor-
+pare the performance with state-of-the-art methods. mation and the detected object bounding boxes. 400 pixels
+4.1. Experimental setup correspond to 100 meters in the in-house dataset, and 130
+        meters in the Argoverse dataset. Rendering is based on the
+4.1.1 Datasets position of self-driving vehicle in the last observed frame;
+        the self-driving vehicle is placed at the coordinate location
+We report results on two vehicle behavior prediction bench- (200, 320) in in-house dataset, and (200, 200) in Argov-
+marks, the recently released Argoverse dataset [7] and our erse dataset. All N frames are stacked together to form a
+in-house behavior prediction dataset. 400×400×3N image as model input.
+Argoverse motion forecasting [7] is a dataset designed for Our baseline uses a ConvNet to encode the rasterized
+vehicle behavior prediction with trajectory histories. There images, whose architecture is comparable to IntentNet [5]:
+are 333K 5-second long sequences split into 211K training, we use a ResNet-18 [14] as the ConvNet backbone. Un-
+41K validation and 80K testing sequences. The creators cu- like IntentNet, we do not use the LiDAR inputs. To obtain
+rated this dataset by mining interesting and diverse scenar- vehicle-centric features, we crop the feature patch around
+ios, such as yielding for a merging vehicle, crossing an in- the target vehicle from the convolutional feature map, and
+tersection, etc. The trajectories are sampled at 10Hz, with average pool over all the spatial locations of the cropped
+(0, 2] seconds are used as observation and (2, 5] seconds for feature map to get a single vehicle feature vector. We em-
+trajectory prediction. Each sequence has one “interesting” pirically observe that using a deeper ResNet model or ro-
+agent whose trajectory is the prediction target. In addition tating the cropped features based on target vehicle headings
+to vehicle trajectories, each sequence is also associated with do not lead to better performance. The vehicle features are
+
+then fed into a fully connected layer (as used by IntentNet) also compare different cropping methods, by increasing the
+to predict the future coordinates in parallel. The model is crop size or cropping along the vehicle trajectory at all ob-
+optimized on 8 GPUs with synchronous training. We use served time steps. From the 3rd to 6th rows of Table 1 we
+the Adam optimizer [17] and decay the learning rate every can see that a larger crop size (3 v.s. 1) can significantly
+5 epochs by a factor of 0.3. We train the model for a total improve the performance, and cropping along observed tra-
+of 25 epochs with an initial learning rate of 0.001. jectory also leads to better performance. This observation
+   To test how convolutional receptive fields and feature confirms the importance of receptive fields when rasterized
+cropping strategies influence the performance, we conduct images are used as inputs. It also highlights its limitation,
+ablation study on the network receptive field, feature crop- where a carefully designed cropping strategy is needed, of-
+ping strategy and input image resolutions. ten at the cost of increased computation cost.
+        Impact of rendering resolution. We further vary the reso-
+4.1.4 VectorNet with vectorized representations lutions of rasterized images to see how it affects the predic-
+        tion quality and computation cost, as shown in the first three
+To ensure a fair comparison, the vectorized representation rows of Table 1. We test three different resolutions, includ-
+takes as input the same information as the rasterized repre- ing 400 × 400 (0.25 meter per pixel), 200 × 200 (0.5 meter
+sentation. Specifically, we extract exactly the same set of per pixel) and 100 × 100 (1 meter per pixel). It can be seen
+map features as when rendering. We also make sure that the that the performance increases generally as the resolution
+visible road feature vectors for a target agent are the same goes up. However, for the Argoverse dataset we can see that
+as in the rasterized representation. However, the vectorized increasing the resolution from 200×200 to 400×400 leads
+representation does enjoy the benefit of incorporating more to slight drop in performance, which can be explained by
+complex road features which are non-trivial to render. the decrease of effective receptive field size with the fixed
+   Unless otherwise mentioned, we use three graph lay- 3×3 kernel. We discuss the impact on computation cost of
+ers for the polyline subgraphs, and one graph layer for the these design choices in Section 4.4.
+global interaction graph. The number of hidden units in all
+MLPs are fixed to 64. The MLPs are followed by layer nor- 4.3. Ablation study for VectorNet
+malization and ReLU nonlinearity. We normalize the vec- Impact of input node types. We study whether it is help-
+tor coordinates to be centered around the location of target ful to incorporate both map features and agent trajecto-
+vehicle at the last observed time step. Similar to the raster- ries for VectorNet. The first three rows in Table 2 corre-
+ized model, VectorNet is trained on 8 GPUs synchronously spond to using only the past trajectory of the target vehi-
+with Adam optimizer. The learning rate is decayed every 5 cle (“none” context), adding only map polylines (“map”),
+epochs by a factor of 0.3, we train the model for a total of and finally adding trajectory polylines (“map + agents”).
+25 epochs with initial learning rate of 0.001. We can clearly observe that adding map information sig-
+   To understand the impact of the components on the per- nificantly improves the trajectory prediction performance.
+formance of VectorNet, we conduct ablation studies on the Incorporating trajectory information furthers improves the
+type of context information, i.e. whether to use only map performance.
+or also the trajectories of other agents as well as the impact Impact of node completion loss. The last four rows of Ta-
+of number of graph layers for the polyline subgraphs and ble 2 compares the impact of adding the node completion
+global interaction graphs. auxiliary objective. We can see that adding this objective
+4.2. Ablation study for the ConvNet baseline consistently helps with performance, especially at longer
+        time horizons.
+   We conduct ablation studies on the impact of ConvNet Impact on the graph architectures. In Table 3 we study
+receptive fields, feature cropping strategies, and the resolu- the impact of depths and widths of the graph layers on tra-
+tion of the rasterized images. jectory prediction performance. We observe that for the
+Impact of receptive fields. As behavior prediction often re- polyline subgraph three layers gives the best performance,
+quires capturing long range road context, the convolutional and for the global graph just one layer is needed. Making
+receptive field could be critical to the prediction quality. We the MLPs wider does not lead to better performance, and
+evaluate different variants to see how two key factors of re- hurts for Argoverse, presumably because it has a smaller
+ceptive fields, convolutional kernel sizes and feature crop- training dataset. Some example visualizations on predicted
+ping strategies, affect the prediction performance. The re- trajectory and lane attention are shown in Figure 4.
+sults are shown in Table 1. By comparing kernel size 3, 5 Comparison with ConvNets. Finally, we compare our
+and 7 at 400×400 resolution, we can see that a larger kernel VectorNet with the best ConvNet model in Table 4. For the
+size leads to slight performance improvement. However, it in-house dataset, our model achieves on par performance
+also leads to quadratic increase of the computation cost. We with the best ResNet model, while being much more eco-
+
+ Resolution   Kernel  Crop          In-house dataset                                         Argoverse dataset
+    DE@1s DE@2s DE@3s ADE DE@1s DE@2s DE@3s ADE
+  100×100      3×3    1×1       0.63       0.94                1.32    0.82         1.14            2.80  5.19     2.21
+  200×200      3×3    1×1       0.57       0.86                1.21    0.75         1.11            2.72  4.96     2.15
+  400×400      3×3    1×1       0.55       0.82                1.16    0.72         1.12            2.72  4.94     2.16
+  400×400      3×3    3×3       0.50       0.77                1.09    0.68         1.09            2.62  4.81     2.08
+  400×400      3×3    5×5       0.50       0.76                1.08    0.67         1.09            2.60  4.70     2.08
+  400×400      3×3    traj      0.47       0.71                1.00    0.63         1.05            2.48  4.49     1.96
+  400×400      5×5    1×1       0.54       0.81                1.16    0.72         1.10            2.63  4.75     2.13
+  400×400      7×7    1×1       0.53       0.81                1.16    0.72         1.10            2.63  4.74     2.13
+Table 1. Impact of receptive field (as controlled by convolutional kernel size and crop strategy) and rendering resolution for the ConvNet
+baseline. We report DE and ADE (in meters) on both the in-house dataset and the Argoverse dataset.
+
+  Context    Node Compl.                           In-house dataset                            Argoverse dataset
+    DE@1s DE@2s DE@3s ADE DE@1s DE@2s DE@3s ADE
+    none          -             0.77       0.99                    1.29       0.92  1.29            2.98    5.24         2.36
+    map           no            0.57       0.81                    1.11       0.72  0.95            2.18    3.94         1.75
+map + agents      no            0.55       0.78                    1.05       0.70  0.94            2.14    3.84         1.72
+    map          yes            0.55       0.78                    1.07       0.70  0.94            2.11    3.77         1.70
+map + agents     yes            0.53       0.74                    1.00       0.66  0.92            2.06    3.67         1.66
+Table 2. Ablation studies for VectorNet with different input node types and training objectives. Here “map” refers to the input vectors from
+the HD maps, and “agents” refers to the input vectors from the trajectories of non-target vehicles. When “Node Compl.” is enabled, the
+model is trained with the graph completion objective in addition to trajectory prediction. DE and ADE are reported in meters.
+
+Polyline Subgraph Global Graph      DE@3s                              Model                FLOPs   #Param             DE@3s
+Depth  Width  Depth  Width     In-house Argoverse                                                                    In-house   Argo
+  1        64   1      64       1.09       3.89                          R18-k3-c1-r100     0.66G    246K         1.32          5.19
+  3        64   1      64       1.00       3.67                          R18-k3-c1-r200     2.64G    246K         1.21          4.95
+  3     128     1      64       1.00       3.93                          R18-k3-c1-r400     10.56G   246K         1.16          4.96
+  3        64   2      64       0.99       3.69                          R18-k5-c1-r400     15.81G   509K         1.16          4.75
+  3        64   2     256       1.02       3.69                          R18-k7-c1-r400     23.67G   902K         1.16          4.74
+Table 3. Ablation on the depth and width of polyline subgraph and        R18-k3-c3-r400     10.56G   246K         1.09          4.81
+global graph. The depth of polyline subgraph has biggest impact          R18-k3-c5-r400     10.56G   246K         1.08          4.70
+on DE@3s.                                                                R18-k3-t-r400      10.56G   246K         1.00          4.49
+                                                                       VectorNet w/o aux.  0.041G×n  72K          1.05          3.84
+nomically in terms of model size and FLOPs. For the Ar-                 VectorNet w aux.   0.041G×n  72K          1.00          3.67
+goverse dataset, our approach significantly outperforms the             Table 4. Model FLOPs and number of parameters comparison for
+                                                                        ResNet and VectorNet. R18-kM-cN -rS stands for the ResNet-18
+best ConvNet model with 12% reduction in DE@3. We ob-                  model with kernel size M × M, crop patch size N × N and input
+serve that the in-house dataset contains a lot of stationary           resolution S × S. Prediction decoder is not counted for FLOPs
+vehicles due to its natural distribution of driving scenarios;     and parameters.
+those cases can be easily solved by ConvNets, which are
+good at capturing local pattern. However, for the Argoverse
+dataset where only “interesting” cases are preserved, Vec-              cally with the kernel size and input image size; the number
+torNet outperforms the best ConvNet baseline by a large                 of parameters increases quadratically with the kernel size.
+margin; presumably due to its ability to capture long range            As we render the images centered at the self driving vehicle,
+context information via the hierarchical graph network.                 the feature map can be reused among multiple targets, so the
+4.4. Comparison of FLOPs and model size                            FLOPs of the backbone part is a constant number.     How-
+                                                                        ever, if the rendered images are target-centered, the FLOPs
+We now compare the FLOPs and model size between                          increases linearly with the number of targets. For Vector-
+ConvNets and VectorNet, and their implications on perfor-                 Net, the FLOPs depends on the number of vector nodes and
+mance. The results are shown in Table 4. The prediction de-            polylines in the scene. For the in-house dataset, the average
+coder is not counted for FLOPs and number of parameters.                 number of road map polylines is 17 containing 205 vectors;
+We can see that the FLOPs of ConvNets increase quadrati-                 the average number of road agent polylines is 59 contain-
+
+     JF                 En                BC                                          Model            DE@3s             ADE
+         x                                h     N      Vd 4                   Constant Velocity [7]     7.89             3.53
+                                                                               Nearest Neighbor [7]     7.88             3.45
+         HA
+     -      Ne                            «|               74                      LSTM ED [7]          4.95             2.15
+                  )                       wl      NN                        Challenge Winner: uulm-mrm  4.19             1.90
+                                          7                                   Challenge Winner: Jean    4.17             1.86
+                                                                                    VectorNet           4.01             1.81
+     “7                    Ne     4                                         Table 5. Trajectory prediction performance on the Argoverse Fore-
+                                  4                                     2   casting test set when number of sampled trajectories K=1. Results
+        |                                     A                             were retrieved from the Argoverse leaderboard [1] on 03/18/2020.
+
+                       jl                                                                  Comparing R18-k3-t-r400 (the best model among Con-
+     = =                                                                    vNets) with VectorNet, VectorNet significantly outperforms
+     Sa                                   wl                                ConvNets.                 For computation, ConvNets consumes 200+
+                  |    |                                                    times more FLOPs than VectorNet (10.56G vs 0.041G) for
+                                                                            a single agent; considering that the average number of ve-
+                  it                                                        hicles in a scene is around 30 (counted from the in-house
+         ww ew                                ww   ow   ow ow          ww   dataset), the actual computation consumption of VectorNet
+                                  A       -                                 is still much smaller than that of ConvNets.          At the same
+                                                                            time, VectorNet needs 29% of the parameters of ConvNets
+                              4           .                                 (72K vs 246K). Based on the comparison, we can see that
+     “N                #                  =                                 VectorNet can significantly boost the performance while at
+     -            4                       o                                 the same time dramatically reducing computation cost.
+            4                                                               4.5. Comparison with state-of-the-art methods
+                       Si                 “                                           Finally, we compare VectorNet with several baseline ap-
+                                                                            proaches [7] and some state-of-the-art methods on the Ar-
+                                          i                                 goverse [7] test set. We report K=1 results (the most likely
+            |                1                                              predictions) in Table 5. The baseline approaches include the
+     sa                                                                     constant velocity baseline, nearest neighbor retrieval, and
+            |                     |  |                                      LSTM encoder-decoder.             The state-of-the-art approaches
+     TET                     —                                              are the winners of Argoverse Forecasting Challenge. It can
+                       ON,                                                  mance from 4.17 to 4.01 for the DE@3s metric when K=1.
+     uo                      I            7 be seen that VectorNet improves the state-of-the-art perfor-
+                        sr | I                                              5. Conclusion and future work
+    Figure 4. (Left) Visualization of the prediction: lanes are shown in                 We proposed to represent the HD map and agent dynam-
+    grey, non-target agents are green, target agent’s ground truth tra-     ics with a vectorized representation. We designed a novel
+jectory is in pink, predicted trajectory in blue. (Right) Visualiza- ~~ hierarchical graph network, where the first level aggre-
+tion of attention for road and agent: Brighter red color corresponds
+    to higher attention score. It can be seen that when agents are fac-     gates information among vectors inside a polyline, and the
+    ing multiple choices (first two examples), the attention mechanism      second level models the higher-order relationships among
+    is able to focus on the correct choices (two right-turn lanes in the    polylines. Experiments on the large scale in-house dataset
+    second example). The third example is a lane-changing agent, the        and the public available Argoverse dataset show that the
+    attended lanes are the current lane and target lane. In the fourth      proposed VectorNet outperforms the ConvNet counterpart
+    example, though the prediction is not accurate, the attention still     while at the same time reducing the computational cost by
+    produces a reasonable score on the correct lane.                        a large margin. VectorNet also achieves state-of-the-art per-
+                                                                            formance (DE@3s, K=1) on the Argoverse test set. A nat-
+    ing 590 vectors.                We calculate the FLOPs based on these   ural next step is to incorporate the VectorNet encoder with
+    average numbers. Note that, as we need to re-normalize the              a multi-modal trajectory decoder (e.g. [6, 29]) to generate
+    vector coordinates and re-compute the VectorNet features                diverse future trajectories.
+    for each target, the FLOPs increase linearly with the num-              Acknowledgement. We want to thank Benjamin Sapp and
+    ber of predicting targets (n in Table 4).                               Yuning Chai for their helpful comments on the paper.
+
+    References                                                                [21]  Charles Ruizhongtai Qi, Li Yi, Hao Su, and Leonidas J Guibas.
+ [1]  Argoverse Motion Forecasting Competition, 2019.                               Pointnet++: Deep hierarchical feature learning on point sets in a
+      https://evalai.cloudcv.org/web/challenges/                              [22]  metric space. In NIPS, 2017.
+      challenge-page/454/leaderboard/1279.                                          Alec Radford, Jeff Wu, Rewon Child, David Luan, Dario Amodei,
+ [2]  Alexandre Alahi, Kratarth Goel, Vignesh Ramanathan, Alexandre                 and Ilya Sutskever.    Language models are unsupervised multitask
+      Robicquet, Li Fei-Fei, and Silvio Savarese. Social LSTM: Human          [23]  learners. 2019.
+      Trajectory Prediction in Crowded Spaces. In CVPR, 2016.                       Nicholas Rhinehart, Rowan McAllister, Kris Kitani, and Sergey
+                                                                                    Levine. PRECOG: Prediction conditioned on goals in visual multi-
+ [3]  Jimmy Lei Ba, Jamie Ryan Kiros, and Geoffrey E Hinton.          Layer         agent settings. In ICCV, 2019.
+      normalization. arXiv preprint arXiv:1607.06450, 2016.                   [24]  Alexandre Robicquet, Amir Sadeghian, Alexandre Alahi, and Silvio
+ [4]  Peter W Battaglia,   Jessica B    Hamrick,    Victor Bapst,    Alvaro         Savarese. Learning social etiquette: Human trajectory understanding
+      Sanchez-Gonzalez, Vinicius Zambaldi, Mateusz Malinowski, An-                  in crowded scenes. In ECCV, 2016.
+      drea Tacchetti,    David Raposo,  Adam Santoro,        Ryan Faulkner,   [25]  Weijie Su, Xizhou Zhu, Yue Cao, Bin Li, Lewei Lu, Furu Wei, and
+      Caglar Gulcehre, Francis Song, Andrew Ballard, Justin Gilmer,                 Jifeng Dai. Vl-bert: Pre-training of generic visual-linguistic repre-
+      George Dahl, Ashish Vaswani, Kelsey Allen, Charles Nash, Vic-                 sentations. arXiv preprint arXiv:1908.08530, 2019.
+      toria Langston, Chris Dyer, Nicolas Heess, Daan Wierstra, Push-         [26]  Chen Sun, Per Karlsson, Jiajun Wu, Joshua B Tenenbaum, and
+      meet Kohli, Matt Botvinick, Oriol Vinyals, Yujia Li, and Razvan               Kevin Murphy.   Stochastic prediction of multi-agent interactions
+      Pascanu. Relational inductive biases, deep learning, and graph net-           from partial observations. In ICLR, 2019.
+ [5]  works. arXiv preprint arXiv:1806.01261, 2018.                           [27]  Chen Sun, Austin Myers,     Carl Vondrick,   Kevin Murphy,    and
+      Sergio Casas, Wenjie Luo, and Raquel Urtasun. Intentnet: Learning             Cordelia Schmid.      VideoBERT: A joint model for video and lan-
+      to predict intention from raw sensor data. In CoRL, 2018.                     guage representation learning. In ICCV, 2019.
+ [6]  Yuning Chai,      Benjamin Sapp,  Mayank Bansal,         and Dragomir   [28]  Chen Sun, Abhinav Shrivastava, Carl Vondrick, Rahul Sukthankar,
+      Anguelov.     Multipath: Multiple probabilistic anchor trajectory hy-         Kevin Murphy, and Cordelia Schmid. Relational action forecasting.
+      potheses for behavior prediction. In CoRL, 2019.                              In CVPR, 2019.
+ [7]  Ming-Fang Chang, John Lambert, Patsorn Sangkloy, Jagjeet Singh,         [29]  Charlie Tang and Russ R Salakhutdinov. Multiple futures prediction.
+      Slawomir Bak, Andrew Hartnett, De Wang, Peter Carr, Simon                     In NeurIPS. 2019.
+      Lucey, Deva Ramanan, et al. Argoverse: 3D tracking and forecasting      [30]  Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit,
+ [8]  with rich maps. In CVPR, 2019.                                                Llion Jones, Aidan N Gomez, Łukasz Kaiser, and Illia Polosukhin.
+      Junyoung Chung,     Kyle Kastner,      Laurent Dinh,   Kratarth Goel,         Attention is all you need. In NIPS, 2017.
+      Aaron C Courville, and Yoshua Bengio. A recurrent latent variable       [31]  Petar Veliˇckovi´c, Guillem Cucurull, Arantxa Casanova, Adriana
+      model for sequential data. In NeurIPS, 2015.                                  Romero, Pietro Li`o, and Yoshua Bengio. Graph attention networks.
+ [9]  James Colyar and Halkias John. Us highway 101 dataset.          FHWA-         In ICLR, 2018.
+      HRT-07-030, 2007.                                                       [32]  Raymond A. Yeh, Alexander G. Schwing, Jonathan Huang, and
+[10]  Henggang Cui, Vladan Radosavljevic, Fang-Chieh Chou, Tsung-                   Kevin Murphy.    Diverse generation for multi-agent sports games.
+      Han Lin, Thi Nguyen, Tzu-Kuo Huang, Jeff Schneider, and Nemanja               In CVPR, 2019.
+      Djuric.      Multimodal trajectory predictions for autonomous driving   [33]  Eric Zhan, Stephan  Zheng,     Yisong    Yue, Long Sha,       and
+      using deep convolutional networks. In ICRA, 2019.                             Patrick Lucey.     Generative  multi-agent behavioral    cloning.
+[11]  Jacob   Devlin, Ming-Wei     Chang, Kenton     Lee,  and     Kristina         arXiv:1803.07612, 2018.
+      Toutanova.        BERT: Pre-training of deep bidirectional transform-
+      ers for language understanding.      arXiv preprint arXiv:1810.04805,
+      2018.
+[12]  Panna Felsen, Pulkit Agrawal, and Jitendra Malik. What will happen
+      next? forecasting player moves in sports videos. In ICCV, 2017.
+[13]  Agrim Gupta, Justin Johnson, Li Fei-Fei, Silvio Savarese, and
+      Alexandre Alahi. Social GAN: Socially acceptable trajectories with
+      generative adversarial networks. In CVPR, 2018.
+[14]  Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun.           Deep
+      residual learning for image recognition. In CVPR, 2016.
+[15]  Joey Hong, Benjamin Sapp, and James Philbin. Rules of the road:
+      Predicting driving behavior with a convolutional model of semantic
+      interactions. In CVPR, 2019.
+[16]  Yedid Hoshen. VAIN: Attentional multi-agent predictive modeling.
+      arXiv preprint arXiv:1706.06122, 2017.
+[17]  Diederik P Kingma and Jimmy Ba. Adam: A method for stochastic
+      optimization. arXiv preprint arXiv:1412.6980, 2014.
+[18]  Thomas Kipf, Ethan Fetaya, Kuan-Chieh Wang, Max Welling, and
+      Richard Zemel. Neural relational inference for interacting systems.
+      In ICML, 2018.
+[19]  Robert Krajewski, Julian Bock, Laurent Kloeker, and Lutz Eckstein.
+      The highd dataset: A drone dataset of naturalistic vehicle trajecto-
+      ries on german highways for validation of highly automated driving
+      systems. In ITSC, 2018.
+[20]  Charles R Qi, Hao Su, Kaichun Mo, and Leonidas J Guibas. Point-
+      net: Deep learning on point sets for 3d classification and segmenta-
+      tion. In CVPR, 2017.
+

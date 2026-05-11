@@ -1,0 +1,625 @@
+    ADS Standardization Landscape: Making Sense of its
+       Status and of the Associated Research Questions
+        Scott Schnelle & Francesca M. Favaro, Waymo LLC
+
+Abstract
+Automated Driving Systems (ADS) hold great potential to increase safety, mobility, and equity.
+However, without public acceptance, none of these promises can be fulfilled. To engender public
+trust, many entities in the ADS community participate in standards development organizations
+(SDOs) with the goal of enhancing safety for the entire industry through a collaborative
+approach. The breadth and depth of the ADS safety standardization landscape is vast and
+constantly changing, as often is the case for novel technologies in rapid evolution. The pace of
+development of the ADS industry makes it hard for the public and interested parties to keep
+track of ongoing SDO efforts, including the topics touched by each standard and the committees
+addressing each topic, as well as make sense of the wealth of documentation produced.
+Therefore, the authors present here a simplified framework for abstracting and organizing the
+current landscape of ADS safety standards into high-level, long term themes. This framework is
+then utilized to develop and organize associated research questions that haven’t yet reached
+widely adopted industry positions, along with identifying potential gaps where further research
+and standardization is needed.
+
+Introduction
+Automated Vehicles (AVs), specifically those equipped with SAE Level 4 Automated Driving
+Systems (ADS), have the potential, and have already started to show the capacity, for
+improvements in roadway safety, mobility, and equity as a part of a holistic Safe System
+approach (NHTSA, 2022) (FHWA, 2023) (GHSA, 2022) (Johns Hopkins University Bloomberg
+School of Public Health, 2021). However, a key part of ADSs achieving their potential is public
+acceptance. Reaching this public acceptance by engendering public trust needs to be a
+collaborative industry effort, not done in isolation by any one entity. To this end, many ADS
+developers, OEMs, suppliers, academics, government agencies, and safety advocates engage
+in standards development organizations (SDOs) that aim to collaboratively enhance uniformity
+of terminology, safety, compatibility, interoperability, and quality for the entire industry. These
+standardization organizations and their constituent committees and subcommittees span a
+breadth of topics, from those addressing a more holistic picture of transportation’s systems
+safety to those addressing ADS specific issues. The structure of these standards organizations
+differ too, with some specializing in ADS-dedicated committees, such as the SAE On-Road
+Automated Driving (ORAD)¹ with 10 active Task Forces within it, and others subsuming ADSs
+under broader categories, such as the ISO TC 22 SC 32 on Road Vehicles Electronics and
+Electrical (EE) Subsystems², where the ISO 5803 technical report on ADS safety (ISO/AWI TS
+
+1 https://standardsworks.sae.org/standards-committees/road-automated-driving-orad-committee
+2 https://www.iso.org/committee/5383636.html
+
+        1
+
+5083) is being drafted by a newly developed sub-working group with ADS technology becoming
+an instantiation of electronics and electrical automotive components. Beyond the breadth of
+topics and themes within these committees, there is also a wide range in the level of technicality
+and detail intrinsic to the nature of each group and standard. For example, documents such as
+ISO 5083 are more foundational in content, while others like IEEE 2846-2022 (IEEE, 2022) are
+more technical. Despite their differences, all these efforts aim at providing consensus standards
+to guide this nascent industry and foster public acceptance. These standards additionally have
+the potential to provide useful information towards the development of appropriate regulatory
+frameworks that permit the safe operation of ADS on public roads. As such, work happening in
+SDOs is instrumental in achieving the promises of ADS technology.
+
+Given the breadth and depth of standards activities mentioned, it is becoming increasingly
+difficult to keep track of which organizations, committees, and standards are addressing what
+topics. This is exacerbated by the rapid evolution of the external landscape over the last two
+years in terms of determining what constitutes a safe ADS. Moreover, all of these SDOs are
+constantly producing novel documentation to try and keep up with the rapid progress of ADS
+technology. With the multitude of standards activities, their disparate structures, the breadth and
+depth of topics covered, along with the volume of documents being produced, a number of
+efforts exist that attempt to provide tools to track progress of these organizations and standards.
+Two examples of such efforts include the SAE³ and BSI roadmap⁴ tools. In addition to these
+tools, liaison agreements and memorandum of understanding (MOUs) at the standards
+committee levels ensure cross-pollination and collaboration within and across SDOs.
+
+Despite such collaborative efforts, developing a coherent organization and overview of these
+efforts and the documentation they produce is becoming exceedingly hard and any effort that
+attempts to stay up to date quickly becomes antiquated. Therefore, to help organize and
+disentangle the landscape of ADS safety standards, this paper abstracts high level and long
+term themes from these SDOs and their work. The goal is to bring forth a mapping of specific
+topics of interest to broader, but flexible, categories. To help focus this effort, the scope of the
+high level categories provided in this framework are restricted to the safe development and
+deployment of ADSs, mainly trying to answer the central question: “how safe is safe enough?”
+for the specific case of ADS applications. To provide context, some specific examples of
+standards and external references are provided in Table 1, however, for the reasons previously
+mentioned, this list is not meant to be exhaustive nor will it remain up-to-date for long.
+
+Beyond providing a structure for organizing the ADS standardization landscape, the framework
+presented in this paper also provides associated research questions for each high-level
+category, which we think still haven't reached full industry consensus. In fact, due to the rapid
+progress in the development and deployment of Level 4 ADSs, many standardization efforts are
+essentially geared towards collaborative research and understanding rather than documentation
+of a standardized and mature know-how. With only a few companies fielding Level 4 ADS to
+date, the type of collaboration and debate happening in relation to ADS safety standards
+
+3 https://www.sae.org/highlights/cav-source
+4 https://www.bsigroup.com/en-GB/CAV/cav-resources/download-cav-roadmap/
+
+        2
+
+development and safety determination is reflective of this more investigative nature rather than
+solidification and standardization of information and practices. This affects, in turn, the type of
+documents developed so far, with the majority of them addressing broader, more foundational
+content such as definitions and terminology, and many remaining anchored in technical and
+information reports than more normative counterparts⁵. These foundational standards ensure
+that the same type of lexicon and vocabulary exists to facilitate a shared understanding which
+can then enable the discussion of more in-depth processes and technical issues. This is
+important as the global interest in ADS continues to increase, with potential asynchronous
+attention from different countries and interest groups, each focusing on varying aspects of
+automation. Overall, the industry is in need of global harmonization of both vocabulary and
+processes so that the current focus of the vast majority of SDO groups is well justified.
+
+ADS Safety Standards Organization Framework
+As stated, the desired outcome of this paper is to provide structure and inform the
+understanding of this complex and rapidly evolving ADS standards landscape. The structure
+proposed here may also help identify outstanding research questions that deserve attention in
+these fora. To enable an abstraction of such themes and create a cohesive mapping, the
+authors leverage their personal experiences in a number of external engagement contexts,
+including:
+    ● Engagement and leadership in external standardization activities (e.g., IEEE, SAE and
+       ISO), both at the domestic as well as the international level
+    ● Engagement in state of the art research, most often tied back to: i) internal research from
+       current and past employment, ii) external engagement in public-facing research boards
+       (e.g., Transportation Research Board⁶ ); iii) participation in state-of-the-art
+       conferences/workshops/events; and iv) service in the role of peer-reviewers within the
+       broader academic community.
+    ● Engagement in policy-oriented work, through participation in trade associations and
+       industry consortia, also at both the domestic and international level.
+    ● Engagement in commenting on regulatory drafts proposed for public consultation, again
+       at both at the domestic and international level.
+
+From this experience, the authors have created the ADS Safety Standards Organization Wheel
+presented in Figure 1, aimed at abstracting and organizing high level and long term themes for
+ADS SDOs.
+
+
+
+
+
+5 As an example, the extremely well known SAE J3016 document (SAE, 2021) was first published in 2014
+as an Information Report, being upgraded to Recommended Practice after over 2 years of wide-spread
+adoption of the Levels of Automation taxonomy included therein (the document is much richer than such a
+taxonomy, albeit broader audiences are often unaware of such additional content). Revisions to its
+content are happening at regular cadence, now in conjunction with the joint ISO Publicly Available
+Specification PAS 22736:2021 (ISO, 2021b).
+6 https://www.nationalacademies.org/trb/transportation-research-board
+
+        3
+
+            Automotive
+        |    derived, »
+             non-ADS
+    Risk|    specific
+acceptance    design  ADS specific
+and safety  practices  safety by
+  impact                 design
+                       practices
+
+
+           Consumer               How safe
+         ratings and               HIs safe        Virtual testing
+           testing                                     practices
+          protocols               enou g h?
+
+                 Evaluation of                     Track and
+                  artificial                       on-roa          System
+                  intelligence                     testing         Design and
+                  insystems     J] Evaluation of   practices       Development
+                                                                   System
+                                    behavior and                   Evaluation and
+                                  driving quality        ¥ Testing
+                                                                    Safety Assurance
+                                                                    (public)
+
+                  Figure 1: ADS Safety Standards Organization Wheel
+
+    The ADS Safety Standards Organization Wheel addresses standards and themes that go
+    beyond the aforementioned first wave of foundational standards (e.g., terminology, definitions,
+    etc.) to explore themes and standards pertinent to the question at the center of the wheel, and
+    at the center of the safety standardization debate, of “How safe is safe enough?”. The wheel
+    symbolizes how, just like it is not possible to pinpoint a single metric to answer that question, it
+    is not possible to look at a single standard related to the design approach or evaluation process
+    to answer the question. Instead, all of the building blocks of the wheel, which are complex and
+    multifaceted, are required in order to answer the central question. The eight themes represented
+    in the wheel are as follows:
+
+     1.  Automotive derived non-ADS specific design practices
+              ○  Standards and practices related to the traditional automotive domain that are
+                 applicable⁷ but not specific to ADS technology
+     2.  ADS-specific safety by design processes
+
+
+    7 Applicability is here intended broadly, and may require adaptation of certain concepts for the specific
+    use-case of ADS technology
+
+                                                                        4
+
+         ○  Standards and practices directly related to ADS-application specific
+            implementations of traditional safety-by-design development practices
+ 3.  Virtual testing practices
+         ○  Standards and practices related to ADS verification and validation activities
+            utilizing simulation
+ 4.  Track and on-road testing practices
+         ○  Standards and practices related to ADS verification and validation activities
+            utilizing closed-course testing and on-road testing
+ 5.  Behavioral evaluation and driving quality
+         ○  Standards and practices related to the evaluation of the ADS behavior and its
+            driving quality, including drivership
+ 6.  Evaluation of AI systems
+         ○  Standards and practices related to the evaluation of artificial intelligence as it is
+            used in ADS development and safety assurance
+ 7.  Consumer rating and testing protocols
+         ○  Standards and practices related to ADS consumer ratings and testing protocols
+            to help engender public trust
+ 8.  Risk acceptance and safety impact
+         ○  Standards and practices related to evaluating the safety impact/benefits
+            stemming from ADS deployment and related frameworks for risk acceptance
+
+Within Figure 1, these eight building blocks are further overlaid on a circle containing various
+shades of blue. This is intended to represent each block's connection to the ADS development
+and safety determination lifecycle, with specific phases on system design, evaluation and
+testing, and safety assurance.
+
+ADS Safety Standards Open Research Questions
+In addition to the ADS Safety Standards Organization Wheel, the authors provide some
+associated research questions as shown in Table 1. These questions attempt to identify and
+align on topics that deserve further attention, potentially aiding in the discovery of research
+areas that are not fully addressed by standards organizations. Non-exhaustive external
+references, including standards and policy documents, in these areas are provided as
+examples.
+
+
+
+
+
+
+
+
+
+
+            5
+
+    Table 1: ADS Safety Standards Categories and Associated Research Questions⁸
+
+Topical                    High-Level Research Questions                             External
+Mapping                                                                             References
+
+Safety By        ●  How do you ensure absence of unreasonable risk (AUR)           ●ISO 26262 -
+Design              based on state of the art development and design                Functional Safety
+Practices           practices?                                                      (ISO, 2018a)
+[Includes both   ●  How do we balance applicability and adaptability of            ●ISO 21448 -
+ADS specific                                                                        Safety of the
+and non-ADS         non-ADS specific standards? For example:
+specific]           ○  Is it possible to benchmark to state of the art              Intended
+                       automotive, but not ADS specific, standards? If not,         Functionality (ISO,
+                                                                                    2022a)
+Og                     which parts can we explicitly leverage and which part can | ●ISO 15026 -
+                       you not? Why?                                                Software
+    ○ Can flexibility in existing concepts be increased to embed | Assurance (ISO,
+                       ADS applications?                                            2019)
+                 ●  What high level requirements and safety goals should be        ●SPICE Software
+                    defined for the system?                                         Development
+                 ●  How do you systematically identify, evaluate the risk for,      Practices from
+                    and mitigate all applicable hazards for an ADS service?         ISO 3300x⁹ (ISO,
+                 ●  How do you aggregate multiple sources of residual risks         2015)
+                    into a single determination of AUR? What if the actual risks   ●NATM Guidelines
+                    and hazards considered aren’t commensurable (e.g., risk of      for Validating ADS
+                                                                                    (GRVA, 2022)
+                    collision vs. risk of fire)                                    ●ISO 5083 - ADS
+                 ●  How do you minimize exposure to hazardous events?               Design and V&V
+                    Can you actually compute rates of hazardous causes and          (ISO/AWI TS
+                    triggering conditions and exposure to hazards or should you     5083)
+                    consider alternative means to estimate risk?                   ●SAE J3208 -
+                                                                                    Taxonomy and
+                                                                                    Definitions of ADS
+                                                                                    V&V¹⁰
+
+Virtual         ●   When do you have enough tests? How do you define               ●ISO 3450x:
+Testing             completeness /representativeness /exhaustiveness of             Scenario-based
+Practices           these tests and how are these concepts related to each          testing vocabulary
+                    other?                                                          (ISO, 2022b),
+    ● What requirements do these concepts place on a library of | safety evaluation
+                    scenarios?                                                      framework (ISO
+                                                                                    2022c), ODD
+
+
+
+8 Table 1 represents a collection of questions being discussed in external fora that the authors have been
+made aware of. There is no claim of exhaustiveness nor of soliciting explicit positions from existing
+groups in relation to them. The contribution from the authors stems from the collection and organization of
+these questions.
+9 https://committee.iso.org/sites/jtc1sc7/home/projects/flagship-standards/isoiec-33000-family.html
+10 https://www.sae.org/standards/content/j3208/
+
+                                                                                        6
+
+           ●   How do you define reasonably foreseeable scenarios?            specification¹¹,
+ O ®           Does that account for reasonably foreseeable behavior          scenario
+               from other agents on the road and/or also exposure to          categorization¹²,
+               conflict types based on the ADS behavior?                      and scenario
+           ●   How does evaluation of reasonably foreseeable scenarios        evaluation and
+               differ from evaluation of edge-cases? What specific            test case
+               approaches should be recommended to tackle each?               generation¹³
+           ●   How do you parametrize the space of conflicts and what        ●SAE J3279 - Best
+                                                                              Practice for
+               language should one standardize to ensure we create            Developing and
+               MECE sets of outcomes of interest?                             Validating
+           ●   How do you assess coverage against various levels of           Simulation for
+               scenario criticality and how is difficulty/ criticality        ADS¹⁴
+               defined?                                                      ●NATM Guidelines
+           ●   How do you define similarity across scenarios?                 for Validating ADS
+           ●   How are ADS simulations validated? What are elements           (GRVA, 2022)
+               that require validation and establish a minimum credibility   ●Pegasus Family:
+               framework for realism and fidelity?                            VVM¹⁵
+           ●   What are standardized processes for counterfactual            ●IAMTS virtual
+                                                                              toolchains best
+               simulations and logs/other events reconstructions? How         practice (IAMTS,
+               are alignment procedures and initial conditions settings       2021)
+               standardized, also for comparison with performance from      | ●ISO 21934:
+               artificial reference models?                                   Prospective safety
+    ● How can results be post processed so that an independent | performance
+               reviewer can confidently review them?                          assessment of
+           ●   How can you simulate and analyze degraded conditions?          pre-crash
+                                                                              technology by
+                                                                              virtual simulation
+                                                                              (ISO, 2021a)
+
+Track and   ●  What are the specific use-cases that should be considered    | ●SAE J3018
+On-Road        for on-road testing?                                           -Guidelines for
+Testing     ●  How can closed-course testing be efficiently used in           Safe On-Road
+Practices      conjunction with virtual and on-road testing?                  Testing of ADS
+            ●  What are the best practices for testing ADS on closed          (SAE, 2020)
+  Q,           courses? What requirements or recommendations do they        ● PAS 1884 -
+               carry for testing providers and testing auditors?              Safety operators
+            ●  What are the best practices for testing ADS on public          in automated
+                                                                              vehicle testing
+               roads? What requirements or recommendations do they            and trialing guide
+                                                                              (BSI, 2021)
+
+ 11 https://www.iso.org/standard/78952.html
+ 12 https://www.iso.org/standard/78953.html
+ 13 https://www.iso.org/standard/78954.html
+ 14 https://www.sae.org/standards/content/j3279/
+ 15 https://www.vvm-projekt.de/en/
+
+                                                                                  7
+
+                   carry for ADS developers? How are they dependent on             ●SAE J3247 - ADS
+                   system maturity and proof of performance?                        Test Facility
+    ● What are differences/similarities in testing in closed-course Safety Practices¹⁶
+                   compared to public road testing?                                ●AVSC
+                ●  What are the differences/similarities to existing testing        Recommended
+                   operation and operator training guidelines? Are there any        Practice for
+                   gaps?                                                            In-Vehicle
+                                                                                    Fallback Test
+                                                                                    Driver (AVSC,
+                                                                                    2019)
+
+Evaluation of   ●  What is good driving behavior? How does one judge               ●IEEE 2846 -
+Behavior and       driving quality? How do you define proper Drivership             Assumptions for
+Driving            competencies (Fraade-Blanar, 2022)?                              Vehicle
+Quality         ●  Can behavioral envelopes be established to assess and/or         Decision-Making
+                   constrain the ADS behavior?                                      (IEEE, 2022)
+    ● How do you define reasonably foreseeable behaviors from ●J3237 -
+                   others ? What are appropriate assumptions that can be            Operational
+                   placed (on the behavior of others or of the ADS) to make         Safety Metrics¹⁷
+                                                                                   ●AVSC Best
+                   such envelopes more or less stringent? How can these             Practice for
+                   assumptions be optimized and validated?                          Metrics and
+                ●  How do you define and quantify predictable behavior?             Methods for
+                ●  How do you define safe and appropriate responses to the          Assessing Safety
+                   actions of others?                                               Performance of
+                ●  How do you translate the qualification of (un)reasonable         ADS (AVSC,
+                   behavior into a quantification of (un)reasonable risk?           2021a)
+                ●  How do you validate models used for behavioral                  ●EU Commission
+                   references? What data do you need to provide sufficient          Implementing
+                   evidence ( e.g., comparison of distributions for gap selection   Regulation for
+                                                                                    ADS Type
+                   with VRUs compared to human reference from naturalistic          Approval (EU,
+                   databases)?                                                      2022)
+                ●  What role does compliance to traffic rules play in good         ●ISO 5083 - ADS
+                   driving behavior evaluation for the ADS and for reasonably       Design and V&V
+                   foreseeable actions of other road users.                         (ISO/AWI TS
+    ● How do you derive acceptance criteria from a codified list of 5083)
+    behavioral competencies?
+
+
+
+
+
+
+
+
+
+16 https://www.sae.org/standards/content/j3247/
+17 https://www.sae.org/standards/content/j3237/
+
+                                                                                    8
+
+Evaluation of ● Does the development of AI systems require more in-depth ●ISO/IEC JTC
+    AI Systems      evaluation beyond black box approaches that test and           1/SC 42¹⁸,
+                    validate the performance output?                               including:
+                 ●  Could safety-by-design approaches applied to AI enable          ○ISO 5259-x
+          O         sufficiency of black-box testing? And what would be              Data Quality
+    [)              ADS-specific principles for AI rigorous development?            ○ISO 5392 - AI
+                 ●  How is robustness of the algorithms and development              Ref.
+                    rigor assessed? How does explainability aid such                 Architecture
+                                                                                    ○ISO AWI 8200 -
+                    evaluation?                                                      Controllability of
+                 ●  How do we better discern safety-criticality for AI-enabled       automated AI
+                    functions in an ADS (compared to all of them being               systems
+                    safety-critical)?                                               ○ISO 5469 -
+                 ●  How do updates in our SW impact our safety assessment?           Functional
+                    Is a CACE (chance anything changes everything) approach          Safety and AI
+                    really practicable? How do updates trigger re-evaluation of a   ○ISO 23894 - AI
+                    safety case?                                                     Risk
+                 ●  What are minimum requirements for data sources, and data         Management
+                    quality, in relation to training of the system? What about      ○ISO 24027 -
+                                                                                     Bias in AI
+                    algorithm/system calibration?        ●ISO/AWI PAS
+                 ●  How are sources of uncertainty handled?                        880019
+                 ●  How are ethical considerations embedded in our
+                    algorithms?
+
+    Consumer     ●  What’s the minimum set of tests an ADS should be trialed     | ●ISO/TC 204²⁰,
+    Ratings and     on?                                                            including:
+    Testing      ●  What types of ratings systems would the public feel more        ○ISO 21737 -
+    Protocols       attuned to and should thus be employed to garner public          Low Speed
+                    trust and acceptance? Should different ratings be                Testing
+          O         established for safety versus other consumer-valued             ○ISO/CD TR
+     ]              qualifications?                                                  21734-3 -
+                 ●  Can tests and protocols devised for L2 and/or L3                 Automated
+                                                                                     driving bus
+                    systems be expanded/ augmented or otherwise applied to L4       ○ISO/AWI
+                    systems?                                                         23792-2
+                 ●  How can testing protocols be appropriately mapped to             Motorway
+                    various ADS use-cases and associated ODDs? How can we            chauffeur
+                    discourage inappropriate comparisons across ADS with             systems
+                    diverse capabilities?                                           ○ ISO
+                 ●  How can tests be mapped to behavioral competencies and           19237:2017
+                    how do different intended ODDs impact how each behavioral        Pedestrian
+                    competency is evaluated?                                         detection and
+                                                                                     collision
+
+     18 https://committee.iso.org/committee/6794475/x/catalogue/p/0/u/1/w/0/d/0
+     19 https://www.iso.org/standard/83303.html
+     20 https://www.iso.org/committee/54706/x/catalogue/p/0/u/1/w/0/d/0
+
+                                                                                         9
+
+             ●  How do you systematically evaluate the soundness and            mitigation
+                applicability of proposed protocols?                            systems
+    ● How do you prioritize the landscape of externally proposed | ●EuroNCAP
+                tests?                                                         updates²¹
+                                                                              ●US NCAP
+                                                                               updates²²
+                                                                              ●Testing Annexes
+                                                                               in UNECE GRVA
+                                                                               (AEB²³)
+
+Risk        ●   What type of risk acceptance criteria should be used? If      ●ISO 5083 - ADS
+Acceptance      multiple, should they be summarized into a single pass/fail    Design and V&V
+and Safety      criterion?                                                     (ISO/AWI TS
+Impact      ●   What type of validation targets are acceptable                 5083)
+                (comparison to what human)?                                   ●UL 4600 - Safety
+            ●   Is it necessary to provide evidence of positive risk balance   of Autonomous
+[               (PRB)? Is PRB just one acceptance criterion out of many to     Products (UL,
+    O           prove Absence of Unreasonable Risk (AUR)?                      2022)
+                                                                              ●BSI PAS 1881 -
+            ●   How can you compare performance across ODDs?                   Assuring the
+            ●   How do you compare predictive/estimated approaches to          operational safety
+                reactive/observation-based ones?                               of automated
+    ● What’s the minimum set of performance metrics to consider? | vehicles.
+    ● How do you define preventable vs. unavoidable collisions | Specification (BSI,
+            ●   Should you distinguish between collisions caused by the        2022)
+                ADS versus those caused by others?                            ●EU Commission
+            ●   What is the set of outcomes of interest, beyond collisions,    Implementing
+                to evaluate an appropriate safety impact?                      Regulation for
+            ●   What are appropriate data sources, or, conversely, data        ADS Type
+                                                                               Approval (EU,
+                limitations that affect the setting of appropriate             2022)
+                benchmarks?                                                   ●French Decree²⁴
+            ●   What are suitable safety margins for comparison to            ●UK Law
+                benchmarks? Should those be set as multipliers and/or          Commission AV
+                added standard deviations?                                     Joint Report²⁵
+            ●   When assessing safety benefits, should one constrain          ●German ADS
+
+
+
+
+21 https://cdn.euroncap.com/media/67892/euro-ncap-assessment-protocol-sa-safe-driving-v1001.pdf
+22 https://www.nhtsa.gov/sites/nhtsa.gov/files/2022-03/NCAP-ADAS-RFC-03-03-2022-web.pdf
+23 https://unece.org/DAM/trans/doc/2019/wp29grva/GRVA-02-39c1e.pdf
+24
+https://www.ecologie.gouv.fr/sites/default/files/2021%2007%2001%20-%20ARTS%20decree%20commun
+ication%20-%20Vdef.pdf
+25
+https://s3-eu-west-2.amazonaws.com/lawcom-prod-storage-11jsxou24uy7q/uploads/2022/01/Automated-
+vehicles-joint-report-cvr-03-02-22.pdf
+
+                                                                                    10
+
+    themselves to the strict ODD definition? Non-conforming    Draft Regulation²⁶
+    agents will behave beyond in-scope ODD features (e.g., high
+    speeds) so should extensions of the ODD be considered?
+
+
+
+Conclusion
+In this paper the authors present a framework that abstracts and organizes the landscape of
+ADS safety standards into high level and long term themes. The categories presented in the
+ADS Safety Standards Organization Wheel are then leveraged to develop and align on
+associated research questions that haven’t yet reached full industry consensus. The hope is
+that framing like the one presented here will allow developers and regulators to better
+understand and organize ongoing ADS safety standard efforts and the subsequent
+documentation generated by SDOs. Beyond organizing this area around the question of “how
+safe is safe enough?,” for ADS applications, the framework also allows for the mapping of
+specific topics of interest to the broader categories presented in the framework, with the
+potential to identify missing topics and subtopics, including missing research questions.
+
+References
+Federal Highway Administration (FHWA). (2023). Zero Deaths and Safe Systems.
+Available at: https://highways.dot.gov/safety/zero-deaths
+
+National Highway Traffic Safety Administration (NHTSA). (2022). NHTSA's Safe System
+Approach: Educating and Protecting All Road Users. Available at:
+https://highways.dot.gov/public-roads/winter-2022/04
+
+Automated Vehicle Safety Consortium (AVSC). (2021a). Best Practice for Metrics and Methods
+for Assessing Safety Performance of Automated Driving Systems (ADS). AVSC00006202103.
+
+Automated Vehicle Safety Consortium (AVSC). (2021b). Best Practice for Evaluation of
+Behavioral Competencies for Automated Driving System Dedicated Vehicles (ADS-DV).
+AVSC00008202111
+
+British Standards Institute (BSI)(2022). PAS 1881 - Assuring the operational safety of automated
+vehicles. Specification
+
+British Standards Institute (BSI) (2021). PAS 1884 - Safety operators in automated vehicle
+testing and trialing. Guide.
+
+
+    26
+    https://bmdv.bund.de/SharedDocs/DE/Pressemitteilungen/2022/008-wissing-verordnung-zum-autonomen
+    -fahren.html
+
+        11
+
+European Union (EU) (2022) Commission Implementing Regulation (EU) 2022/1426. Available
+at: https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32022R1426
+
+Fraade-Blanar, L. (2022) Introducing Drivership: A research approach for AV driving behavior.
+Presented at: Automated Road Transportation Symposium; July 2022; Anaheim, CA.
+
+Governors Highway Safety Association (GHSA) [Contracted to Cambridge Systematics for
+GHSA] (2022). Putting the Pieces Together: Addressing the Role of Behavioral Safety in the
+Safe System Approach. Available at:
+https://www.ghsa.org/sites/default/files/2021-12/GHSA%20Safe%20System%20Report_2.pdf
+
+GRVA - Working Party on Automated/Autonomous and Connected Vehicles. (2022) Informal
+Document GRVA-14-16 New Assessment/Test Method for Automated Driving (NATM)
+Guidelines for Validating Automated Driving System (ADS) – amendments to
+ECE/TRANS/WP.29/2022/58 Available at:
+https://unece.org/sites/default/files/2022-09/GRVA-14-16e_0.pdf
+
+International Alliance for Mobility Testing and Standardization (IAMTS). (2021). A
+Comprehensive Approach for the Validation of Virtual Testing Toolchains. SAE ITC. Available at:
+https://www.iamts.org/storage/app/media/Publications/iamts0001202104.pdf
+
+Institute of Electrical and Electronics Engineers (IEEE) (2022). IEEE 2846 - Standard for
+Assumptions in Safety-Related Models for Automated Driving Systems.
+
+International Organization for Standardization (ISO). Road vehicles — Safety for automated
+driving systems — Design, verification and validation ISO/AWI TS 5083. In drafting.
+
+International Organization for Standardization (ISO). (2015). Information technology — Process
+assessment — Concepts and terminology ISO/IEC 33001:2015
+
+International Organization for Standardization (ISO). (2018). Road Vehicles - functional safety
+ISO 26262:2018.
+
+International Organization for Standardization (ISO). (2019). Systems and software engineering
+— Systems and software assurance — Part 1: Concepts and vocabulary ISO/IEC/IEEE
+15026-1:2019.
+
+International Organization for Standardization (ISO). (2021a). Road vehicles - Prospective
+safety performance assessment of pre-crash technology by virtual simulation: Part 1:
+State-of-the-art and general method overview (ISO/TR 21934-1:2021).
+
+International Organization for Standardization (ISO). (2021b). Taxonomy and definitions for
+terms related to driving automation systems for on-road motor vehicles (ISO/SAE PAS
+22736:2021)
+
+
+
+
+    12
+
+International Organization for Standardization (ISO). (2022a). Road Vehicles - safety of the
+intended functionality ISO 21448:2022.
+
+International Organization for Standardization (ISO). (2022b). Road vehicles - Test Scenarios for
+Automated Driving Systems - Vocabulary (ISO 34501:2022).
+
+International Organization for Standardization (ISO). (2022c). Road vehicles - Test Scenarios for
+Automated Driving Systems - Scenario-based safety evaluation framework for Automated
+Driving Systems (ISO 34502:2022).
+
+Johns Hopkins University Bloomberg School of Public Health. (2021). 'Safe System' approach
+could dramatically reduce road deaths while improving equity. Available at:
+https://hub.jhu.edu/2021/05/13/safe-system-roads-could-reduce-road-accidents-deaths/
+
+SAE. (2020). J3018 -Safety-Relevant Guidance for On-Road Testing of Prototype Automated
+Driving System (ADS)-Operated Vehicles.
+https://www.sae.org/standards/content/j3018_202012/
+
+SAE. (2021). J3016 - Taxonomy and Definitions for Terms Related to Driving Automation
+Systems for On-Road Motor Vehicles. https://doi.org/10.4271/J3016_202104
+
+Underwriters Laboratories (UL). (2022). UL 4600 - Standard for Safety Evaluation of
+Autonomous Products - Second Edition
+
+
+
+
+
+
+
+
+
+
+    13
+

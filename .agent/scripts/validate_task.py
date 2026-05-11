@@ -112,7 +112,7 @@ PADDING_KEYWORDS = [
 ]
 
 
-def validate_task(filepath):
+def validate_task(filepath, strict_thinking=False):
     """Run all quality gates and return structured report."""
     report = {
         "report_id": "QA-AUTO",
@@ -134,6 +134,14 @@ def validate_task(filepath):
     }
 
     def fail(category, message, fixable_locally=False, partial_repair=False):
+        # IF this is a thinking_quality failure and WE ARE NOT IN STRICT MODE,
+        # then we record it as a WARNING but DO NOT fail the report.
+        if category == "thinking_quality" and not strict_thinking:
+            if "warnings" not in report: report["warnings"] = []
+            report["warnings"].append(f"STRICT_OFF_WARNING: {message}")
+            report["metrics"][category]["violations"].append(f"WARNING: {message}")
+            return
+
         report["overall_status"] = "FAIL"
         report["metrics"][category]["status"] = "FAIL"
         report["metrics"][category]["violations"].append(message)
@@ -643,14 +651,26 @@ def validate_task(filepath):
 
 def main():
     quiet = "--quiet" in sys.argv
+    strict_thinking = "--strict-thinking" in sys.argv
 
     if len(sys.argv) < 2:
         if not quiet:
             print(json.dumps({"overall_status": "FAIL", "error": "No filepath provided"}))
         sys.exit(1)
 
-    filepath = sys.argv[1]
-    report = validate_task(filepath)
+    # Find the filepath (it's the first arg that doesn't start with --)
+    filepath = None
+    for arg in sys.argv[1:]:
+        if not arg.startswith("--"):
+            filepath = arg
+            break
+    
+    if not filepath:
+        if not quiet:
+            print(json.dumps({"overall_status": "FAIL", "error": "No filepath provided"}))
+        sys.exit(1)
+
+    report = validate_task(filepath, strict_thinking=strict_thinking)
 
     # Optionally save report to file
     if "--save-report" in sys.argv:

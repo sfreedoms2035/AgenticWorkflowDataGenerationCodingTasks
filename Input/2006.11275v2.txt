@@ -1,0 +1,713 @@
+arXiv:2006.11275v2  [cs.CV]  6 Jan 2021
+
+
+
+
+
+
+
+
+
+
+          Center-based 3D Object Detection and Tracking
+
+     Tianwei Yin           Xingyi Zhou    Philipp Kr¨ahenb¨
+    uhl
+      UT Austin             UT Austin             UT Austin
+yintianwei@utexas.edu  zhouxy@cs.utexas.edu  philkr@cs.utexas.edu
+
+
+        Abstract
+
+               Three-dimensional objects are commonly represented as
+    3D boxes in a point-cloud. This representation mimics the
+    well-studied image-based 2D bounding-box detection but
+    comes with additional challenges. Objects in a 3D world do
+    not follow any particular orientation, and box-based detec-
+    tors have difficulties enumerating all orientations or fitting        a) Anchor-based t=1             b) Center-based t=1
+    an axis-aligned bounding box to rotated objects.         In this
+    paper, we instead propose to represent, detect, and track 3D
+    objects as points. Our framework, CenterPoint, first detects
+    centers of objects using a keypoint detector and regresses
+    to other attributes, including 3D size, 3D orientation, and
+    velocity. In a second stage, it refines these estimates using
+    additional point features on the object. In CenterPoint, 3D
+    object tracking simplifies to greedy closest-point matching.
+    The resulting detection and tracking algorithm is simple,
+    efficient, and effective. CenterPoint achieved state-of-the-          c) Anchor-based t=2             d) Center-based t=2
+    art performance on the nuScenes benchmark for both 3D
+    detection and tracking, with 65.5 NDS and 63.8 AMOTA                 Figure 1: We present a center-based framework to represent,
+    for a single model. On the Waymo Open Dataset, Center-               detect and track objects. Previous anchor-based methods use
+    Point outperforms all previous single model method by a              axis-aligned anchors with respect to ego-vehicle coordinate.
+    large margin and ranks first among all Lidar-only submis-            When the vehicle is driving in straight roads, both anchor-
+    sions.           The code and pretrained models are available at     based and our center-based method are able to detect objects
+    https://github.com/tianweiy/CenterPoint.                             accurately (top). However, during a safety-critical left turn
+                                                                         (bottom), anchor-based methods have difficulty fitting axis-
+                                                                         aligned bounding boxes to rotated objects. Our center-based
+    1. Introduction                                                      model accurately detect objects through rotationally invari-
+                                                                         ant points. Best viewed in color.
+              Strong 3D perception is a core ingredient in many state-
+    of-the-art driving systems [1, 50]. Compared to the well-            tween the two domain harder [45, 47, 60]. The crux of it
+    studied 2D detection problem, 3D detection on point-clouds           is that an axis-aligned 2D box [16, 17] is a poor proxy of a
+    offers a series of interesting challenges: First, point-clouds       free-form 3D object. One solution might be to classify a dif-
+    are sparse, and most regions of 3D space are without mea-            ferent template (anchor) for each object orientation [58, 59],
+    surements [23].           Second, the resulting output is a three-   but this unnecessarily increases the computational burden
+    dimensional box that is often not well aligned with any              and may introduce a large number of potential false-positive
+    global coordinate frame. Third, 3D objects come in a wide            detections. We argue that the main underlying challenge in
+    range of sizes, shapes, and aspect ratios, e.g., in the traf-        linking up the 2D and 3D domains lies in this representation
+    fic domain, bicycles are near planer, buses and limousines           of objects.
+    elongated, and pedestrians tall. These marked differences                      In this paper, we show how representing objects as
+    between 2D and 3D detection made a transfer of ideas be-             points (Figure 1) greatly simplifies 3D recognition.     Our
+
+        1
+
+two-stage 3D detector, CenterPoint, finds centers of ob- a category-agnostic bounding box candidates, then classify
+jects and their properties using a keypoint detector [64], a and refine it. YOLO [42], SSD [33], and RetinaNet [32]
+second-stage refines all estimates. Specifically, CenterPoint directly find a category-specific box candidate, sidestepping
+uses a standard Lidar-based backbone network, i.e., Voxel- later classification and refinement. Center-based detectors,
+Net [56, 66] or PointPillars [28], to build a representation e.g. CenterNet [64] or CenterTrack [63], directly detect the
+of the input point-cloud. It then flattens this representation implicit object center point without the need for candidate
+into an overhead map-view and uses a standard image-based boxes. Many 3D object detectors [20, 45, 47, 60] evolved
+keypoint detector to find object centers [64]. For each de- from these 2D object detector. We argue center-based repre-
+tected center, it regresses to all other object properties such sentation [63, 64] is a better fit in 3D application comparing
+as 3D size, orientation, and velocity from a point-feature at to axis-aligned boxes.
+the center location. Furthermore, we use a light-weighted 3D object detection aims to predict three dimensional ro-
+second stage to refine the object locations. This second stage tated bounding boxes [15, 28, 31, 39, 56, 60, 61]. They differ
+extracts point-features at the 3D centers of each face of the from 2D detectors on the input encoder. Vote3Deep [12]
+estimated objects 3D bounding box. It recovers the lost local leverages feature-centric voting [51] to efficiently process
+geometric information due to striding and a limited receptive the sparse 3D point-cloud on equally spaced 3D voxels. Vox-
+field, and brings a decent performance boost with minor cost. elNet [66] uses a PointNet [40] inside each voxel to generate
+   The center-based representation has several key advan- a unified feature representation from which a head with 3D
+tages: First, unlike bounding boxes, points have no intrinsic sparse convolutions [18] and 2D convolutions produces de-
+orientation. This dramatically reduces the object detector’s tections. SECOND [56] simplifies the VoxelNet and speeds
+search space while allowing the backbone to learn the rota- up sparse 3D convolutions. PIXOR [57] project all points
+tional invariance of objects and rotational equivariance of onto a 2D feature map with 3D occupancy and point inten-
+their relative rotation. Second, a center-based representation sity information to remove the expensive 3D convolutions.
+simplifies downstream tasks such as tracking. If objects are PointPillars [28] replaces all voxel computation with a pillar
+points, tracklets are paths in space and time. CenterPoint representation, a single tall elongated voxel per map location,
+predicts the relative offset (velocity) of objects between con- improving backbone efficiency. MVF [65] and Pillar-od [52]
+secutive frames, which are then linked up greedily. Thirdly, combine multiple view features to learn a more effective
+point-based feature extraction enables us to design an effec- pillar representation. Our contribution focuses on the output
+tive two-stage refinement module that is much faster than representation, and is compatible with any 3D encoder and
+previous approaches [44–46]. can improve them all.
+   We test our models on two popular large datasets: Waymo VoteNet [38] detects objects through vote clustering us-
+Open Dataset [48], and nuScenes Dataset [6]. We show that ing point feature sampling and grouping. In contrast, we
+a simple switch from the box representation to center-based directly regress to 3D bounding boxes through features at
+representation yields a 3-4 mAP increase in 3D detection the center point without voting. Wong et al. [55] and Chen
+under different backbones [28, 56, 66, 67]. Two-stage re- et al. [8] used similar multiple points representation in the
+finement further brings an additional 2 mAP boost with object center region (i.e., point-anchors) and regress to other
+small (< 10%) computation overhead. Our best single attributes. We use a single positive cell for each object and
+model achieves 71.8 and 66.4 level 2 mAPH for vehicle use a keypoint estimation loss.
+and pedestrian detection on Waymo, 58.0 mAP and 65.5 Two-stage 3D object detection. Recent works considered
+NDS on nuScenes, outperforming all published methods directly applying RCNN style 2D detectors to the 3D do-
+on both datasets. Notably, in NeurIPS 2020 nuScenes 3D mains [9, 44–46, 61]. Most of them apply RoIPool [43] or
+Detection challenge, CenterPoint is adopted in 3 of the top RoIAlign [21] to aggregate RoI-specific features in 3D space,
+4 winning entries. For 3D tracking, our model performs at using PointNet-based point [45] or voxel [44] feature extrac-
+63.8 AMOTA outperforming the prior state-of-the-art by 8.8 tor. These approaches extract region features from 3D Lidar
+AMOTA on nuScenes. On Waymo 3D tracking benchmark, measurements (points and voxels), resulting in a prohibitive
+our model achieves 59.4 and 56.6 level 2 MOTA for vehicle run-time due to massive points. Instead, we extract sparse
+and pedestrian tracking, respectively, surpassing previous features of 5 surface center points from the intermediate
+methods by up to 50%. Our end-to-end 3D detection and feature map. This makes our second stage very efficient and
+tracking system runs near real-time, with 11 FPS on Waymo keeps effective.
+and 16 FPS on nuScenes. 3D object tracking. Many 2D tracking algorithms [2, 4,
+2. Related work 27, 54] readily track 3D objects out of the box. However,
+        dedicated 3D trackers based on 3D Kalman filters [10, 53]
+2D object detection predicts axis-algined bounding box still have an edge as they better exploit the three-dimensional
+from image inputs. The RCNN family [16, 17, 21, 43] finds motion in a scene. Here, we adopt a much simpler approach
+
+        2
+
+following CenterTrack [63].             We use a velocity estimate   VoxelNet [56, 66] and PointPillars [28].
+together with the point-based detection to track centers of                   With a map-view feature map M, a detection head, most
+objects through multiple frames. This tracker is much faster         commonly a one- [32] or two-stage [43] bounding-box de-
+and more accurate than dedicated 3D trackers [10, 53].               tector, then produces object detections from some predefined
+                                                                     bounding boxes anchored on this overhead feature-map. As
+3. Preliminaries                                                     3D bounding boxes come with various sizes and orienta-
+2D CenterNet [64] rephrases object detection as keypoint             tion, anchor-based 3D detectors have difficulty fitting an
+estimation. It takes an input image and predicts a w × h             axis-aligned 2D box to a 3D object. Moreover, during the
+heatmap Yˆ ∈ [0, 1]w×h×K for each of K     classes.           Each   training, previous anchor-based 3D detectors rely on 2D Box
+local maximum (i.e., pixels whose value is greater than its          IoU for target assignment [44, 56], which creates unneces-
+8 neighbors) in the output heatmap corresponds to the cen-           sary burdens for choosing positive/negative thresholds for
+ter of a detected object. To retrieve a 2D box, CenterNet            different classes or different dataset.   In the next section,
+regresses to a size map Sˆ             ∈ Rw×h×2 shared between all   we show how to build a principled 3D object detection and
+categories. For each detection object, the size-map stores its       tracking model based on point representation. We introduce
+width and height at the center location. The CenterNet archi-        a novel center-based detection head but rely on existing 3D
+tecture uses a standard fully convolutional image backbone           backbones (VoxelNet or PointPillars).
+and adds a dense prediction head on top. During training,            4. CenterPoint
+CenterNet learns to predict heatmaps with rendered Gaus-
+sian kernels at each annotated object center qi for each class              Figure 2 shows the overall framework of the CenterPoint
+ci ∈ {1 . . . K }, and regress to object size S at the center of     model. Let M ∈ RW ×H×F be the output of the 3D back-
+the annotated bounding box. To make up for quantization er-          bone. The first stage of CenterPoint predicts a class-specific
+rors introduced by the striding of the backbone architecture,        heatmap, object size, a sub-voxel location refinement, rota-
+CenterNet also regresses to a local offset Oˆ.                       tion, and velocity. All outputs are dense predictions.
+ At test time, the detector produces K     heatmaps and              Center heatmap head.         The center-head’s goal is to pro-
+dense class-agnostic regression maps. Each local maxima              duce a heatmap peak at the center location of any detected
+(peak) in the heatmaps corresponds to an object, with                object. This head produces a K -channel heatmap Yˆ , one
+confidence proportional to the heatmap value at the peak.            channel for each of K classes. During training, it targets
+For each detected object, the detector retrieves all regression      a 2D Gaussian produced by the projection of 3D centers
+values from the regression maps at the corresponding                 of annotated bounding boxes into the map-view. We use
+peak location.                Depending on the application domain,   a focal loss [29, 64]. Objects in a top-down map view are
+Non-Maxima Suppression (NMS) may be warranted.                       sparser than in an image. In map-view, distances are ab-
+                                                                     solute, while an image-view distorts them by perspective.
+3D Detection Let P = {(x, y, z, r)i} be an orderless point-          Consider a road scene, in map-view the area occupied by
+cloud of 3D location (x, y, z) and reflectance r          measure-   vehicles small, but in image-view, a few large objects may
+ments. 3D object detection aims to predict a set of 3D object        occupy most of the screen. Furthermore, the compression
+bounding boxes B = {bk} in the bird eye view from this               of the depth-dimension in perspective projection naturally
+point-cloud. Each bounding box b           = (u, v, d, w, l, h, α)   places object centers much closer to each other in image-
+consists of a center location (u, v, d), relative to the objects     view. Following the standard supervision of CenterNet [64]
+ground plane, and 3D size (w, l, h), and rotation expressed          results in a very sparse supervisory signal, where most lo-
+by yaw α. Without loss of generality, we use an egocentric           cations are considered background. To counteract this, we
+coordinate system with sensor at (0, 0, 0) and yaw= 0.               increase the positive supervision for the target heatmap Y  by
+             Modern 3D object detectors [20, 28, 56, 66] uses a 3D   enlarging the Gaussian peak rendered at each ground truth
+encoder that quantizes the point-cloud into regular bins. A          object center. Specifically, we set the Gaussian radius to
+point-based network [40] then extracts features for all points       σ = max(f (wl), τ ), where τ     = 2 is the smallest allowable
+inside a bin. The 3D encoder then pools these features into          Gaussian radius, and f is a radius function defined in Corner-
+its primary feature representation. Most of the computation          Net [29]. In this way, CenterPoint maintains the simplicity
+happens in the backbone network, which operates solely               of the center-based target assignment; the model gets denser
+on these quantized and pooled feature representations. The           supervision from nearby pixels.
+output of a backbone network is a map-view feature-map               Regression heads.        We store several object properties at
+M ∈ RW ×L×F of width W and length L with F channels                  center-features of objects: a sub-voxel location refinement
+in a map-view reference frame. Both width and height di-             o ∈ R2, height-above-ground hg ∈ R, the 3D size s ∈ R3,
+rectly relate to the resolution of individual voxel bins and         and a yaw rotation angle (sin(α), cos(α)) ∈ R2. The sub-
+the backbone network’s stride. Common backbones include                  voxel location refinement o reduces the quantization error
+
+    3
+
+ score 0.765
+ 3D box
+
+
+                                                                                              score     0.436
+                                                                                              3D box
+                                                                            …                     …
+
+                                                                       (c) First and
+                                                                        stage:3D Boxes        (d) Second (d)
+    (a) Point cloud (b) Map-view Features      (c) Centers                                       stage:
+                                                                                                 Second stage
+    (a) Point. cloud  (b) Map-view features                            Centers and 3D boxes   Score and 3D boxes
+
+    Figure 2: Overview of our CenterPoint framework. We rely on a standard 3D backbone that extracts map-view feature
+    representation from Lidar point-clouds. Then, a 2D CNN architecture detection head finds object centers and regress to full 3D
+    bounding boxes using center features. This box prediction is used to extract point features at the 3D centers of each face of
+    the estimated 3D bounding box, which are passed into MLP to predict an IoU-guided confidence score and box regression
+    refinement. Best viewed in color.
+
+    from voxelization and striding of the backbone network. The        simplifies and improves previous anchor-based 3D detec-
+    height-above-ground hg helps localize the object in 3D and         tors (see experiments). However, all properties of the object
+    adds the missing elevation information removed by the map-         are currently inferred from the object’s center-feature, which
+    view projection. The orientation prediction uses the sine and      may not contain sufficient information for accurate object
+    cosine of the yaw angle as a continuous regression target.         localization. For example, in autonomous driving, the sensor
+    Combined with box size, these regression heads provide the         often only sees the side of the object, but not its center. Next,
+    full state information of the 3D bounding box. Each output         we improve CenterPoint by using a second refinement stage
+    uses its own head. At training time, only ground truth centers     with a light-weight point-feature extractor.
+    are supervised using an L1 regression loss. We regress to          4.1. Two-Stage CenterPoint
+    logarithmic size to better handle boxes of various shapes.
+    At inference time, we extract all properties by indexing into            We use CenterPoint unchanged as a first stage. The sec-
+    dense regression head outputs at each object’s peak location.      ond stage extracts additional point-features from the output
+    Velocity head and tracking. To track objects through time,         of the backbone. We extract one point-feature from the 3D
+    we learn to predict a two-dimensional velocity estimation          center of each face of the predicted bounding box. Note
+    v ∈ R2 for each detected object as an additional regression        that the bounding box center, top and bottom face centers
+    output. The velocity estimate is special, as it requires two in-   all project to the same point in map-view.       We thus only
+    put map-views the current and previous time-step. It predicts      consider the four outward-facing box-faces together with the
+    the difference in object position between the current and          predicted object center. For each point, we extract a feature
+    the past frame. Like other regression targets, the velocity        using bilinear interpolation from the backbone map-view
+    estimation is also supervised using L1 loss at the ground          output M. Next, we concatenate the extracted point-features
+    truth object’s location at the current time-step.                  and pass them through an MLP. The second stage predicts a
+         At inference time, we use this offset to associate current    class-agnostic confidence score and box refinement on top
+    detections to past ones in a greedy fashion. Specifically, we      of one-stage CenterPoint’s prediction results.
+    project the object centers in the current frame back to the            For class-agnostic confidence score prediction, we follow
+    previous frame by applying the negative velocity estimate          [26, 30, 44, 46] and use a score target I guided by the box’s
+    and then matching them to the tracked objects by closest           3D IoU with the corresponding ground truth bounding box:
+    distance matching. Following SORT [4], we keep unmatched            I = min(1, max(0, 2 × IoUt − 0.5))                       (1)
+    tracks up to T       = 3 frames before deleting them. We update
+    each unmatched track with its last known velocity estimation.      where IoUt is the IoU between the t-th proposal box and the
+    See supplement for the detailed tracking algorithm diagram.        ground-truth. The training is supervised with a binary cross
+             CenterPoint combines all heatmap and regression losses    entropy loss:
+    in one common objective and jointly optimizes them.          It    Lscore = −It log( Iˆt) − (1 − It) log(1 − Iˆt)            (2)
+
+        4
+
+
+
+
+
+
+
+
+
+
+ 3D Backbone
+
+
+
+
+
+
+
+
+
+
+    Head
+
+
+
+
+
+
+
+
+
+
+MLP MLP
+
+where Iˆt is the predicted confidence score. During the infer-   dation, and testing, respectively. Each sequence is approxi-
+ence, we directly use the class prediction from one-stage        mately 20-second long, with a Lidar frequency of 20 FPS.
+CenterPoint and computes the final confidence √
+    score as                                                     The dataset provides calibrated vehicle pose information for
+the geometric average of the two scores Qˆt    =  Yˆt ∗ Iˆt      each Lidar frame but only provides box annotations every
+where Qˆt is the final prediction confidence of object t and     ten frames (0.5s). nuScenes uses a 32 lanes Lidar, which
+Yˆt = max0≤k≤K Yˆp,k and Iˆt are the first stage and second      produces approximately 30k points per frame. In total, there
+stage confidence of object t, respectively.                      are 28k, 6k, 6k, annotated frames for training, validation,
+     For box regression, the model predicts a refinement on      and testing, respectively. The annotations include 10 classes
+top of first stage proposals, and we train the model with L1     with a long-tail distribution.      The official evaluation met-
+loss. Our two-stage CenterPoint simplifies and accelerates       rics are an average among the classes. For 3D detection,
+previous two-stage 3D detectors that use expensive PointNet-     the main metrics are mean Average Precision (mAP) [13]
+based feature extractor and RoIAlign operations [44, 45].        and nuScenes detection score (NDS). The mAP uses a bird-
+                                                                 eye-view center distance <           0.5m, 1m, 2m, 4m instead of
+4.2. Architecture                                                standard box-overlap. NDS is a weighted average of mAP
+  All first-stage outputs share a first 3 × 3 convolutional      and other attributes metrics, including translation, scale, ori-
+layer, Batch Normalization [25], and ReLU. Each output           entation, velocity, and other box attributes [6]. After our
+then uses its own branch of two 3 × 3 convolutions separated     test set submission, the nuScenes team adds a new neural
+by a batch norm and ReLU. Our second-stage uses a shared         planning metric (PKL) [37].              The PKL metric measures
+two-layer MLP, with a batch norm, ReLU, and Dropout [22]         the influence of 3D object detection for down-streamed au-
+with a drop rate of 0.3, followed by two branches of three       tonomous driving tasks based on the KL divergence of a
+fully-connected layers, one for confidence score and one for     planner’s route (using 3D detection) and the ground truth tra-
+box regression prediction.                                       jectory. Thus, we also report the PKL metric for all methods
+                                                                 that evaluate on the test set.
+5. Experiments                                                                   For 3D tracking, nuScenes uses AMOTA [53], which
+                                                                 penalizes ID switches, false positive, and false negatives and
+          We evaluate CenterPoint on Waymo Open Dataset and      is averaged among various recall thresholds.
+nuScenes dataset. We implement CenterPoint using two 3D                   For experiments on nuScenes, we set the detection range
+encoders: VoxelNet [56,66,67] and PointPillars [28], termed      to [−51.2m, 51.2m] for the X and Y           axis, and [−5m, 3m]
+CenterPoint-Voxel and CenterPoint-Pillar respectively.           for Z axis.           CenterPoint-Voxel use a (0.1m, 0.1m, 0.2m)
+                                                                 voxel size and CenterPoint-Pillars uses a (0.2m, 0.2m) grid.
+Waymo Open Dataset. Waymo Open Dataset [48] contains
+798 training sequences and 202 validation sequences for ve-      Training and Inference. We use the same network designs
+hicle and pedestrian. The point-clouds are captured with a 64    and training schedules as prior works [44, 67]. See supple-
+lanes Lidar, which produces about 180k Lidar points every        ment for detailed hyper-parameters. During the training of
+0.1s. The official 3D detection evaluation metrics include the   two-stage CenterPoint, we randomly sample 128 boxes with
+standard 3D bounding box mean average precision (mAP)            1:1 positive negative ratio [43] from the first stage predic-
+and mAP weighted by heading accuracy (mAPH). The mAP             tions. A proposal is positive if it overlaps with a ground truth
+and mAPH are based on an IoU threshold of 0.7 for vehicles       annotation with at least 0.55 IoU [44]. During inference,
+and 0.5 for pedestrians. For 3D tracking, the official metrics   we run the second stage on the top 500 predictions after
+are Multiple Object Tracking Accuracy (MOTA) and Mul-            Non-Maxima Suppression (NMS). The inference times are
+tiple Object Tracking Precision (MOTP) [3]. The official         measured on an Intel Core i7 CPU and a Titan RTX GPU.
+evaluation toolkit also provides a performance breakdown
+for two difficulty levels: LEVEL 1 for boxes with more than      5.1. Main Results
+five Lidar points, and LEVEL 2 for boxes with at least one       3D Detection           We first present our 3D detection results
+Lidar point.                                                     on the test sets of Waymo and nuScenes. Both results use a
+    Our Waymo   model     uses  a     detection  range   of      single CenterPoint-Voxel model. Table 1 and Table 2 summa-
+[−75.2m, 75.2m] for the X and Y     axis, and [−2m, 4m] for      rize our results. On Waymo test set, our model achieves 71.8
+the Z axis. CenterPoint-Voxel uses a (0.1m, 0.1m, 0.15m)         level 2 mAPH for vehicle detection and 66.4 level 2 mAPH
+voxel size following PV-RCNN [44] while CenterPoint-Pillar       for pedestrian detection, surpassing previous methods by
+uses a grid size of (0.32m, 0.32m).                              7.1%           mAPH for vehicles and 10.6% mAPH for pedestrians.
+                                                                 On nuScenes (Table 2), our model outperforms the last-year
+nuScenes Dataset.        nuScenes [6] contains 1000 driving      challenge winner CBGS [67] with multi-scale inputs and
+sequences, with 700, 150, 150 sequences for training, vali-      multi-model ensemble by 5.2% mAP and 2.2% NDS. Our
+
+    5
+
+ Difficulty   Method             Vehicle         Pedestrian            Method      AMOTA↑            FP↓        FN↓          IDS↓
+                                 mAP mAPH mAP mAPH                     AB3D [53]              15.1  15088       75730        9027
+              StarNet [36]       61.5   61.0    67.8   59.9            Chiu et al. [10]       55.0  17533       33216         950
+              PointPillars [28]  63.3   62.8    62.1   50.2            Ours                   63.8  18612       22928         760
+ Level 1      PPBA [36]          67.5   67.0    69.7   61.7
+              RCD [5]            72.0   71.6                         Table 4: State-of-the-art comparisons for 3D tracking on
+              Ours               80.2   79.7    78.3   72.1          nuScenes test set. We show AMOTA, the number of false
+              StarNet [36]       54.9   54.5    61.1   54.0          positives (FP), false negatives (FN), id switches (IDS), and
+              PointPillars [28]  55.6   55.1    55.9   45.1          per-category AMOTA. ↑ is for higher better and ↓ is for
+ Level 2      PPBA [36]          59.6   59.1    63.0   55.8          lower better.
+              RCD [5]            65.1   64.7
+              Ours               72.2   71.8    72.2   66.4            Encoder          Method              Vehicle Pedestrain mAPH
+Table 1: State-of-the-art comparisons for 3D detection on              VoxelNet      Anchor-based     66.1            54.4   60.3
+Waymo test set. We show the mAP and mAPH for both level                              Center-based     66.5            62.7   64.6
+1 and level 2 benchmarks.                                              PointPillars  Anchor-based     64.1            50.8   57.5
+                                                                                     Center-based     66.5            57.4   62.0
+  Method          mAP↑                  NDS↑     PKL↓                Table 5:         Comparison between anchor-based and center-
+  WYSIWYG [23]                  35.0    41.9       1.14              based methods for 3D detection on Waymo validation. We
+  PointPillars [28]             40.1    55.0       1.00              show the per-calss and average LEVEL 2 mAPH.
+  CVCNet [7]                    55.3    64.4       0.92
+  PointPainting [49]            46.4    58.1       0.89
+  PMPNet [62]                   45.4    53.1       0.81                        Encoder        Method        mAP NDS
+  SSN [68]                      46.3    56.9       0.77                                       Anchor-based  52.6 63.0
+  CBGS [67]                     52.8    63.3       0.77                        VoxelNet       Center-based  56.4 64.8
+  Ours                          58.0    65.5       0.69                        PointPillars   Anchor-based  46.2 59.1
+Table 2:            State-of-the-art comparisons for 3D detection                             Center-based  50.3 60.2
+on nuScenes test set.              We show the nuScenes detection    Table 6:         Comparison between anchor-based and center-
+score (NDS), and mean Average Precision (mAP).                       based methods for 3D detection on nuScenes validation. We
+ Difficulty   Method              MOTA↑          MOTP↓               show mean average precision (mAP) and nuScenes detection
+                                Vehicle Ped.    Vechile    Ped.      score (NDS).
+ Level 1      AB3D [48, 53]      42.5   38.9     18.6      34.0      3D Tracking     Table 3 shows CenterPoint’s tracking perfor-
+              Ours               62.6   58.3     16.3      31.1      mance on the Waymo test set. Our velocity-based closest
+ Level 2      AB3D [48, 53]      40.1   37.7     18.6      34.0      distance matching described in Section 4 significantly outper-
+              Ours               59.4   56.6     16.4      31.2      forms the official tracking baseline in the Waymo paper [48],
+Table 3: State-of-the-art comparisons for 3D tracking on             which uses a Kalman-filter based tracker [53]. We observe
+Waymo test set. We show MOTA, and MOTP. ↑ is for higher              a 19.4      and 18.9 MOTA improvement for vehicle and pedes-
+better and ↓ is for lower better.                                    trian tracking, respectively.     On nuScenes (Table 4), our
+                                                                     framework outperforms the last challenge winner Chiu et
+                                                                     al. [10] by 8.8 AMOTA. Notably, our tracking does not re-
+model is also much faster, as shown later. A breakdown               quire a separate motion model and runs in a negligible time,
+along classes is contained in the supplementary material.            1ms on top of detection.
+Our model displays a consistent performance improvement              5.2. Ablation studies
+over all categories and shows more significant improvements
+in small categories (+5.6 mAP for traffic cone) and extreme-         Center-based vs Anchor-based            We first compare our
+aspect ratio categories (+6.4 mAP for bicycle and +7.0               center-based one-stage detector with its anchor-based coun-
+mAP for construction vehicle). More importantly, our model           terparts [28, 56, 67].  On Waymo, we follow the state-of-
+significantly outperforms all other submissions under the            the-art PV-RCNN [44] to set the anchor hyper-parameters:
+neural planar metric (PKL), a hidden metric evaluated by the         we use two anchors per-locations with 0°and 90°; The posi-
+organizers after our leaderboard submission. This highlights         tive/ negative IoU thresholds are set as 0.55/0.4 for vehicles
+the generalization ability of our framework.                         and 0.5/0.35 for pedestrians. On nuScenes, we follow the
+
+                                                               6
+
+                         Vehicle               Pedestrian            Encoder     Method                     Vehicle Ped. Tₚᵣₒₚₒₛₐₗ Tref ine
+ Rel. yaw       0°-15° 15°-30° 30°-45° 0°-15° 15°-30° 30°-45°            First Stage                66.5    62.7   71ms
+ # annot.       81.4% 10.5%         8.1%  71.4% 15.8%     12.8%      VoxelNet     + Box Center      68.0    64.9   71ms           5ms
+ Anchor-based      67.1    47.7     45.4   55.9  32.0      26.5      + Surface Center               68.3    65.3   71ms           6ms
+ Center-based      67.8    46.4     51.6   64.0  42.1      35.7          Dense Sampling             68.2    65.4   71ms           8ms
+Table 7: Comparison between anchor-based and center based            PointPillars First Stage       66.5    57.4   56ms
+                                                                         + Box Center               67.3    57.4   56ms           6ms
+methods for detecting objects of different heading angles.               + Surface Center           67.5    57.9   56ms           7ms
+The ranges of the rotation angle and their corresponding              Dense Sampling                67.3    57.9   56ms           8ms
+portion of objects are listed in line 2 and line 3. We show
+the LEVEL 2 mAPH for both methods on the Waymo vali-               Table 9: Compare 3D LEVEL 2 mAPH for VoxelNet and
+dation.                                                            PointPillars encoders using single stage, two stage with 3D
+                                                                   center features, and two stage with 3D center and surface
+                                                                   center features on Waymo validation.
+  Method                   Vehicle            Pedestrian
+                    small medium large small medium large
+  Anchor-based       58.5   72.8     64.4  29.6  60.2     60.1       Methods                        Vehicle Pedestrian Runtime
+  Center-based       59.0   72.4     65.4  38.5  69.5     69.0       BEV Feature                      68.3                65.3   77ms
+                                                                     w/ VSA [44]                      68.3                65.2   98ms
+Table 8: Effects of object size for the performance of anchor-       w/ RBF Interpolation [20, 41]    68.4                65.7   89ms
+based and center-based methods.           We show the per-class
+LEVEL 2 mAPH for objects in different size range: small            Table 10: Ablation studies of different feature components
+33%, middle 33%, and large 33%                                     for two stage refinement module.              VSA stands for Voxel
+                                                                   Set Abstraction, the feature aggregation methods used in PV-
+anchor assignment strategy from the last challenge winner          RCNN [44]. RBF uses a radial basis function to interpolate 3
+CBGS [67]. All other parameters are the same as our Cen-           nearest neighbors. We compare bird-eye view and 3D voxel
+terPoint model.                                                    features using LEVEL 2 mAPH on Waymo validation.
+  As is shown in Table 5, on Waymo dataset, simply switch-
+ing from anchors to our centers gives 4.3 mAPH and 4.5             ment with multiple center features gives a large accuracy
+mAPH improvements for VoxelNet and PointPillars encoder,           boost to both 3D encoders with small overheads (6ms-7ms).
+respectively. On nuScenes (Table 6) CenterPoint improves           We also compare with RoIAlign, which densely samples
+anchor-based counterparts by 3.8-4.1 mAP and 1.1-1.8 NDS           6         × 6 points in the RoI [44, 46], our center-based feature
+across different backbones. To understand where the im-            aggregation achieved comparable performance but is faster
+provements are from, we further show the performance               and simpler.
+breakdown on different subsets based on object sizes and             The voxel quantization limits two-stage CenterPoint’s
+orientation angles on the Waymo validation set.                    improvements for pedestrian detection with PointPillars as
+  We first divide the ground truth instances into three bins       pedestrians typically only reside in 1 pixel in the model
+based on their heading angles: 0°to 15°, 15°to 30°, and            input.
+30°to 45°. This division tests the detector’s performance            Two-stage refinement does not bring an improvement
+for detecting heavily rotated boxes, which is critical for the     over the single-stage CenterPoint model on nuScenes in
+safe deployment of autonomous driving. We also divide the          our experiments. We think the reason is that the nuScenes
+dataset into three splits: small, medium, and large, and each      dataset uses 32 lanes Lidar, which produces about 30k Lidar
+split contains 13   of the overall ground truth boxes.             points per frame, about 16          of the number of points in the
+  Table 7 and Table 8 summarize the results. Our center-           Waymo dataset, which limits the potential improvements of
+based detectors perform much better than the anchor-based          two-stage refinement. Similar results have been observed
+baseline when the box is rotated or deviates from the average      in previous two-stage methods like PointRCNN [45] and
+box size, demonstrating the model’s ability to capture the         PV-RCNN [44].
+rotation and size invariance when detecting objects. These         Effects of different feature components In our two-stage
+results convincingly highlight the advantage of using a            CenterPoint model, we only use features from the 2D CNN
+point-based representation of 3D objects.                          feature map. However, previous methods propose to also uti-
+                                                                   lize voxel features for second stage refinement [44,46]. Here,
+One-stage vs. Two-stage In Table 9, we show the compari-           we compare with two voxel feature extraction baselines:
+son between single and two-stage CenterPoint models using            Voxel-Set Abstraction.                 PV-RCNN [44] proposes the
+2D CNN features on Waymo validation. Two-stage refine-             Voxel-Set Abstraction (VSA) module, which extends Point-
+
+                                                               7
+
+Figure 3: Example qualitative results of CenterPoint on the Waymo validation. We show the raw point-cloud in blue, our
+detected objects in green bounding boxes, and Lidar points inside bounding boxes in red. Best viewed on screen.
+
+Difficulty  Method                     Vehicle       Pedestrian     features are sufficient for good performance while being
+                                      mAP mAPH mAP mAPH             more efficient comparing to voxel features used in the litera-
+            DOPS [35]                 56.4                          tures [20, 41, 44].
+            PointPillars [28]         56.6           59.3                  To compare with prior work that did not evaluate on
+Level 1     PPBA [36]                 62.4           66.0           Waymo test, we also report results on the Waymo validation
+            MVF [65]                  62.9           65.3           split in Table 11.     Our model outperforms all published
+            Huang et al. [24]         63.6
+            AFDet [14]                63.7                          methods by a large margin, especially for the challenging
+            CVCNet [7]                65.2                          pedestrian class(+18.6 mAPH) of the level 2 dataset, where
+            Pillar-OD [52]            69.8           72.5           boxes contain as little as one Lidar point.
+            PV-RCNN [44]              74.4    73.8   61.4  53.4
+            CenterPoint-Pillar(ours)  76.1    75.5   76.1  65.1     3D Tracking. Table 12 shows the ablation experiments of
+            CenterPoint-Voxel(ours)   76.7    76.2   79.0  72.9     3D tracking on nuScenes validation. We compare with last
+Level 2     PV-RCNN [44]              65.4    64.8   53.9  46.7     year’s challenge winner Chiu et al. [10], which uses maha-
+            CenterPoint-Pillar(ours)  68.0    67.5   68.1  57.9     lanobis distance-based Kalman filter to associate detection
+            CenterPoint-Voxel(ours)   68.8    68.3   71.0  65.3     results of CBGS [67]. We decompose the evaluation into the
+                                                                    detector and tracker to make the comparison strict. Given the
+Table 11: State-of-the-art comparisons for 3D detection on          same detected objects, using our simple velocity-based clos-
+Waymo validation.                                                   est point distance matching outperforms the Kalman filter-
+                                                                    based Mahalanobis distance matching [10] by 3.7 AMOTA
+Detector        Tracker AMOTA↑ AMOTP↓ Ttrack           Tₜₒₜ         (line 1 vs. line 3 and line 2 vs. line4). There are two sources
+                                                                    of improvements: 1) we model the object motion with a
+CenterPoint-Voxel     Point    63.7    0.606     1ms       62ms     learned point velocity, rather than modeling 3D bounding
+CBGS [67]             Point    59.8    0.682     1ms > 182ms        box dynamic with a Kalman filter; 2) we match objects
+CenterPoint-Voxel M-KF         60.0    0.765    73ms  135ms         by center point-distance instead of a Mahalanobis distance
+CBGS [67]             M-KF     56.1    0.800    73ms  >254ms        of box states or 3D bounding box IoU. More importantly,
+Table 12: Ablation studies for 3D tracking on nuScenes val-         our tracking is a simple nearest neighbor matching without
+idation. We show combinations of different detectors and            any hidden-state computation. This saves the computational
+trackers. CenterPoint-* are our detectors. Point is our pro-        overhead of a 3D Kalman filter [10] (73ms vs. 1ms).
+posed tracker. M-KF is short for Mahalanobis distance-based
+Kalman filter, as is used in the last challenge winner Chiu et
+al. [10]. Ttrack denotes tracking time and Ttot denotes total       6. Conclusion
+time for both detection and tracking.
+
+Net++ [41]’s set abstraction layer to aggregate voxel features           We proposed a center-based framework for simultaneous
+in a fixed radius ball.                                             3D object detection and tracking from the Lidar point-clouds.
+Radial basis function (RBF) Interpolation.                 Point-   Our method uses a standard 3D point-cloud encoder with a
+Net++ [41] and SA-SSD [20] use a radial basis function to           few convolutional layers in the head to produce a bird-eye-
+aggregate grid point features from three nearest non-empty          view heatmap and other dense regression outputs. Detection
+3D feature volumes.                                                 is a simple local peak extraction with refinement, and track-
+For both baselines, we combine bird-eye view features               ing is a closest-distance matching. CenterPoint is simple,
+with voxel features using their official implementations. Ta-       near real-time, and achieves state-of-the-art performance on
+ble 10 summarizes the results.             It shows bird-eye view   the Waymo and nuScenes benchmarks.
+
+                                                         8
+
+    References                                                            [19]  Sylvain Gugger. The 1cycle policy.     https://sgugger.
+ [1]  Mayank Bansal, Alex Krizhevsky, and Abhijit Ogale. Chauf-           [20]  github.io/the-1cycle-policy.html, 2018. 11
+      feurnet: Learning to drive by imitating the best and synthesiz-           Chenhang He, Hui Zeng, Jianqiang Huang, Xian-Sheng Hua,
+      ing the worst. RSS, 2019. 1                                               and Lei Zhang. Structure aware single-stage 3d object detec-
+ [2]  Philipp Bergmann, Tim Meinhardt, and Laura Leal-Taixe.              [21]  tion from point cloud. CVPR, 2020. 2, 3, 7, 8
+      Tracking without bells and whistles. ICCV, 2019. 2                        Kaiming He, Georgia Gkioxari, Piotr Dollar, ´    and Ross Gir-
+ [3]  Keni Bernardin, Alexander Elbs, and Rainer Stiefelhagen.            [22]  shick. Mask r-cnn. ICCV, 2017. 2
+      Multiple object tracking performance metrics and evaluation               Geoffrey E Hinton, Nitish Srivastava, Alex Krizhevsky, Ilya
+      in a smart room environment. Citeseer. 5                                  Sutskever, and Ruslan R Salakhutdinov. Improving neural
+ [4]  Alex Bewley, Zongyuan Ge, Lionel Ott, Fabio Ramos, and                    networks by preventing co-adaptation of feature detectors.
+      Ben Upcroft.     Simple online and realtime tracking.       ICIP,   [23]  JMLR, 2012. 5
+      2016. 2, 4                                                                Peiyun Hu, Jason Ziglar, David Held, and Deva Ramanan.
+ [5]  Alex Bewley, Pei Sun, Thomas Mensink, Dragomir Anguelov,                  What you see is what you get: Exploiting visibility for 3d
+      and Cristian Sminchisescu. Range conditioned dilated convo-         [24]  object detection. CVPR, 2020. 1, 6, 12
+      lutions for scale invariant 3d object detection. arXiv preprint           Rui Huang, Wanyue Zhang, Abhijit Kundu, Caroline Panto-
+      arXiv:2005.09927, 2020. 6                                                 faru, David A Ross, Thomas Funkhouser, and Alireza Fathi.
+ [6]  Holger Caesar, Varun Bankiti, Alex H. Lang, Sourabh Vora,                 An lstm approach to temporal 3d object detection in lidar
+      Venice Erin Liong, Qiang Xu, Anush Krishnan, Yu Pan, Gi-            [25]  point clouds. ECCV, 2020. 8
+      ancarlo Baldan, and Oscar Beijbom. nuscenes: A multimodal                 Sergey Ioffe and Christian Szegedy.       Batch normalization:
+      dataset for autonomous driving. CVPR, 2020. 2, 5, 11                      Accelerating deep network training by reducing internal co-
+ [7]  Qi Chen, Lin Sun, Ernest Cheung, Kui Jia, and Alan Yuille.          [26]  variate shift. ICML, 2015. 5
+      Every view counts: Cross-view consistency in 3d object detec-             Borui Jiang, Ruixuan Luo, Jiayuan Mao, Tete Xiao, and Yun-
+      tion with hybrid-cylindrical-spherical voxelization. NeurIPS,             ing Jiang. Acquisition of localization confidence for accurate
+      2020. 6, 8, 12                                                      [27]  object detection. ECCV, 2018. 4
+ [8]  Qi Chen, Lin Sun, Zhixin Wang, Kui Jia, and Alan Yuille. Ob-              H. Karunasekera, H. Wang, and H. Zhang. Multiple object
+      ject as hotspots: An anchor-free 3d object detection approach             tracking with attention to appearance, structure, motion and
+      via firing of hotspots.  ECCV, 2020. 2                              [28]  size. IEEE Access, 2019. 2
+ [9]  Yilun Chen, Shu Liu, Xiaoyong Shen, and Jiaya Jia. Fast                   Alex H. Lang, Sourabh Vora, Holger Caesar, Lubing Zhou,
+      point r-cnn. ICCV, 2019. 2                                                Jiong Yang, and Oscar Beijbom. Pointpillars: Fast encoders
+                                                                                for object detection from point clouds. CVPR, 2019. 2, 3, 5,
+[10]  Hsu-kuang Chiu, Antonio Prioletti, Jie Li, and Jeannette Bohg.            6, 8, 11, 12
+      Probabilistic 3d multi-object tracking for autonomous driving.      [29]  Hei Law and Jia Deng. Cornernet: Detecting objects as paired
+      arXiv:2001.05673, 2020. 2, 3, 6, 8                                        keypoints. ECCV, 2018. 3
+[11]  Jifeng Dai, Haozhi Qi, Yuwen Xiong, Yi Li, Guodong Zhang,           [30]  Buyu Li, Wanli Ouyang, Lu Sheng, Xingyu Zeng, and Xiao-
+      Han Hu, and Yichen Wei. Deformable convolutional networks.                gang Wang. Gs3d: An efficient 3d object detection framework
+      ICCV, 2017. 11                                                            for autonomous driving. CVPR, 2019. 4
+[12]  Martin Engelcke, Dushyant Rao, Dominic Zeng Wang,                   [31] Ming Liang, Bin Yang, Yun Chen, Rui Hu, and Raquel Urta-
+      Chi Hay Tong, and Ingmar Posner.              Vote3deep: Fast ob-         sun. Multi-task multi-sensor fusion for 3d object detection.
+      ject detection in 3d point clouds using efficient convolutional           CVPR, 2019. 2
+
+      Mark Everingham, Luc Van Gool, Christopher KI Williams,                   Piotr Dollar. Focal loss for dense object detection.     ICCV,
+[13]  neural networks. ICRA, 2017. 2                                      [32]  Tsung-Yi Lin, Priya Goyal, Ross Girshick, Kaiming He, and
+      John Winn, and Andrew Zisserman. The pascal visual object                 2017. 2, 3
+      classes (voc) challenge. IJCV, 2010. 5                              [33]  Wei Liu, Dragomir Anguelov, Dumitru Erhan, Christian
+[14]  Runzhou Ge, Zhuangzhuang Ding, Yihan Hu, Yu Wang, Sijia                   Szegedy, Scott Reed, Cheng-Yang Fu, and Alexander C Berg.
+      Chen, Li Huang, and Yuan Li. Afdet: Anchor free one stage                 Ssd: Single shot multibox detector. ECCV, 2016. 2
+      3d object detection.8      arXiv preprint arXiv:2006.12671, 2020.   [34]  Ilya Loshchilov and Frank Hutter. Decoupled weight decay
+                                                                                regularization. ICLR, 2019. 11
+[15]  Andreas Geiger, Philip Lenz, and Raquel Urtasun. Are we             [35]  Mahyar Najibi, Guangda Lai, Abhijit Kundu, Zhichao Lu,
+      ready for autonomous driving? the kitti vision benchmark                  Vivek Rathod, Thomas Funkhouser, Caroline Pantofaru,
+      suite.     CVPR, 2012. 2                                                  David Ross, Larry S Davis, and Alireza Fathi. Dops: Learn-
+    [16] Ross Girshick. Fast r-cnn. ICCV, 2015. 1, 2                            ing to detect 3d objects and predict their 3d shapes. CVPR,
+[17]  Ross Girshick, Jeff Donahue, Trevor Darrell, and Jitendra                 2020. 8
+      Malik. Rich feature hierarchies for accurate object detection       [36]  Jiquan Ngiam, Benjamin Caine, Wei Han, Brandon Yang,
+      and semantic segmentation. CVPR, 2014. 1, 2                                       Yuning Chai, Pei Sun, Yin Zhou, Xi Yi, Ouais Alsharif,
+[18]  Benjamin Graham, Martin Engelcke, and Laurens van der                     Patrick Nguyen, et al.       Starnet:     Targeted computation
+      Maaten. 3d semantic segmentation with submanifold sparse                  for   object   detection in  point clouds.     arXiv  preprint
+      convolutional networks. CVPR, 2018. 2                                     arXiv:1908.11069, 2019. 6, 8
+
+          9
+
+[37]  Jonah Philion, Amlan Kar, and Sanja Fidler. Learning to eval-     [55]  Kelvin Wong, Shenlong Wang, Mengye Ren, Ming Liang,
+      uate perception models using planner-centric metrics. CVPR,             and Raquel Urtasun. Identifying unknown instances for au-
+      2020. 5                                                                 tonomous driving. CORL, 2019. 2
+[38]  Charles R. Qi, Or Litany, Kaiming He, and Leonidas Guibas.        [56]  Yan Yan, Yuxing Mao, and Bo Li.              Second: Sparsely em-
+      Deep hough voting for 3d object detection in point clouds.              bedded convolutional detection.        Sensors, 2018. 2, 3, 5, 6,
+      ICCV, 2019. 2                                                           11
+[39]  Charles R Qi, Wei Liu, Chenxia Wu, Hao Su, and Leonidas J         [57]  Bin Yang, Wenjie Luo, and Raquel Urtasun. Pixor: Real-time
+      Guibas. Frustum pointnets for 3d object detection from rgb-d            3d object detection from point clouds. CVPR, 2018. 2
+      data. CVPR, 2018. 2                                               [58]  Xue Yang, Qingqing Liu, Junchi Yan, Ang Li, Zhiqiang
+[40]  Charles R Qi, Hao Su, Kaichun Mo, and Leonidas J Guibas.                Zhang, and Gang Yu. R3det: Refined single-stage detector
+      Pointnet: Deep learning on point sets for 3d classification and         with feature refinement for rotating object. arXiv:1908.05612,
+      segmentation. CVPR, 2017. 2, 3                                          2019. 1
+[41]  Charles Ruizhongtai Qi, Li Yi, Hao Su, and Leonidas J             [59]  Xue Yang, Jirui Yang, Junchi Yan, Yue Zhang, Tengfei Zhang,
+      Guibas. Pointnet++: Deep hierarchical feature learning on               Zhi Guo, Xian Sun, and Kun Fu. Scrdet: Towards more robust
+      point sets in a metric space. In NeurIPS, 2017. 7, 8                    detection for small, cluttered and rotated objects. ICCV, 2019.
+[42]  Joseph Redmon and Ali Farhadi. Yolo9000: better, faster,                1
+      stronger. CVPR, 2017. 2                                           [60]  Zetong Yang, Yanan Sun, Shu Liu, and Jiaya Jia.            3dssd:
+[43]  Shaoqing Ren, Kaiming He, Ross Girshick, and Jian Sun.                  Point-based 3d single stage object detector. CVPR, 2020. 1,
+      Faster r-cnn: Towards real-time object detection with region            2, 11
+      proposal networks. NIPS, 2015. 2, 3, 5                            [61]  Zetong Yang, Yanan Sun, Shu Liu, Xiaoyong Shen, and Jiaya
+[44]  Shaoshuai Shi, Chaoxu Guo, Li Jiang, Zhe Wang, Jianping                 Jia. Std: Sparse-to-dense 3d object detector for point cloud.
+      Shi, Xiaogang Wang, and Hongsheng Li.           Pv-rcnn: Point-         ICCV, 2019. 2
+      voxel feature set abstraction for 3d object detection. CVPR,      [62]  Junbo Yin, Jianbing Shen, Chenye Guan, Dingfu Zhou, and
+      2020. 2, 3, 4, 5, 6, 7, 8, 11                                           Ruigang Yang.           Lidar-based online 3d video object detec-
+[45]  Shaoshuai Shi, Xiaogang Wang, and Hongsheng Li. Pointr-                 tion with graph-based message passing and spatiotemporal
+      cnn: 3d object proposal generation and detection from point             transformer attention. CVPR, 2020. 6, 12
+      cloud. CVPR, 2019. 1, 2, 5, 7                                     [63]  Xingyi Zhou, Vladlen Koltun, and Philipp Krahenb¨ uhl. ¨   Track-
+[46]  Shaoshuai Shi, Zhe Wang, Jianping Shi, Xiaogang Wang, and               ing objects as points. ECCV, 2020. 2, 3
+      Hongsheng Li. From points to parts: 3d object detection from      [64]  Xingyi Zhou, Dequan Wang, and Philipp Krahenb¨    uhl. ¨  Objects
+      point cloud with part-aware and part-aggregation network.               as points. arXiv:1904.07850, 2019. 2, 3
+      TPAMI, 2020. 2, 4, 7                                              [65]  Yin Zhou, Pei Sun, Yu Zhang, Dragomir Anguelov, Jiyang
+[47]  Martin Simony, Stefan Milzy, Karl Amendey, and Horst-                   Gao, Tom Ouyang, James Guo, Jiquan Ngiam, and Vijay Va-
+      Michael Gross.   Complex-yolo: An euler-region-proposal                 sudevan. End-to-end multi-view fusion for 3d object detection
+      for real-time 3d object detection on point clouds.        ECCV,         in lidar point clouds. CORL, 2019. 2, 8
+      2018. 1, 2                                                        [66]  Yin Zhou and Oncel Tuzel. Voxelnet: End-to-end learning
+[48]  Pei Sun, Henrik Kretzschmar, Xerxes Dotiwalla, Aurelien                 for point cloud based 3d object detection. CVPR, 2018. 2, 3,
+      Chouard, Vijaysai Patnaik, Paul Tsui, James Guo, Yin Zhou,              5, 11
+      Yuning Chai, Benjamin Caine, et al. Scalability in perception     [67]  Benjin Zhu, Zhengkai Jiang, Xiangxin Zhou, Zeming Li, and
+      for autonomous driving: An open dataset benchmark. CVPR,                Gang Yu. Class-balanced grouping and sampling for point
+      2020. 2, 5, 6                                                           cloud 3d object detection. arXiv:1908.09492, 2019. 2, 5, 6,
+[49]  Sourabh Vora, Alex H Lang, Bassam Helou, and Oscar Bei-                 7, 8, 11, 12
+      jbom. Pointpainting: Sequential fusion for 3d object detection.   [68]  Xinge Zhu, Yuexin Ma, Tai Wang, Yan Xu, Jianping Shi, and
+      CVPR, 2020. 6, 11, 12                                                   Dahua Lin. Ssn: Shape signature networks for multi-class
+[50]  Dequan Wang, Coline Devin, Qi-Zhi Cai, Philipp Krahenb¨ uhl,¨           object detection from point clouds. ECCV, 2020. 6, 12
+      and Trevor Darrell. Monocular plan view networks for au-
+      tonomous driving. IROS, 2019. 1
+[51]  Dominic Zeng Wang and Ingmar Posner. Voting for voting in
+      online point cloud object detection. RSS, 2015. 2
+[52]  Yue Wang, Alireza Fathi, Abhijit Kundu, David Ross, Caro-
+      line Pantofaru, Tom Funkhouser, and Justin Solomon. Pillar-
+      based object detection for autonomous driving. ECCV, 2020.
+      2, 8
+[53]  Xinshuo Weng and Kris Kitani. A Baseline for 3D Multi-
+      Object Tracking. IROS, 2020. 2, 3, 5, 6
+[54]  Nicolai Wojke, Alex Bewley, and Dietrich Paulus. Simple
+      online and realtime tracking with a deep association metric.
+      ICIP, 2017. 2
+
+          10
+
+  A. Tracking algorithm                                                  B. Implementation Details
+                                                                          Our implementation is based on the open-sourced code
+  Algorithm 1: Center-based Tracking                                     of CBGS [67]1. CBGS provides implementations of Point-
+                                                                         Pillars [28] and VoxelNet [66] on nuScenes. For Waymo
+    Input    : T (t−1) = {(p, v, c, q, id, a)(t−1)j   }Mj=1:             experiments, we use the same architecture for VoxelNet and
+              Tracked objects in the previous frame, with                increases the output stride to 1 for PointPillars [28] following
+              center p, ground plane velocity v, category                the dataset’s reference implementation2.
+              label c, other bounding box attributes q,                   A common practice [6, 49, 60, 67] in nuScenes is to trans-
+              tracking id id, and inactive age a (active                 form and merge the Lidar points of non-annotated frames
+              tracks will have a = 0).                                   into its following annotated frame. This produces a denser
+              Dˆ (t)   = {(ˆ
+                              p, vˆ, c,ˆ    qˆ)(t)i }N : Detections in   point-cloud and enables a more reasonable velocity estima-
+                          i=1
+    the current frame in descending confidence.                          tion. We follow this practice in all nuScenes experiments.
+    Output : T (t) = {(p, v, c, q, id, a)Kj=1}: Tracked                   For data augmentation, we use random flipping along
+              Objects.                                                   both X and Y axis, and global scaling with a random fac-
+ 1  Hyper parameters: Matching distance threshold τ ;                    tor from [0.95, 1.05]. We use a random global rotation be-
+                    Max inactive age A.                                  tween [−π/8, π/8] for nuScenes [67] and [−π/4, π/4] for
+ 2  Initialization: Tracks T (t), and matches S are                      Waymo [44]. We also use the ground-truth sampling [56] on
+              initialized as empty sets.                                 nuScenes to deal with the long tail class distribution, which
+ 3  T (t)                ← ∅, S ← ∅                                      copies and pastes points inside an annotated box from one
+ 4  F ← Cost( Dˆ (t), T (t−1))     //                                    frame to another frame.
+    Fij = ||pˆ(t)i     − vˆ, p(t−1)j ||2                                  For nuScenes dataset, we follow CBGS [67] to optimize
+ 5  for i ← 1 to N do                                                    the model using AdamW [34] optimizer with one-cycle learn-
+ 6   j ← arg minj ∈S/     Fij                                            ing rate policy [19], with max learning rate 1e-3, weight de-
+                                                                         cay 0.01, and momentum 0.85 to 0.95. We train the models
+ 7   // Class-wise distance threshold τc                                 with batch size 16 for 20 epochs on 4 V100 GPUs.
+ 8   if Fij         ≤ τc then                                             We use the same training schedule for Waymo models
+ 9           // Associate with tracked object                            except a learning rate 3e-3, and we train the model for 30
+10           a(it)    ← 0                                                epochs following PV-RCNN [44]. To save computation on
+11           T (t)    ← T (t) ∪ {( Dˆi(t), id(t−1)j    , a(t)i )}        large scale Waymo dataset, we finetune the model for 6
+12           S ← S ∪ {j} // Mark track j as matched                      epochs with second stage refinement modules for various
+13   end                                                                 ablation studies. All ablation experiments are conducted in
+14   else                                                                this same setting.
+15           // Initialize a new track                                    For the nuScenes test set submission, we use a input grid
+16           a(t)i    ← 0                                                size of 0.075m × 0.075m and add two separate deformable
+                                                                         convolution layers [11] in the detection head to learn differ-
+17           T (t)    ← T (t) ∪ {( Dˆi(t), newID, a(t)i )}               ent features for classification and regression. This improves
+18   end                                                                 CenterPoint-Voxel’s performance from 64.8 NDS to 65.4
+19  end                                                                  NDS on nuScenes validation. For the nuScenes tracking
+20  for j ← 1 to M do                                                    benchmark, we submit our best CenterPoint-Voxel model
+21   if j ∈ /       S then        with flip testing, which yields a result of 66.5 AMOTA on
+22           // Unmatched tracks                                         nuScenes validation.
+23           if T.a(tj    −1) < A then                                   C. nuScenes Performance across classes
+24                   T.aj(t) ← T.a(jt−1) + 1
+25                   T.pj(t) ← T.p(t−1)j      + T.vj(t−1) // Update       We show per-class comparisons with state-of-the-art
+                      the center location                                methods in Table 13.
+26                   T (t) ← T (t) ∪ {Tj(t−1)}                           D. nuScenes Detection Challenge
+27           end
+28   end                                                                  As a general framework, CenterPoint is complementary
+29  end                                                                  to contemporary methods and was used by three of the top 4
+30  Return T (t)                                                          1 https://github.com/poodarchu/Det3D
+                                                                          2 https : / / github . com / tensorflow / lingvo / tree /
+                                                                         master/lingvo/tasks/car
+
+                          11
+
+ Method                    mAP     NDS    Car  Truck   Bus Trailer  CV   Ped  Motor Bicycle   TC Barrier
+ WYSIWYG [23]              35.0    41.9   79.1  30.4   46.6  40.1  7.1   65.0  18.2   0.1   28.8   34.7
+ PointPillars [28]         30.5    45.3   68.4  23.0   28.2  23.4  4.1   59.7  27.4   1.1   30.8   38.9
+ PointPainting [49]        46.4    58.1   77.9  35.8   36.2  37.3  15.8  73.3  41.5   24.1  62.4   60.2
+ CVCNet [7]                55.3    64.4   82.7  46.1   46.6  49.4  22.6  79.8  59.1   31.4  65.6   69.6
+ PMPNet [62]               45.4    53.1   79.7  33.6   47.1  43.1  18.1  76.5  40.7   7.9   58.8   48.8
+ SSN [68]                  46.4    58.1   80.7  37.5   39.9  43.9  14.6  72.3  43.7   20.1  54.2   56.3
+ CBGS [67]                 52.8    63.3   81.1  48.5   54.9  42.9  10.5  80.1  51.5   22.3  70.9   65.7
+ Ours                      58.0    65.5   84.6  51.0   60.2  53.2  17.5  83.4  53.7   28.7  76.7   70.9
+
+Table 13: State-of-the-art comparisons for 3D detection on nuScenes test set. We show the NDS, mAP, and mAP for each
+class. Abbreviations: construction vehicle (CV), pedestrian (Ped), motorcycle (Motor), and traffic cone (TC).
+
+           Method                 mAP     NDS
+           Baseline               57.1    65.4
+           + PointPainting [49]   62.7    68.0
+           + Flip Test            64.9    69.4
+           + Rotation             66.2    70.3
+           + Ensemble             67.7    71.4
+           + Filter Empty         68.2    71.7
+
+Table 14: Ablation studies for 3D detection on nuScenes
+validation.
+
+entries in the NeurIPS 2020 nuScenes detection challenge.
+In this section, we describe the details of our winning sub-
+mission which significantly improved 2019 challenge winner
+CBGS [67] by 14.3 mAP and 8.1 NDS. We report some im-
+proved results in Table 14. We use PointPainting [49] to
+annotate each lidar point with image-based instance segmen-
+tation results generated by a Cascade RCNN model trained
+on nuImages3. This improves the NDS from 65.4 to 68.0.
+We then perform two test-time augmentations including dou-
+ble flip testing and point-cloud rotation around the yaw axis.
+Specifically, we use [0°, ± 6.25°, ± 12.5°, ± 25°] for yaw
+rotations. Theses test time augmentations improve the NDS
+from 68.0 to 70.3. In the end, we ensemble five models with
+input grid size between [0.05m, 0.05m] to [0.15m, 0.15m]
+and filter out predictions with zero number of points, which
+yields our best results on nuScenes validation, with 68.2
+mAP and 71.7 NDS.
+
+
+
+
+
+
+
+
+
+
+3acquired  from https : / / github . com / open - mmlab /
+mmdetection3d/tree/master/configs/nuimages
+
+                                                         12
+

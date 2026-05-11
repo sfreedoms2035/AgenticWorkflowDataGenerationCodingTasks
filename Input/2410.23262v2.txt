@@ -1,0 +1,1324 @@
+arXiv:2410.23262v2 [cs.CV] 4 Nov 2024
+
+
+
+
+
+
+
+
+
+
+EMMA: End-to-End Multimodal Model
+      for Autonomous Driving
+
+
+
+
+Jyh-Jing Hwang∗†, Runsheng Xu∗, Hubert Lin‡, Wei-Chih Hung‡, Jingwei Ji, Kristy Choi
+       Di Huang, Tong He, Paul Covington, Benjamin Sapp, Yin Zhou, James Guo
+                          Dragomir Anguelov, Mingxing Tan†
+
+                                     Waymo LLC
+
+
+        Abstract
+
+        We introduce EMMA, an End-to-end Multimodal Model for Autonomous driving.
+        Built on a multi-modal large language model foundation, EMMA directly maps
+        raw camera sensor data into various driving-specific outputs, including planner
+        trajectories, perception objects, and road graph elements. EMMA maximizes
+        the utility of world knowledge from the pre-trained large language models, by
+        representing all non-sensor inputs (e.g. navigation instructions and ego vehicle
+        status) and outputs (e.g. trajectories and 3D locations) as natural language text.
+        This approach allows EMMA to jointly process various driving tasks in a unified
+        language space, and generate the outputs for each task using task-specific prompts.
+        Empirically, we demonstrate EMMA’s effectiveness by achieving state-of-the-art
+        performance in motion planning on nuScenes as well as competitive results on the
+        Waymo Open Motion Dataset (WOMD). EMMA also yields competitive results
+        for camera-primary 3D object detection on the Waymo Open Dataset (WOD). We
+        show that co-training EMMA with planner trajectories, object detection, and road
+        graph tasks yields improvements across all three domains, highlighting EMMA’s
+        potential as a generalist model for autonomous driving applications. However,
+        EMMA also exhibits certain limitations: it can process only a small amount of
+        image frames, does not incorporate accurate 3D sensing modalities like LiDAR
+        or radar and is computationally expensive. We hope that our results will inspire
+        further research to mitigate these issues and to further evolve the state of the art in
+        autonomous driving model architectures.
+
+1 Introduction
+
+Autonomous driving technology has made significant progress in recent years. To make autonomous
+vehicles a ubiquitous form of transportation, they must navigate increasingly complex real-world
+scenarios that require understanding rich scene context as well as sophisticated reasoning and
+decision-making.
+Historically, autonomous driving systems employed a modular approach, consisting of specialized
+components for perception [Yurtsever et al., 2020, Li et al., 2022b, Lang et al., 2019, Sun et al., 2022,
+Hwang et al., 2022], mapping [Li et al., 2022a, Tancik et al., 2022], prediction [Nayakanti et al., 2023,
+Shi et al., 2024], and planning [Teng et al., 2023]. While this design lends itself to easier debugging
+and optimization of individual modules, it poses scalability challenges due to the accumulated
+errors among modules and limited inter-module communication. In particular, the expert-designed
+
+   ∗Equal contributions; ‡ Equal contributions.
+   †Contact emails: Mingxing Tan <tanmingxing@waymo.com>, Jyh-Jing Hwang <jyhh@waymo.com>.
+
+Technical report. November 5, 2024.
+
+interfaces between modules, such as the perception and behavior modules, may struggle to adapt to
+novel environments because they are often pre-defined based on targeted scenarios [Bansal et al.,
+2019, Jiang et al., 2023, Nayakanti et al., 2023, Seff et al., 2023]. End-to-end autonomous driving
+systems [Hu et al., 2023, Zhai et al., 2023, Li et al., 2024] have recently emerged as a potential
+solution, directly learning to generate driving actions from sensor data. This approach eliminates the
+need for symbolic interfaces between modules and allows for joint optimization of driving objectives
+from raw sensor inputs. However, these systems are often specialized for specific driving tasks and
+trained on limited datasets, hindering their ability to generalize to rare or novel scenarios.
+Multimodal Large Language Models (MLLMs) [Gemini Team Google, 2023, Achiam et al., 2023]
+offer a promising new paradigm for AI in autonomous driving that may help to address such
+challenges. This is because MLLMs, as generalist foundation models, excel in two key areas: (1)
+they are trained on vast, internet-scale datasets that provide rich "world knowledge" beyond what is
+contained in common driving logs, and (2) they demonstrate superior reasoning capabilities through
+techniques such as chain-of-thought reasoning [Wei et al., 2022] that are not available in specialized
+driving systems. While recent efforts [Chen et al., 2024b, Tian et al., 2024] have explored integrating
+and augmenting the capabilities of existing driving systems with MLLMs, we propose to develop an
+autonomous driving system in which the MLLM is a first class citizen.
+We introduce the End-to-End Multimodal Model for Autonomous Driving (EMMA), built on top of
+Gemini [Gemini Team Google, 2023] without additional specialized components. Figure 1 shows
+the overview of the EMMA framework. EMMA accepts camera images and plain text for other non-
+vision inputs such as high-level driving commands and historical context. By recasting driving tasks
+as visual question answering (VQA) problems, EMMA leverages Gemini’s pre-trained capabilities
+while preserving its extensive world knowledge. After EMMA is fine-tuned with driving logs from
+all tasks using task-specific prompts (see Figure 2 for more examples), its shared Gemini model
+generates various driving outputs such as future trajectories for motion planning, perception objects,
+road graph elements, and scene semantics. Our experiments showcase EMMA’s strong performance
+on several planning and perception benchmarks despite this simple design. Additionally, we find that
+EMMA can produce interpretable, human-readable outputs for many perception tasks such as road
+graph estimation, and is able to function as a generalist model that is both scalable and robust for
+autonomous driving. Notably, as used here and throughout the paper, the EMMA generalist model
+refers to a machine learning model that has been trained and fine-tuned on a large volume of driving
+data to perform a wide range of specific driving tasks in the autonomous driving domain.
+We summarize our key findings below:
+
+      1. EMMA exhibits strong performance in end-to-end motion planning, achieving state-of-
+        the-art performance on public benchmarks nuScenes [Caesar et al., 2020] and competitive
+        results on the Waymo Open Motion Dataset (WOMD) [Chen et al., 2024a]. We also show
+        that we can further improve motion planning quality with more internal training data and
+        chain-of-thought reasoning.
+      2. EMMA demonstrates competitive results for various perception tasks including 3D object
+        detection, road graph estimation, and scene understanding. On the camera-primary Waymo
+        Open Dataset (WOD) [Hung et al., 2024], EMMA achieves better precision and recall for
+        3D object detection than state-of-the-art methods.
+      3. We demonstrate that EMMA can function as a generalist model in the autonomous driving
+        domain, which jointly generates the outputs for multiple driving related tasks. In particular,
+        EMMA matches or even surpasses the performance of individually trained models when it
+        is co-trained with motion planning, object detection, and road graph tasks.
+      4. Finally, we show EMMA’s capacity to reason and make decisions in complex, long-tail
+        driving scenarios.
+
+Despite these promising results, EMMA is not without its limitations. In particular, it faces challenges
+for real-world deployment due to: (1) limitations in 3D spatial reasoning due to its inability to fuse
+camera inputs with LiDAR or radar, (2) the need for realistic and computationally expensive sensor
+simulation to power its closed-loop evaluation, and (3) the increased computational requirements
+relative to conventional models. We plan to better understand and address such challenges in future
+work.
+
+        2
+
+      Router  )
+High-level command    ||  Soho srience     ||
+        pr                                 AN
+
+        Jo
+     n tex        eed                      A
+    by        Model
+
+
+
+        : -
+        5 — Spatial reasoning Road comprehensionns Scenene ununderstanding
+Figure 1: EMMA overview diagram. It takes 3 inputs (left): 1) a high-level command from the
+router, 2) historical status of the ego vehicle, and 3) surround-view camera videos. The model then
+predicts ego future trajectories (right) for motion planning that will be transformed into vehicle
+driving control signals. Further, we can ask the model to explain its rationale (top right) before
+predicting trajectories, which enhances both the performance and explainability of the model through
+chain-of-thought reasoning. Notably, we incorporate visual grounding into the rationale so that the
+model also predicts the accurate 3D/BEV location for critical objects. For completeness, we highlight
+three additional capabilities of our model (bottom).
+
+In the remainder of this paper, Section 2 describes the detailed method of EMMA for end-to-end
+motion planning and generalist tasks in autonomous driving. In Section 3, we present experimental
+results of EMMA on public and internal datasets. Finally, we discuss related works and limitations of
+our work in Sections 4 and 5, respectively.
+
+2 Method
+
+EMMA is built on top of Gemini [Gemini Team Google, 2023], a family of MLLMs developed at
+Google. We leverage the auto-regressive Gemini models that are trained to process interleaved textual
+and visual inputs to produce text outputs:
+        O = G(T, V) (1)
+where G is the Gemini model, O represents natural language outputs, T represents natural lan-
+guage prompts, and V denotes images or videos. The language output O = (o1, o2, ..., on) is
+generated via next-token prediction, i.e., the output probability can be represented as
+Qn P (o |o , T, V) for n output tokens. Our goal is to adapt P (O|T, V) =
+  i=1 i <i G for autonomous driving applica-
+tions, thereby harnessing the world knowledge obtained during its pre-training phase.
+As shown in Figure 1, we map autonomous driving tasks into Gemini-based EMMA formulation. All
+sensor data are represented as stitched images or videos as V; all router commands, driving context,
+and task-specific prompts are represented as T; all output tasks are presented as language outputs
+O. A challenge is that many of the inputs and outputs need to capture 3D world coordinates, such
+as waypoint BEV (Bird’s Eye View) locations (x, y) for motion planning and the location and size
+of 3D boxes. We consider two representations: The first is direct text conversion to floating-point
+numbers, expressed as Tcoordinates = {(xi, yi)} ≈ text({(xi, yi)}), where the specified decimal
+precision depends on the distance unit and decimal points. RT-2 [Brohan et al., 2023] exemplifies this
+approach in robotic control. The second approach uses special tokens to represent each location or
+action, formulated as Tcoordinates = {(xi, yi)} ≈ tokenize({(xi, yi)}), with resolution determined
+by the learned or manually defined discretization scheme. MotionLM [Seff et al., 2023] leverages
+this method for motion forecasting. We note that the two approaches have their respective strengths
+and weaknesses. We opt for the text representation such that all tasks can share the same unified
+language representation space and they can maximally reuse the knowledge from the pre-trained
+weights, even though the text presentation may produce more tokens than specialized tokenization.
+
+        3
+
+2.1 End-to-End Motion Planning
+EMMA employs a unified, end-to-end trained model to generate future trajectories for autonomous
+vehicles directly from sensor data. These generated trajectories are then transformed into vehicle-
+specific control actions such as acceleration and turning for autonomous vehicles. EMMA’s end-to-end
+approach aims to emulate human driving behavior, focusing on two critical aspects: (1) first, the
+use of navigation systems (e.g. Google Maps) for route planning and intent determination, and (2)
+second, the utilization of past actions to ensure smooth, consistent driving over time.
+Our model incorporates three key inputs to align with these human driving behaviors:
+      1. Surround-view camera videos (V): Provides comprehensive environment information.
+      2. High-level intent command (Tintent): Derived from the router, includes directives such as
+        “go straight”, “turn left”, “turn right”, etc.
+      3. Set of historical ego status (Tego): Represented as a set of waypoint coordinates in Bird’s
+        Eye View (BEV) space, Tego = {(xt, yt)}−Tʰ for T timestamps. All waypoint coordinates
+                    t=−1     h
+        are represented as plain text without specialized tokens. This can also be extended to include
+        higher-order ego status such as velocity and acceleration.
+The model generates future trajectories for motion planning, represented as a set of future trajectory
+waypoints for the ego vehicle in the same BEV space: Otrajectory = {(xt, yt)}Tt=1ᶠ for future Tf
+timestamps, where all output waypoints are also represnted as plain text. Putting everything together,
+the complete formulation is expressed as:
+                Otrajectory = G(Tintent, Tego, V).                                                                    (2)
+                          We then fine-tune Gemini with this formulation for end-to-end planner trajectory generation, as
+    illustrated in Figure 1. We highlight 3 characteristics of this formulation:
+      1.                    Self-supervised: the only required supervision is the future locations of the ego vehicle. No
+                dedicated human labels are needed.
+      2.        Camera-only: the only sensor input required is surround-view cameras.
+      3.                                HD map free: no HD map is needed beyond the high-level routing information from a
+                navigation system such as Google Maps.
+                  While we are not the first to adopt this general formulation—[Li et al., 2024] conducted a thorough in-
+    vestigation, particularly examining the impact of including the historical ego status—our contribution
+    lies in adapting this formulation specifically for MLLMs for autonomous driving.
+
+    2.2 Planning with Chain-of-Thought Reasoning
+                        Chain-of-thought Prompting [Wei et al., 2022] is a powerful tool in MLLMs that enhances reasoning
+                             capabilities and improves explainability. In EMMA, we incorporate chain-of-thought reasoning
+                   into end-to-end planner trajectory generation by asking the model to articulate its decision rationale
+    Orationale  while predicting the final future trajectory waypoints Otrajectory.
+                    We structure the driving rationale hierarchically, progressing from 4 types of coarse-to-fine-grained
+    information:
+    R1 -               Scene description broadly describes the driving scenarios, including weather, day of time, traffic
+                     situations, and road conditions. For example: The weather is clear and sunny, and it is daytime. The
+                   road is four-lane undivided street with a crosswalk in the middle. There are cars parked on both sides
+                of the street.
+    R2 -               Critical objects are the on-road agents that can potentially influence the driving behavior of the
+                        ego vehicle, and we require the model to identify their precise 3D/BEV coordinates. For instance:
+                pedestrian at [9.01, 3.22], vehicle at [11.58, 0.35].
+    R3 -              Behavior description of critical objects describes the current status and intent for the identified
+                critical objects. A concrete example is as follows: The pedestrian is currently standing on the sidewalk,
+                      looking toward the road, and maybe preparing to cross the street. The vehicle is currently ahead of
+                me, moving in the same direction, and its future trajectory suggests it will continue straight.
+    R4 -            Meta driving decision includes 12 categories of high-level driving decisions, summarizing the driving
+                plan given the previous observations. An example would be I should keep my current low speed.
+
+                                4
+
+We highlight that the driving rationale captions are generated using an automated tool without any
+additional human labels, ensuring scalability of the data generation pipeline. Specifically, we leverage
+off-the-shelf perception and prediction expert models to identify critical agents, and then use Gemini
+models with carefully designed visual and text prompts to generate comprehensive scene and agent
+behavior descriptions. Meta driving decisions are computed using a heuristic algorithm that analyzes
+the ego vehicle’s ground-truth trajectory.
+During both training and inference, the model predicts all four components of the driving rationale
+before predicting the future waypoints, i.e.,
+        (Orationale, Otrajectory) = G(Tintent, Tego, V). (3)
+Where Orationale denotes an ordered text output of (R1, R2, R3, R4) for driving rationale. Empirically,
+we observe that the prediction order of Orationale and Otrajectory does not result in a significant difference
+in quality after model convergence. This suggests that we can predict Otrajectory first and apply early
+stopping during inference for time-critical applications.
+
+2.3 EMMA Generalist
+While end-to-end motion planning is the ultimate core task, a comprehensive autonomous driving
+system requires additional capabilities. Specifically, it must perceive the 3D world and recognize
+surrounding objects, the road graph and the traffic conditions. To achieve this goal, we formulate
+EMMA as a generalist model capable of handling multiple driving tasks through training mixtures.
+Our vision-language framework represents all non-sensor inputs and outputs as plain text, providing
+the flexibility necessary to incorporate many other driving tasks. We employ instruction-tuning, a
+well-established approach in LLMs, to jointly train all tasks together with task-specific prompts
+included in the inputs T of Eq. 1. We organize these tasks into three primary categories: spatial
+reasoning, road graph estimation, and scene understanding. Fig. 2 illustrates the overall EMMA
+Generalist diagram.
+Spatial reasoning is the ability to understand, reason, and draw conclusions about objects and their
+relationships in space. This enables an autonomous driving system to interpret and interact with its
+surrounding environment for safe navigation.
+Our primary focus for spatial reasoning is 3D object detection. We follow Pix2Seq [Chen et al.,
+2022a] and formulate the output 3D bounding boxes as Oboxes = set{text(x, y, z, l, w, h, θ, cls)}
+where (x, y, z) are the center location in the vehicle frame, l, w, h are the length, width, and height
+of the box, θ is the heading angle, and cls is the class label in text. We convert a 7D box to text by
+writing floating-point numbers with two decimal places, separated by spaces between each dimension.
+We then represent the detection tasks using a fixed prompt Tdetect_3D, such as “detect every object in
+3D”, as in the following:
+        Oboxes = G(Tdetect_3D, V). (4)
+While Oboxes is an unordered set of boxes, the predictions from an auto-regressive language model
+are always ordered. We find that sorting the 3D bounding boxes by depth improves detection quality,
+in contrast with the findings in Pix2Seq [Chen et al., 2022a].
+Road graph estimation focuses on identifying critical road elements for safe driving, including
+semantic elements (e.g., lane markings, signs) and physical properties (e.g., lane curvature). The
+collection of these road elements forms a road graph. For example, lane segments are represented
+by (a) nodes, where the lanes encounter an intersection, merge, or split and (b) edges between these
+nodes following the direction of traffic. The full road-graph is composed of many such polyline
+segments.
+While edges within each polyline are directional, each polyline does not necessarily have a unique
+order relative to the other elements. This bears similarity to object detection (e.g., [Carion et al., 2020,
+Chen et al., 2022a]), where each box is defined by ordered attributes (top-left corner, bottom-right
+corner), but a relative ordering between boxes does not necessarily exist. There are several existing
+works that model polyline graphs with Transformers [Yuan et al., 2024, Liao et al., 2024a,b, 2023,
+Ding et al., 2023, Qiao et al., 2023, Liu et al., 2023, Li et al., 2022a], sharing similarities with
+language models.
+Our general modeling formulation in EMMA is as follows:
+        Oroadgraph = G(Testimate_roadgraph, V). (5)
+
+        5
+
+Task Prompts and        Camera Input (Video)    Answers  Decoded Visualization
+ir      15                                       Pteorm
+
+Detect everything in 30?        vericle....theta, J
+
+    J
+
+    EMMA:      Multimodal Mode
+
+
+    temporary blocked?       Noteroadaneads
+                                  car.
+     {moretask prompts]    moretask answers)      ne
+
+Figure 2: Illustration of EMMA Generalist. Starting with a task prompt (left), EMMA generates
+a corresponding textual prediction (middle right), which can then be decoded into a target output
+format, visualized and overlaid with the input image (right). EMMA Generalist is highly versatile,
+capable of performing a wide range of driving-related tasks, such as end-to-end motion planning,
+object detection, road graph estimation, and scene understanding Q&A. In the answer text, italicized
+words represent placeholders that will be dynamically substituted with actual values during task
+execution.
+
+where Oroadgraph is a text-encoded road graph represented as waypoints, Testimate_roadgraph is a prompt
+asking the model to predict the roadgrah, and V denotes the surrounding images.
+We focus specifically on predicting drivable lanes, i.e., the lanes that the ego vehicle can drive towards
+in the scene. These are neighboring lanes in the same traffic direction and lanes branching out from
+the current ego lane. To construct Oroadgraph, we (a) convert lanes into sets of ordered waypoints and
+(b) transform these sets of waypoints into text. It is beneficial to use sample-ordered waypoints to
+represent both traffic direction and curvature. Just like detection, we also find that ordering lanes by
+approximate distance improves the prediction quality. An example of our polyline text encoding is:
+"(x1,y1 and...                     and xn,yn);..." where "x,y" are floating point waypoints with precision
+to 2 decimal places, ";" separates polyline instances.
+Scene understanding tasks test the model’s understanding of the whole scene context, which can be
+relevant for driving. For example, roads can be temporarily obstructed due to construction, emergency
+situations, or other events. Detecting these blockages in a timely manner and safely navigating
+around them is essential for ensuring the smooth and safe operation of autonomous vehicles; however,
+multiple cues in the scene are required to determine if there is a blockage or not. We focus on how
+our model performs on this temporary blockage detection task, using the following formulation:
+              Otemporary_blockage = G(Ttemporary_blockage, Troad_user, V),                             (6)
+where Otemporary_blockage is the model output signaling potential obstruction, V denotes the surrounding
+images, Troad_users denotes the all the objects on the road ahead, Ttemporary_blockage is the text prompt
+"is the road ahead temporarily blocked?".
+
+2.4       Generalist Training
+Our unified vision-language formulation enables the simultaneous training of multiple tasks with a
+single model, allowing for task-specific predictions at inference time through simple variations of the
+task prompt Ttask. The training procedure is both straightforward and flexible.
+For each task, we construct a dataset Dtask containing |Dtask| training examples. During each training
+iteration, we randomly sample a batch from the available datasets, with the probability of selecting
+an example from a specific dataset proportional to the dataset size:      P
+     e        e     P |i.e., |Dtask|/                                                        |D . To train
+                                                                             |, ensuring that the training
+for       epochs, we set the total number of training iterations to × t Dt     t t|
+
+              6
+
+     Method                               ADE 1s  ADE 3s [ ADE 5s [ ADE 8s
+     MotionLM [Seff et al., 2023]         0.045   0.251    0.694                      1.766
+     Wayformer* [Nayakanti et al., 2023]  0.044   0.250    0.640                      1.517
+     EMMA                                 0.032   0.248    0.681                      1.718
+     EMMA+                                0.030   0.225    0.610                      1.553
+    Table 1: End-to-end motion planning experiments on WOMD planning benchmark [Chen et al.,
+    2024a]. EMMA+ denotes the models are pre-trained on our internal data. EMMA achieves promising
+    performance on ADE 1s, 3s, and 5s. EMMA is slightly worse than Wayformer at ADE 8s, largely
+    because the camera-only EMMA has higher depth error for longer distance than Wayformer, which
+    uses all sensors including LiDAR, Radar, and Cameras. ∗Note that the Wayformer baseline is based
+    on an enhanced internal version after the publication of [Nayakanti et al., 2023].
+
+
+         0724 Driving Quality vs Number of Sampled Trajectories on WOMD
+      on
+    Jogo    EN
+     gem        a
+
+         number of sampled trajectories                                               h
+
+    Figure 3: Ablation study on the number of sampled trajectories. As more trajectories are sampled,
+    the quality measured by ADE@5s also improves, but the benefits diminish after 12+ samples.
+
+
+ratio among tasks is governed by the relative dataset sizes. The optimal training ratio is influenced by
+several factors, including task complexity, inter-task correlations, and the degree of transferability
+across tasks.
+Our experimental results demonstrate that the generalist model, trained across multiple tasks, consis-
+tently outperforms each specialist model that is trained on a single task. This highlights the advantage
+of the generalist approach: enhanced knowledge transfer, improved generalization, and increased
+efficiency.
+
+3 Experiments
+
+We highlight the experiments used to validate the efficacy of EMMA model. We leverage the smallest
+size of Gemini, i.e., Gemini 1.0 Nano-1 [Gemini Team Google, 2023] for all the experiments. In
+the following section, we first present the results of end-to-end planner trajectory generation on two
+public datasets in Section 3.1. Next, we conduct additional experiments on our internal datasets,
+studying the impact of chain-of-thought and data scaling in Section 3.2. Section 3.3 focuses on
+experiments involving three core perception tasks: 3D object detection, road graph estimation, and
+scene understanding. Our co-training results for the generalist model are summarized in Section 3.4.
+Finally, we showcase visual results that highlight EMMA capabilities in challenging, long-tail
+scenarios in Section 3.5.
+
+3.1 End-to-End Motion Planning on Public Datasets
+
+We conduct the end-to-end planner trajectory generation experiments on two public datasets, the
+Waymo Open Motion Dataset (WOMD) [Chen et al., 2024a] and the nuScenes dataset [Caesar et al.,
+2020]. EMMA is trained with the simplest end-to-end planner trajectory generation formulation as in
+Equation 2. That is, given camera images, ego vehicle history, and driving intent, the model is asked
+to predict the future ego waypoints for a certain time horizon.
+
+        7
+
+3.1.1 Driving on the Waymo Open Motion Dataset (WOMD)
+
+WOMD comprises 103k real-world urban and suburban driving scenarios, each lasting 20 seconds.
+These scenarios are further segmented into 1.1M examples, each representing a 9-second window:
+1 second is used as input context, and the remaining 8 seconds serve as the prediction target. The
+dataset includes detailed map features such as traffic signal states and lane characteristics, along with
+agent states such as position, velocity, acceleration, and bounding boxes.
+WOMD is typically used for the agent motion prediction task, i.e., given the agent tracks for the past
+1 second on a corresponding map, predict the positions of up to 8 agents for 8 seconds into the future.
+We adopt the exact same setting but only train and evaluate the future motion prediction of the ego
+vehicle, i.e. the autonomous driving vehicle, as the planning benchmark. In addition, we leverage
+the ‘high-level intent command’ field, used for evaluating motion prediction, as the planning router
+instruction. We adapt some of the best motion prediction models, MotionLM [Seff et al., 2023] and
+enhanced Wayformer [Nayakanti et al., 2023], as the baselines of this planning benchmark.
+During inference, sampling a final trajectory from multiple candidate trajectories plays a critical role
+in the final performance. Both MotionLM and Wayformer generate 192 candidate trajectories, which
+are subsequently aggregated into 6 clusters using k-means clustering, resulting in 6 representative
+trajectories. The final trajectory is selected from these 6 representative trajectories based on their
+associated probabilities. For fairness, we also sample multiple trajectories using a Top-K decoding
+strategy, up to K = 24. We then compute the pairwise L2 distance between all trajectories and select
+the one with the lowest average L2 distance as the final predicted trajectory, which can be viewed
+as the “median” trajectory among all the predictions. In the ADE calculation, we treat this median
+trajectory with the highest probability. All WOMD eval results are based on the validation set.
+As shown in Table 1, our model achieved similar performance as the MotionLM baseline when
+we train only on the WOMD dataset, with Gemini pre-trained weights. When pre-trained with our
+internal dataset (denoted as EMMA+), our model surpasses both MotionLM and Wayformer up to
+ADE 5s in the future. EMMA is only slightly worse than Wayformer at ADE 8s, where camera-
+induced depth error becomes a prominent error resource. We note the differences in inputs between
+MotionLM and EMMA: MotionLM takes inputs of agent location history, agent interactions, the road
+graph, and traffic light states. These agent boxes are produced by specialized off-board perception
+models that look at both past and future observations and are trained with a large amount of carefully
+curated human labels, the road graph is manually generated using full run segments, and all inputs
+heavily use LiDAR data with superior depth estimation. In stark contrast, EMMA only takes camera
+images and ego vehicle history as input, without the need of any labels or additional models (besides
+leveraging the Gemini pre-trained weights). Notably, for this work, we added internally available
+image inputs, which are not currently in the released WOMD.
+We further investigate the impact of the number of sampled trajectories on ADE, as illustrated in
+Figure 3. The results highlight that sampling from multiple trajectories, rather than a single one, leads
+to a notable improvement in ADE. However, the advantage of increasing the number of candidate
+trajectories diminishes beyond a certain point.
+
+3.1.2 Driving on the nuScenes Dataset
+
+The nuScenes dataset [Caesar et al., 2020] offers a comprehensive autonomous vehicle sensor suite
+for evaluation. It consists of 1,000 scenes, each spanning 20 seconds, and includes information from
+6 cameras, 5 radars, and 1 LiDAR that collectively provide 360-degree coverage in the field of view.
+The dataset is fully annotated with 3D bounding boxes across 23 classes and 8 attributes. In our
+experiments, we follow the standard protocol for planning evaluation: predict the next 3 seconds of
+future driving actions based on 2 seconds of historical data. We measure the planning quality with L2
+errors at 1-, 2- and 3-second time horizons, aligning with established baseline methods.
+As shown in Table 2, our self-supervised EMMA achieves state-of-the-art results in planning on
+nuScenes, outperforming all previous supervised (with intermediate perception labels and/or human
+labels) and self-supervised (no extra labels) methods. Under the same self-supervised setup, EMMA
+outperforms previous BEV-Planner [Li et al., 2024] by 17.1% in average L2 metric; even compared
+to DriveVLM-Dual [Tian et al., 2024] that heavily uses intermediate perception and human labels,
+our self-supervised EMMA still improves the average L2 metric by 6.4%.
+
+        8
+
+     Method                      self-supervised?  L2 (m) 1s  L2 (m) 2s  L2 (m) 3s  Avg L2 (m)
+     UniAD [Hu et al., 2023]            ✗             0.42       0.64       0.91       0.66
+     DriveVLM [Tian et al., 2024]       ✗             0.18       0.34       0.68       0.40
+     VAD [Jiang et al., 2023]           ✗             0.17       0.34       0.60       0.37
+     OmniDrive [Wang et al., 2024a]     ✗             0.14       0.29       0.55       0.33
+     DriveVLM-Dual [Tian et al., 2024]  ✗             0.15       0.29       0.48       0.31
+     Ego-MLP∗ [Zhai et al., 2023]       ✓             0.15       0.32       0.59       0.35
+     BEV-Planner [Li et al., 2024]      ✓             0.16       0.32       0.57       0.35
+     EMMA (random init)                 ✓             0.15       0.33       0.63       0.37
+     EMMA                               ✓             0.14       0.29       0.54       0.32
+     EMMA+                              ✓             0.13       0.27       0.48       0.29
+    Table 2: End-to-end motion planning experiments on nuScenes [Caesar et al., 2020]. EMMA (random
+    init) denotes models are randomly initialized; EMMA denotes models are initialized from Gemini;
+    EMMA+ denotes models are pre-trained on our internal data. EMMA achieves state-of-the-art
+    performance on the nuScenes planning benchmark, outperforming the supervised (with perception
+    and/or human labels) prior art by 6.4% and self-supervised (no extra labels) prior art by 17.1%.
+    ∗Ego-MLP results are taken from a reproduced version in BEV-Planner.
+
+
+
+  Scene description Critical object Meta decision Behavior description Relative improvements
+        over baseline e2e planning
+    ✓    ✗  ✗    ✗    + 0.0%
+    ✗    ✓  ✗    ✗    + 1.5%
+    ✗    ✗  ✓    ✗    + 3.0%
+    ✗    ✓  ✓    ✗    + 5.7%
+    ✗    ✓  ✓    ✓    + 6.7%
+    Table 3: Ablation study on chain-of-thought reasoning components. It improves end-to-end planning
+    quality by up to 6.7% by combining all elements. In particular, driving meta-decision and critical
+    objects contribute the improvements of 3.0% and 1.5%, respectively. The details of each component
+    is described in Section 2.2.
+
+
+
+Unlike in WOMD, we note that sampling multiple trajectories did not yield significant improvements.
+We hypothesize that this is due to nuScenes’ shorter prediction time horizon (3s) in simpler driving
+scenarios. Thus, we report only top-1 predictions for our results.
+
+
+3.2 End-to-End Motion Planning with Chain-of-Thought Reasoning on Internal Dataset
+
+In this section, we present our studies of end-to-end planning with chain-of-thought on our internal
+dataset. This dataset contains millions of scenarios, orders of magnitude larger than any publicly
+available autonomous driving dataset. The model takes in 2 seconds of history to predict the driving
+actions for 5 seconds into the future.
+Table 3 presents the results of our experiments on chain-of-thought reasoning applied to end-to-end
+planning. By adopting the chain-of-thought formulation introduced in Equation 3, we achieve a
+notable 6.7% improvement over the standard end-to-end planning approach detailed in Equation 2.
+We also conduct an ablation study to analyze the contributions of different rationale components. Our
+findings reveal that both driving meta-decision and critical object identification significantly enhance
+performance, contributing improvements of 3.0% and 1.5%, respectively. When these components
+are combined, the gains are even more substantial. Conversely, while scene description has a neutral
+impact on driving performance, it enhances the model’s explainability. These results demonstrate
+that chain-of-thought reasoning can meaningfully improve driving performance, particularly when its
+components are carefully selected and integrated.
+We also perform a series of data scaling experiments for end-to-end planning, the results of which
+are illustrated in Figure 4. As we train the model on a larger training set, we observe lower eval
+perplexities before overfitting. Our findings indicate that the driving quality of EMMA has not yet
+plateaued, even with the current large-scale dataset.
+
+        9
+
+        End-to-End Motion Planning Quality Scales with Training Data
+        =
+        52
+
+        4857 mel
+        46.07
+        4526
+        a 44.69
+
+        training flops
+
+Figure 4: EMMA data scaling experiments on our internal dataset. Each curve represents the eval
+perplexity for end-to-end motion planning as training proceeds with more steps. The x-axis is training
+compute, measured by floating-point operations (FLOPs) in log scale. The same EMMA model
+is trained on four sizes of datasets that are sampled with different percentages from 3% to 100%
+(denoted by different colors). In general, EMMA tends to achieve better quality until overfitting when
+given more training compute, but it also overfits quickly on smaller datasets. We observe the driving
+quality has not saturated when using the full large-scale dataset.
+
+3.3 Perception Tasks
+
+We summarize our studies on three main perception tasks: 3D object detection, road graph estimation,
+and scene understanding.
+
+3.3.1 3D Object Detection
+We validate our 3D object detection performance on the 3D camera-primary detection benchmark
+from the Waymo Open Dataset [Sun et al., 2020] using the d Longitudinal Error Tolerant (LET)
+matching [Hung et al., 2024]. We evaluate two versions: EMMA and EMMA+, similar to earlier
+sections, where EMMA+ is pre-trained on the 3D detection task using our internal dataset. The
+quantitative results are reported on the official test set and summarized in Figure 5.
+Our findings show that after pre-training, EMMA+ achieves competitive performance on the bench-
+mark. Since our model output set of detected boxes without individual confidence scores, we directly
+compare the precision/recall instead of LET-3D-AP, which is calculated based on the precision/recall
+curve. We also compare the commonly used F1-score, where EMMA’s F1-score is computed using the
+single precision/recall and other models’ F1-scores are calculated by picking the maximal F1-score on
+the curve (often called F1-max). Figure 5 shows the performance comparison. In generally, EMMA+
+demonstrates substantial improvements over state-of-the-art methods such as BEVFormer [Li et al.,
+2022b], achieving a 16.3% relative increase in vehicle precision at the same recall, and a 5.5%
+recall improvement at the same precision. EMMA+ also achieve better F1-score than prior arts.
+Performance on the pedestrian class is also comparable to that of MV-FCOS3D++ [Wang et al.,
+2021]. Additionally, we provide a performance breakdown across different ranges, highlighting that
+our model performs especially well in the near range. Our results underscore that with sufficient data
+and a large enough model, a multimodal approach can surpass specialized expert models in 3D object
+detection quality.
+
+3.3.2 Road Graph Estimation
+Road graph estimation is a complex task that predicts a group of unordered polylines, each of which
+is represented as a sequence of waypoints. We measure the quality of road graph prediction with
+two metrics: (1) lane-level precision and recall, where we define a true positive match between a
+predicted lane polyline and a groundtruth lane polyline if and only if their Chamfer distance is within
+1 meter; and (2) pixel-level precision and recall, where polylines are rasterized into a BEV grid with
+1 meter resolution – we then treat the BEV grid as a image and compute precision and recall based
+on per-pixel matching.
+As discussed in Section 2.3, this task involves several design choices. One is about the representation
+of road graph polylines, where our choice is to define the start and end points of each lane, with
+
+        10
+
+       Pedestrian
+       .
+
+    \* os    J N
+
+       a        \
+
+
+
+
+
+
+
+    *
+    oz  —   082 BEVFormer  oz  — BEVFormer
+
+            082        0.63
+
+
+            ds  do  ow a Wo
+                on     0, 30
+    Vehicle Range 0,30    Pedestrian Range
+
+
+
+
+
+
+
+
+
+                           go
+                           3        *
+  Bo        |              Boe
+                                    *
+        *
+  oz    —   090 BEVFormer      oz   —
+
+                                     0.76
+
+
+    Vehicle Range 30,50   ds  0  .  ow 30, 50 Wo
+                               Pedestrian Range
+
+
+                           —
+
+
+
+
+
+
+    gos    *   \\                   \
+
+
+
+                                h
+        *                           *
+                                    *
+    oz    —     082 BEVFormer   oz  —   071 BEVFormer
+
+        Fim                             060
+
+
+        3 om ds 0 ow
+
+Figure 5: Camera-primary 3D object detection experiments on WOD [Sun et al., 2020] using the
+standard LET matching [Hung et al., 2024]. EMMA+ denotes model is pre-trained on our internal
+data. EMMA+ achieves competitive performance on the detection benchmark in both precision/recall
+and F1-score metrics. Compared to state-of-the-art methods, it achieves 16.3% relative improvements
+in vehicle precision at the same recall or 5.5% recalls improvement at the same precision.
+
+
+
+intermediate points added as needed to accurately capture the road’s curvature. Another critical design
+choice is the construction of target label sequences used for model training. Drawing inspiration from
+Pix2Seq [Chen et al., 2022a] in the context of object detection, one effective design choice is to pad
+the targets and apply random shuffling. This technique helps the model handle unordered outputs and
+prevents premature termination during training.
+Figure 6 presents our ablation studies on various design choices. Starting from our best designs, we
+systematically ablate each of the following configurations and assess the resulting quality degradation.
+We then summarize the key insights from our analysis.
+Polyline representation: dynamic sampling is better than fixed sampling. A simple polyline
+representation is to sample a fixed number of sparse control points per lane, e.g. two end points plus
+a fixed number of intermediate points to capture curvature. However, we find a better approach is to
+dynamically adjust the number of points per polyline according to the curvature and length of the
+lane. By keeping a consistent waypoint density rather than a consistent number of waypoints, we
+achieve a representation that more accurately captures the lane structure intricacies, yielding around a
+40% to 90% difference in the metrics as shown in Figure 6.
+
+        11
+
+        Ablation Study on Roadgraph Estimation
+        5
+  :Ew I=
+  $e
+
+  8 w lanedevel recall
+        precision
+        ® recall
+        ed sem ron ted» 5 TE
+
+ Figure 6: Ablation study on road graph estimation. To evaluate the influence of different components
+ in our road graph estimation model, we ablate each configuration and measure the corresponding
+ impact on quality. Dynamic sampling (leftmost) of road graph polylines based on lane curvature
+ and length proves to be the most significant factor, leading to a substantial 70% to 90% change in
+ lane-level precision and recall. In contrast, aligning the model with a language-like representation,
+ i.e., semantic punctuation (rightmost), has a more modest effect, contributing to only <10% change
+ in precision and recall of any metric.
+
+ Polyline representation: ego-origin aligned sample intervals are better than naively aligned
+ sample intervals. The road graph is typically stored and accessed in global coordinate frame,
+ meaning lane origins and extensions are independent of the ego vehicle position. To improve
+ accuracy, it is essential to adjust lane point samples to start from the ego vehicle coordinate frame
+ origin. Specifically, sampling polyline points relative to the AV position (ego-origin) avoids arbitrary
+ offsets that can arise from directly transforming points sampled in the global coordinate frame into
+ the ego coordinate frame. This prevents a 25% to 60% drop in prediction quality.
+ Target sequence construction: shuffled ordering is better than arbitrary ordering. We organize
+ polyline targets into bins based on their endpoint distance from the ego vehicle, providing a rough
+ global ordering. For instance, we categorize lanes into nearby lanes and those further away that serve
+ as connecting lanes. During training, we dynamically shuffle the polylines within each distance bin
+ to enhance the model robustness and coverage. This dynamic shuffling within each bin improves the
+ model’s ability to generalize across different lane configurations, leading to more accurate predictions.
+ Target sequence construction: padding is better than non-padding. Similar to Pix2Seq [Chen
+ et al., 2022a], we find that padding targets to prevent early termination is highly effective. In addition
+ to padding the total number of polyline targets, we also pad the number of points within each
+ polyline. We use “invalid” tokens to represent padded points within polylines. Each polyline is also
+ explicitly tagged with a final “valid” or “invalid” token to denote whether it contains any nonpadded
+ points. This approach ensures consistent input sizes, which helps maintain the integrity of the model
+ during training and reduces the risk of premature truncation, leading to more reliable and accurate
+ predictions.
+ Target sequence construction: adding punctuation and other semantically redundant token im-
+ proves quality. In the target sequence construction, we notice that it is beneficial to use language-like
+ structures and punctuation to group targets (e.g., "(x,y and x,y);..." instead of "xy xy;...").
+ Additionally, explicitly including semantically redundant tokens – such as marking padded targets as
+“invalid” instead of relying on implicit omissions of “valid” markers – improves performance. This
+ approach, incorporating punctuation and redundancy, results in a boost of up to 10% in lane-level
+ metrics. We attribute this improvement to the language-related pre-training of Gemini. By leveraging
+ similar structured expressions, Gemini can be more easily adapted to other tasks.
+
+ 3.3.3 Scene Understanding
+ Figure 7 summarizes our studies on the scene understanding task for temporary blockage detection.
+ Our study is based on our internal datasets specifically curated for these scenarios. For this study,
+ we establish our baselines by showing a picture to human and asking them to judge whether a
+ lane is temporarily blocked. They can answer ‘yes’, ‘no’, or ‘unsure’. Our baseline will treat
+
+        12
+
+                                  Temporary Blockage Detection
+                                                                  -
+    ;     |                                                  |    I
+               rect fen MAU        J.
+
+    Figure 7: Scene understanding experiments. direct fine-tuning denotes solely using the tem-
+    poral blockage data during fine-tuning; naive mixture denotes co-training this scene task with
+    road graph estimation; mix + short pretraining denotes pre-training on road graph esitmation
+    first, and then fine-tune on the mixture of both tasks; mix + long pretraining denotes a longer
+    pre-training before fine-tuning. The naive fine-tuning is already close to strong human baseline, but
+    long-pretraining with training mixture can further boost the quality.
+
+    e2e planning || 3D detection || road graph estimation ||| Relative improvement over single task
+                             e2e planning                                   detection      road graph
+                    ✓    ✓        -                                       +1.6% (±1.0%)  +2.4% ( ±0.8%)
+         ✓          ✓       +1.4% (±2.8%)     |                           +5.6% (±1.1%)        -
+         ✓               ✓  −1.4% (±2.9%)                                       -        +3.5% (±0.9%)
+         ✓          ✓    ✓  +1.4% (±2.8%)                                 +5.5% (±1.1%)  +2.4% (±0.8%)
+    Table 4: Generalist co-training experiments. (±∗) indicates standard deviation. By co-training on
+    multiple tasks, EMMA gains a broader understanding of driving scenes, enabling it to handle various
+    tasks at inference time, while enhancing individual task performance. Notably, certain task pairings
+    yield greater benefits than others, suggesting these tasks are complementary. Co-training all three
+    tasks together yields the best quality.
+
+
+all ‘unsure’ answers as incorrect, baseline+filtering will filter out all examples with ‘unsure’
+answers. In contrast, our model is fine-tuned to predict ‘yes’ or ‘no’ for all examples. As shown in
+the figure, our naive model that is directly fine-tuned for only this task achieves better performance
+than the baseline comparison, but underperforms on the baseline+filtering comparison. To boost
+the model performance, our first attempt is to co-train this task with road graph estimation, but the
+naive mixture doesn’t improve performance. Our second attempt is to first pre-train the model on
+road graph estimation, and then fine-tune on these two tasks. Results show when the pre-training is
+long enough, the quality is boosted, showcasing the model’s ability to integrate multiple tasks for
+enhanced performance.
+
+3.4 Generalist
+
+We explore the development of a generalist model by co-training on multiple tasks and analyzing
+their synergies, as summarized in Table 4. For this study, we focus on three core tasks: end-to-end
+planning, 3D object detection, and road graph estimation.
+Co-training on all three tasks yields significant improvements, with the generalist model outperform-
+ing the single-task models by up to 5.5%. Notably, when co-training two tasks, certain combinations
+lead to greater gains than others. For instance, detection performance improves most when co-trained
+with driving, and road graph estimation similarly benefits most when paired with driving. This
+suggests that the driving task plays a particularly prominent and influential role, serving as a key
+contributor to overall performance improvements.
+We attribute these results to the complementary nature of the tasks. For example, road graph
+estimation becomes easier when the model can accurately identify the locations of vehicles. Similarly,
+driving quality is closely tied to understanding agent interactions, a skill enhanced by 3D object
+detection. These findings suggest that pursuing a generalist model is a promising direction for future
+research, with the potential for deeper insights into task synergies and performance optimization.
+
+        13
+
+3.5 Visualizations
+We present 12 diverse visual examples in Fig. 8, 9 and 10, each selected to highlight the generaliz-
+ability of EMMA model across a range of scenarios. In all the scenarios, we display the model’s
+predictions (from left to right): end-to-end motion planning, 3D object detection, and road graph
+estimation.
+We group visual examples by scenario type: Examples (a)-(d) showcase how EMMA safely interacts
+with rare, unseen objects or animals on the road. Examples (e)-(f) feature EMMA navigating through
+construction areas. Examples (g)-(j) showcase EMMA following traffic rules at intersections with
+traffic lights or traffic controllers. Examples (k)-(l) highlight EMMA respecting vulnerable road users
+like motorcyclists.
+Given these examples, we demonstrate the following capabilities of EMMA:
+       • Generalizability: Adapts well to diverse real-world driving scenarios across different environments
+        and attends to objects beyond its fine-tuning categories, such as squirrels.
+       • Predictive driving: Proactively adjusts to the behavior of other road users for safe and smooth driving.
+       • Obstacle avoidance: Consistently adjusts trajectories to avoid obstacles, debris and blocked lanes.
+       • Adaptive behavior: Safely handles complex situations like yielding, construction zones, and following
+        traffic control signals.
+       • Accurate 3D detection: Effectively identifies and tracks road agents, including vehicles, cyclists,
+        motorcyclists, and pedestrians.
+       • Reliable road graph estimation: Accurately captures road layouts and integrates them into safe
+        trajectory planning.
+To conclude, these scenarios highlight EMMA’s capability to operate safely and efficiently in a variety
+of challenging and diverse driving scenarios and environments.
+
+4 Related Works
+
+End-to-end autonomous driving research enjoys a rich history and has evolved significantly
+since ALVINN [Pomerleau, 1988] employed shallow neural networks to predict control signals.
+The field benefited from further deep learning advancements: e.g. DAVE-2 [Bojarski et al., 2016]
+and ChauffeurNet [Bansal et al., 2019], leveraged deeper neural architectures and incorporated
+sophisticated perception and motion planning modules respectively. Recent research has expanded to
+include multimodal inputs [Codevilla et al., 2018, Prakash et al., 2021], multi-task learning [Chitta
+et al., 2022, Wu et al., 2022], reinforcement learning [Chekroun et al., 2023, Chen et al., 2021,
+Kendall et al., 2019, Liang et al., 2018, Toromanoff et al., 2020], and distillation [Chen et al., 2020,
+Zhang and Ohn-Bar, 2021, Zhang et al., 2021]. Unified planning frameworks such as VAD [Jiang
+et al., 2023] and UniAD [Hu et al., 2023] integrated planning with conventional modules in open-loop
+environments. More studies have been proposed to examine the robustness, safety, and transferability
+from synthetic environments to real-world domains. However, recent findings from Ego-MLP [Zhai
+et al., 2023] and BEV-Planner [Li et al., 2024] revealed that these methods could potentially overfit
+to ego status despite their good performance on benchmark tasks. Our work revisits the simplicity of
+earlier end-to-end models such as ALVINN and DAVE-2, enhancing them with powerful MLLMs.
+Vision language models for autonomous driving have gained increasing interest, focusing on
+achieving explainable driving behavior and generalizability through end-to-end learning frameworks.
+DriveGPT4 [Xu et al., 2024] utilizes LLMs to both explain vehicle actions and predict control signals
+in an iterative Q&A format. Drive Anywhere [Wang et al., 2024b] introduces patch-aligned feature
+extraction from MLLMs for text-based driving decision queries, while OmniDrive [Wang et al.,
+2024a] features a 3D vision-language model design for reasoning and planning. Other approaches
+use MLLMs in graph-based VQA contexts (DriveLM [Sima et al., 2024]), or apply chain-of-thought
+reasoning (DriveVLM [Tian et al., 2024]) to tackle multiple driving-related tasks. For non-end-to-end
+models, LLM-Drive [Chen et al., 2024b] leverages LLMs with object-level vector inputs for control
+planning. In contrast, our work studies the end-to-end fine-tuning of a state-of-the art MLLM for
+driving tasks, employing a generalist approach that emphasizes open-world driving capabilities.
+Multimodal large language models (MLLM) extend LLMs [Vaswani et al., 2017, Devlin, 2019,
+Raffel et al., 2020, Gemini Team Google, 2023, Reid et al., 2024, Chowdhery et al., 2023, Anil et al.,
+
+        14
+
+    yh
+
+
+
+
+
+    Find    Find
+    —       —   2
+
+
+    (a) A garbage bag appears on the freeway, so our predicted trajectory suggests to nudge slightly to the
+    right to avoid it.
+
+        »        »
+        2        &
+    NN
+    EN      NN
+        EN
+
+
+
+
+
+
+
+    (b) A ladder appears on the freeway, and our predicted trajectory suggests to switch to the left lane to
+    bypass it appropriately.
+
+
+
+    La    3
+
+
+    se  ~    se  ~    se  ~
+
+        <
+
+
+
+    (c) we encounter a small squirrel on the road and our predicted trajectory instinctively slows down to
+    avoid the animal. Note EMMA wasn’t explicitly trained to detect squirrels.
+
+
+
+
+
+
+
+        TT ge ICR i GEE
+
+       Bon ~ =~ ~
+
+   (d) A white dog appears in our lane, and our model predicts to slow down and yield. Our model also
+   accurately detects surrounding vehicles, including those in adjacent lanes and the parking lot.
+Figure 8: EMMA prediction visualization. Each row contains a scenario with our model’s predictions:
+end-to-end planning (left), 3D object detection (middle), and road graph estimation (right).
+
+
+    15
+
+    yard    yard    yard
+
+    y=        \     y=    \
+
+
+    (e) As a construction zone blocks the left lanes, our predicted trajectory suggests passing through on
+    the right, while the road graph estimation correctly identifies the blocked area.
+
+     Tae
+
+    4      4                4
+     if    NE
+     |     Ze 3            BE
+                            |
+     =      LEE    EE
+      po           TE Ne)        Ve]
+    (f) Our lane is blocked by construction cones, so our predicted trajectory suggests to move into the left
+    lane, even though it’s in the opposite direction. EMMA captured the blockage and performed a safe detour.
+
+
+
+
+
+
+         SYP ia₁    THI TL    HY ;
+
+
+
+
+    (g) A traffic controller signals to proceed through the intersection, and our predicted trajectory aligns
+    with the instruction.
+
+     an an pe
+
+
+  (h) Our predicted trajectory suggests to stop as we approach an intersection with a yellow light,
+  demonstrating cautious and safe behavior.
+Figure 9: EMMA prediction visualization. Each row contains a scenario with our model’s predictions:
+end-to-end planning trajectory (left), 3D object detection (middle), and road graph estimation (right).
+
+
+     16
+
+    1    |    |
+
+
+
+                    p=
+
+    — y7 =    4  — rs ||
+
+    (i) While crossing an intersection, our predicted trajectory nudges slightly to the left due to nearby
+    cars and a bicyclist partially occupying our lane.
+
+
+
+
+
+
+
+
+                TVR    TR
+    ff)  ff 8 £7  |      —
+
+
+
+    (j) Our model predicts a driving trajectory to patiently wait at a red light (left). The model also
+    accurately predicts surrounding 3D objects (middle) and road graph with lane centers (right).
+
+        ’      Vi      ’        Vi           -             Vi
+    [=     NY      [=           NY       [=            NY
+                                                       i
+    i          w   i            I.       i        I.
+        ~~   1               =H
+                               ~~   1        =H
+        =H                                   ~~     1
+                   pT       Pal
+        vy   "a |g           NL      BE      ss     AR     |
+        4     NY            7⁴     NY        4     NY
+    (k) A fleet of fast-moving motorcyclists passes by. The predicted trajectory suggests pausing to allow
+    them to pass safely. Notably, motorcyclists are accurately identified by our model (middle).
+
+
+
+
+
+
+
+
+
+                   [eraᵀ
+               | =]                      \                 | =]
+
+    (l) A motorbike is moving on a narrow lane at night, and yields to the right. Our predicted trajectory
+    adjusts, guiding us to pass safely by nudging slightly to the left.
+Figure 10: EMMA prediction visualization. Each row contains a scenario with our model’s
+predictions: end-to-end planning trajectory (left), 3D object detection (middle), and road graph
+estimation (right).
+
+
+                            17
+
+2023, Radford et al., 2018, 2019, Brown et al., 2020, Achiam et al., 2023, Touvron et al., 2023a,b,
+Dubey et al., 2024] to multiple modalities, leveraging their generalizability, reasoning capabilities,
+and contextual understanding. Early explorations [Donahue et al., 2015, Vinyals et al., 2015, Chen
+et al., 2022a] focused on specific vision-language problems or open-set object detection Liu et al.
+[2024b], Zareian et al. [2021], Gu et al. [2022], while recent research has scaled up both trask diversity
+and model sizes for improved generalizability and few-shot capabilities [Cho et al., 2021, Chen et al.,
+2022b, Wang et al., 2022, Lu et al., 2022, Alayrac et al., 2022, Yu et al., 2022, Chen et al., 2023, 2024c,
+Wang et al., 2024c, Peng et al., 2024, Huang et al., 2023, Lu et al., 2024]. Notable examples include
+Flamingo [Alayrac et al., 2022], a 70B model [Hoffmann et al., 2022] which achieved state-of-the-art
+quality for multiple few-shot vision benchmarks, and CoCa [Yu et al., 2022] a 2.1B parameter model
+which demonstrated state-of-the-art performance on zero-shot transfer and various downstream tasks
+including ImageNet classification. PaLI [Chen et al., 2023, 2024c], at 55B parameters, achieves better
+performance across multiple vision and language tasks by scaling both the vision and language model
+components jointly. These early works demonstrate the strong performance and generalizability of
+MLLMs. Recent trends have seen the integration of native multi-modal inputs in LLMs, such as
+Gemini [Gemini Team Google, 2023, Reid et al., 2024], GPT-4o, and Llama3-v [Dubey et al., 2024,
+Liu et al., 2024a]. Our work explores the application of these promising new models for generalist
+end-to-end autonomous driving.
+
+
+5 Limitations, Risks, and Mitigations
+
+In the previous sections, we demonstrate state-of-the-art end-to-end motion planning on the nuScenes
+planning benchmark. We also achieve competitive performance for end-to-end motion planning
+on the WOMD planning benchmark and camera-primary 3D detection on WOD. Furthermore, our
+generalist setup improved the quality across multiple tasks through joint training. Despite these
+promising results, we acknowledge the limitations of our work and propose directions for building on
+this foundation and addressing such challenges in future research.
+Memory and video capability: Currently, our model processes only a limited number of frames
+(up to 4), restricting its ability to capture the long-term dependencies essential for driving tasks.
+Effective driving requires not just real-time decision-making but also reasoning over extended time
+horizons, relying on long-term memory to anticipate and respond to evolving scenarios. Enhancing
+the model’s ability to perform long-term reasoning is a promising area for future research. This could
+potentially be achieved by integrating memory modules or extending its capability to process longer
+video sequences efficiently, enabling more comprehensive temporal understanding.
+Extension to LiDAR and radar input: Our approach heavily relies on pre-trained MLLMs, which
+typically do not incorporate LiDAR or radar inputs. Expanding our model to integrate these 3D
+sensing modalities presents two key challenges: 1) There is a significant imbalance between the
+volume of available camera and 3D sensing data, resulting in less generalizable 3D sensing encoders
+as compared to their camera-based counterparts. 2) The development of 3D sensing encoders has not
+yet reached the scale and sophistication of camera-based encoders. A potential solution to address
+these challenges is to pre-train a large-scale 3D sensing encoder using data carefully aligned with
+camera inputs. This approach may foster better cross-modality synergy and substantially improve the
+generalization capabilities of the 3D sensing encoder.
+Verification of the predicted driving signals: Our model can directly predict driving signals without
+relying on intermediate outputs, such as object detection or road graph estimation. This approach
+introduces challenges for both real-time and post-hoc verification. We have demonstrated that our
+generalist model can jointly predict additional human readable outputs such as objects and road graph
+elements, and the driving decision can be further explained with chain-of-thought driving rationale.
+However, there is no guarantee that these outputs will be always consistent despite the empirical
+observations that they are often indeed consistent. Furthermore, additional outputs incur significant
+runtime latency overhead for deployment.
+Sensor simulation for closed-loop evaluation: It is widely recognized that open-loop evaluation
+may not be strongly correlated with closed-loop performance. To accurately assess an end-to-end
+autonomous driving system in a closed-loop environment, a comprehensive sensor simulation solution
+is necessary. However, the computational cost of sensor simulation is often several times higher than
+
+        18
+
+that of behavior simulators. This significant cost burden can hinder thorough testing and verification
+of an end-to-end models unless substantial optimizations are made.
+Challenges of onboard deployment: Autonomous driving demands real-time decision-making,
+which poses a significant challenge when deploying large models due to their increased inference
+latency. This creates a need for optimizing the model or distilling it into a more compact form
+suitable for deployment, all while maintaining performance and safety standards. Achieving this
+delicate balance between model size, efficiency, and quality is crucial for the successful real-world
+deployment of autonomous driving systems, and represents a key area for future research.
+
+6 Conclusion
+
+In this paper, we present EMMA, a Gemini-powered end-to-end multimodal model for autonomous
+driving. It treats Gemini as a first class citizen and recasts autonomous driving tasks as vision
+question answering problems to fit the paradigm of MLLMs, aiming at maximizing the utility of
+Gemini’s world knowledge and its reasoning capability equipped with chain-of-thought tools. Unlike
+historical cascaded systems with specialized components, EMMA directly maps raw camera sensor
+data into various driving-specific outputs, including planning trajectories, perception objects, and
+road graph elements. All task outputs are represented as plain text and thus can be jointly processed
+in a unified language space through task-specific prompts. Empirical results show that EMMA
+achieves state-of-the-art or competitive results on multiple public and internal benchmarks and tasks,
+including end-to-end planning trajectory prediction, camera-primary 3D object detection, road graph
+estimation, and scene understanding. We also demonstrate that a single co-trained EMMA can jointly
+produce the outputs for multiple tasks, while matching or even super-passing the performance of
+individually trained models, highlighting its potential as a generalist model for many autonomous
+driving applications.
+While EMMA demonstrates promising results, it is still in an early stage with challenges and
+limitations on onboard deployment, spatial reasoning capability, interpretability, and closed-loop
+simulation. Despite that, we believe our EMMA findings will inspire further research and progress in
+the space.
+
+Acknowledgement
+
+We thank many collaborators: Michael Wei, Zoey Yang, Zhenpei Yang, Kan Chen, Ming Ji, Qichi
+Yang, Yang Wang, Pan Li, Yan Jiao, Haricharan Lakshman, Ruotian Luo, Ningshan Zhang, Anant
+Subramanian, Chao-Yeh Chen, Xuetao Hao, Andre Cornman, Cheol Park, Xi Chen, and Fei Xia. We
+also thank the support from Srikanth Thirumalai, Vincent Vanhoucke, Kim Tran, Julia Ilina, Adam
+Neustein, Ben Loewenstein, Chen Wu, Congcong Li, and Annie Cheng.
+
+
+
+
+
+
+
+
+
+
+    19
+
+References
+J. Achiam, S. Adler, S. Agarwal, L. Ahmad, I. Akkaya, F. L. Aleman, D. Almeida, J. Altenschmidt, S. Altman,
+   S. Anadkat, et al. Gpt-4 technical report. arXiv preprint arXiv:2303.08774, 2023.
+J.-B. Alayrac, J. Donahue, P. Luc, A. Miech, I. Barr, Y. Hasson, K. Lenc, A. Mensch, K. Millican, M. Reynolds,
+   et al. Flamingo: a visual language model for few-shot learning. In NeurIPS, 2022.
+R. Anil, A. M. Dai, O. Firat, M. Johnson, D. Lepikhin, A. Passos, S. Shakeri, E. Taropa, P. Bailey, Z. Chen, et al.
+   Palm 2 technical report. arXiv preprint arXiv:2305.10403, 2023.
+M. Bansal, A. Krizhevsky, and A. Ogale. Chauffeurnet: Learning to drive by imitating the best and synthesizing
+   the worst. RSS, 2019.
+M. Bojarski, D. Del Testa, D. Dworakowski, B. Firner, B. Flepp, P. Goyal, L. D. Jackel, M. Monfort, U. Muller,
+   J. Zhang, et al. End to end learning for self-driving cars. arXiv preprint arXiv:1604.07316, 2016.
+A. Brohan, N. Brown, J. Carbajal, Y. Chebotar, X. Chen, K. Choromanski, T. Ding, D. Driess, A. Dubey, C. Finn,
+   et al. Rt-2: Vision-language-action models transfer web knowledge to robotic control. In CoRL, 2023.
+T. Brown, B. Mann, N. Ryder, M. Subbiah, J. D. Kaplan, P. Dhariwal, A. Neelakantan, P. Shyam, G. Sastry,
+   A. Askell, et al. Language models are few-shot learners. In NeurIPS, 2020.
+H. Caesar, V. Bankiti, A. H. Lang, S. Vora, V. E. Liong, Q. Xu, A. Krishnan, Y. Pan, G. Baldan, and O. Beijbom.
+   nuscenes: A multimodal dataset for autonomous driving. In CVPR, 2020.
+N. Carion, F. Massa, G. Synnaeve, N. Usunier, A. Kirillov, and S. Zagoruyko. End-to-end object detection with
+   transformers. In ECCV, 2020.
+R. Chekroun, M. Toromanoff, S. Hornauer, and F. Moutarde. Gri: General reinforced imitation and its application
+   to vision-based autonomous driving. Robotics, 2023.
+D. Chen, B. Zhou, V. Koltun, and P. Krähenbühl. Learning by cheating. In CoRL, 2020.
+D. Chen, V. Koltun, and P. Krähenbühl. Learning to drive from a world on rails. In ICCV, 2021.
+K. Chen, R. Ge, H. Qiu, R. Ai-Rfou, C. R. Qi, X. Zhou, Z. Yang, S. Ettinger, P. Sun, Z. Leng, et al. Womd-lidar:
+   Raw sensor dataset benchmark for motion forecasting. In ICRA, 2024a.
+L. Chen, O. Sinavski, J. Hünermann, A. Karnsund, A. J. Willmott, D. Birch, D. Maund, and J. Shotton. Driving
+   with llms: Fusing object-level vector modality for explainable autonomous driving. In ICRA, 2024b.
+T. Chen, S. Saxena, L. Li, D. J. Fleet, and G. Hinton. Pix2seq: A language modeling framework for object
+   detection. In ICLR, 2022a.
+T. Chen, S. Saxena, L. Li, T.-Y. Lin, D. J. Fleet, and G. E. Hinton. A unified sequence interface for vision tasks.
+   In NeurIPS, 2022b.
+X. Chen, X. Wang, S. Changpinyo, A. Piergiovanni, P. Padlewski, D. Salz, S. Goodman, A. Grycner, B. Mustafa,
+   L. Beyer, A. Kolesnikov, J. Puigcerver, N. Ding, K. Rong, H. Akbari, G. Mishra, L. Xue, A. Thapliyal,
+   J. Bradbury, W. Kuo, M. Seyedhosseini, C. Jia, B. K. Ayan, C. Riquelme, A. Steiner, A. Angelova, X. Zhai,
+   N. Houlsby, and R. Soricut. PaLI: A Jointly-Scaled Multilingual Language-Image Model. In ICLR, 2023.
+X. Chen, J. Djolonga, P. Padlewski, B. Mustafa, S. Changpinyo, J. Wu, C. R. Ruiz, S. Goodman, X. Wang,
+   Y. Tay, et al. Pali-x: On scaling up a multilingual vision and language model. In CVPR, 2024c.
+K. Chitta, A. Prakash, B. Jaeger, Z. Yu, K. Renz, and A. Geiger. Transfuser: Imitation with transformer-based
+   sensor fusion for autonomous driving. PAMI, 2022.
+J. Cho, J. Lei, H. Tan, and M. Bansal. Unifying vision-and-language tasks via text generation. In ICML, 2021.
+A. Chowdhery, S. Narang, J. Devlin, M. Bosma, G. Mishra, A. Roberts, P. Barham, H. W. Chung, C. Sutton,
+   S. Gehrmann, et al. Palm: Scaling language modeling with pathways. JMLR, 2023.
+F. Codevilla, M. Müller, A. López, V. Koltun, and A. Dosovitskiy. End-to-end driving via conditional imitation
+   learning. In ICRA, 2018.
+J. Devlin. Bert: Pre-training of deep bidirectional transformers for language understanding. In NAACL, 2019.
+W. Ding, L. Qiao, X. Qiu, and C. Zhang. Pivotnet: Vectorized pivot learning for end-to-end hd map construction.
+   In ICCV, 2023.
+
+        20
+
+J. Donahue, L. Anne Hendricks, S. Guadarrama, M. Rohrbach, S. Venugopalan, K. Saenko, and T. Darrell.
+   Long-term recurrent convolutional networks for visual recognition and description. In CVPR, 2015.
+A. Dubey, A. Jauhri, A. Pandey, A. Kadian, A. Al-Dahle, A. Letman, A. Mathur, A. Schelten, A. Yang, A. Fan,
+   et al. The llama 3 herd of models. arXiv preprint arXiv:2407.21783, 2024.
+Gemini Team Google. Gemini: A family of highly capable multimodal models. arXiv preprint arXiv:2312.11805,
+   2023.
+X. Gu, T.-Y. Lin, W. Kuo, and Y. Cui. Open-vocabulary object detection via vision and language knowledge
+   distillation. In ICLR, 2022.
+J. Hoffmann, S. Borgeaud, A. Mensch, E. Buchatskaya, T. Cai, E. Rutherford, D. d. L. Casas, L. A. Hendricks,
+   J. Welbl, A. Clark, et al. Training compute-optimal large language models. In NeurIPS, 2022.
+Y. Hu, J. Yang, L. Chen, K. Li, C. Sima, X. Zhu, S. Chai, S. Du, T. Lin, W. Wang, et al. Planning-oriented
+   autonomous driving. In CVPR, 2023.
+S. Huang, L. Dong, W. Wang, Y. Hao, S. Singhal, S. Ma, T. Lv, L. Cui, O. K. Mohammed, B. Patra, et al.
+   Language is not all you need: Aligning perception with language models. In NeurIPS, 2023.
+W.-C. Hung, V. Casser, H. Kretzschmar, J.-J. Hwang, and D. Anguelov. Let-3d-ap: Longitudinal error tolerant
+   3d average precision for camera-only 3d detection. In ICRA, 2024.
+J.-J. Hwang, H. Kretzschmar, J. Manela, S. Rafferty, N. Armstrong-Crews, T. Chen, and D. Anguelov. Cramnet:
+   Camera-radar fusion with ray-constrained cross-attention for robust 3d object detection. In ECCV, 2022.
+B. Jiang, S. Chen, Q. Xu, B. Liao, J. Chen, H. Zhou, Q. Zhang, W. Liu, C. Huang, and X. Wang. Vad: Vectorized
+   scene representation for efficient autonomous driving. In ICCV, 2023.
+A. Kendall, J. Hawke, D. Janz, P. Mazur, D. Reda, J.-M. Allen, V.-D. Lam, A. Bewley, and A. Shah. Learning to
+   drive in a day. In ICRA, 2019.
+A. H. Lang, S. Vora, H. Caesar, L. Zhou, J. Yang, and O. Beijbom. Pointpillars: Fast encoders for object
+   detection from point clouds. In CVPR, 2019.
+Q. Li, Y. Wang, Y. Wang, and H. Zhao. Hdmapnet: An online hd map construction and evaluation framework.
+   In ICRA, 2022a.
+Z. Li, W. Wang, H. Li, E. Xie, C. Sima, T. Lu, Y. Qiao, and J. Dai. Bevformer: Learning bird’s-eye-view
+   representation from multi-camera images via spatiotemporal transformers. In ECCV, 2022b.
+Z. Li, Z. Yu, S. Lan, J. Li, J. Kautz, T. Lu, and J. M. Alvarez. Is ego status all you need for open-loop end-to-end
+   autonomous driving? In CVPR, 2024.
+X. Liang, T. Wang, L. Yang, and E. Xing. Cirl: Controllable imitative reinforcement learning for vision-based
+   self-driving. In ECCV, 2018.
+B. Liao, S. Chen, X. Wang, T. Cheng, Q. Zhang, W. Liu, and C. Huang. Maptr: Structured modeling and learning
+   for online vectorized hd map construction. In ICLR, 2023.
+B. Liao, S. Chen, B. Jiang, T. Cheng, Q. Zhang, W. Liu, C. Huang, and X. Wang. Lane graph as path:
+   Continuity-preserving path-wise modeling for online lane graph construction. In ECCV, 2024a.
+B. Liao, S. Chen, Y. Zhang, B. Jiang, Q. Zhang, W. Liu, C. Huang, and X. Wang. Maptrv2: An end-to-end
+   framework for online vectorized hd map construction. IJCV, 2024b.
+H. Liu, C. Li, Q. Wu, and Y. J. Lee. Visual instruction tuning. In NeurIPS, 2024a.
+S. Liu, Z. Zeng, T. Ren, F. Li, H. Zhang, J. Yang, C. Li, J. Yang, H. Su, J. Zhu, et al. Grounding dino: Marrying
+   dino with grounded pre-training for open-set object detection. In ECCV, 2024b.
+Y. Liu, T. Yuan, Y. Wang, Y. Wang, and H. Zhao. Vectormapnet: End-to-end vectorized hd map learning. In
+   ICML, 2023.
+J. Lu, C. Clark, R. Zellers, R. Mottaghi, and A. Kembhavi. Unified-io: A unified model for vision, language,
+   and multi-modal tasks. In ICLR, 2022.
+J. Lu, C. Clark, S. Lee, Z. Zhang, S. Khosla, R. Marten, D. Hoiem, and A. Kembhavi. Unified-io 2: Scaling
+   autoregressive multimodal models with vision language audio and action. In CVPR, 2024.
+
+        21
+
+N. Nayakanti, R. Al-Rfou, A. Zhou, K. Goel, K. S. Refaat, and B. Sapp. Wayformer: Motion forecasting via
+ simple & efficient attention networks. In ICRA, 2023.
+
+Z. Peng, W. Wang, L. Dong, Y. Hao, S. Huang, S. Ma, and F. Wei. Kosmos-2: Grounding multimodal large
+ language models to the world. In ICLR, 2024.
+
+D. A. Pomerleau. Alvinn: An autonomous land vehicle in a neural network. In NeurIPS, 1988.
+
+A. Prakash, K. Chitta, and A. Geiger. Multi-modal fusion transformer for end-to-end autonomous driving. In
+ CVPR, 2021.
+
+L. Qiao, W. Ding, X. Qiu, and C. Zhang. End-to-end vectorized hd-map construction with piecewise bezier
+ curve. In CVPR, 2023.
+
+A. Radford, K. Narasimhan, T. Salimans, I. Sutskever, et al. Improving language understanding by generative
+ pre-training. OpenAI blog, 2018.
+
+A. Radford, J. Wu, R. Child, D. Luan, D. Amodei, I. Sutskever, et al. Language models are unsupervised
+ multitask learners. OpenAI blog, 2019.
+
+C. Raffel, N. Shazeer, A. Roberts, K. Lee, S. Narang, M. Matena, Y. Zhou, W. Li, and P. J. Liu. Exploring the
+ limits of transfer learning with a unified text-to-text transformer. JMLR, 2020.
+
+M. Reid, N. Savinov, D. Teplyashin, D. Lepikhin, T. Lillicrap, J.-b. Alayrac, R. Soricut, A. Lazaridou, O. Firat,
+ J. Schrittwieser, et al. Gemini 1.5: Unlocking multimodal understanding across millions of tokens of context.
+ arXiv preprint arXiv:2403.05530, 2024.
+
+A. Seff, B. Cera, D. Chen, M. Ng, A. Zhou, N. Nayakanti, K. S. Refaat, R. Al-Rfou, and B. Sapp. Motionlm:
+ Multi-agent motion forecasting as language modeling. In ICCV, 2023.
+
+S. Shi, L. Jiang, D. Dai, and B. Schiele. Mtr++: Multi-agent motion prediction with symmetric scene modeling
+ and guided intention querying. PAMI, 2024.
+
+C. Sima, K. Renz, K. Chitta, L. Chen, H. Zhang, C. Xie, P. Luo, A. Geiger, and H. Li. Drivelm: Driving with
+ graph visual question answering. In ECCV, 2024.
+
+P. Sun, H. Kretzschmar, X. Dotiwalla, A. Chouard, V. Patnaik, P. Tsui, J. Guo, Y. Zhou, Y. Chai, B. Caine, et al.
+ Scalability in perception for autonomous driving: Waymo open dataset. In CVPR, 2020.
+
+P. Sun, M. Tan, W. Wang, C. Liu, F. Xia, Z. Leng, and D. Anguelov. Swformer: Sparse window transformer for
+ 3d object detection in point clouds. In ECCV, 2022.
+
+M. Tancik, V. Casser, X. Yan, S. Pradhan, B. Mildenhall, P. P. Srinivasan, J. T. Barron, and H. Kretzschmar.
+ Block-nerf: Scalable large scene neural view synthesis. In CVPR, 2022.
+
+S. Teng, X. Hu, P. Deng, B. Li, Y. Li, Y. Ai, D. Yang, L. Li, Z. Xuanyuan, F. Zhu, et al. Motion planning for
+ autonomous driving: The state of the art and future perspectives. T-IV, 2023.
+
+X. Tian, J. Gu, B. Li, Y. Liu, C. Hu, Y. Wang, K. Zhan, P. Jia, X. Lang, and H. Zhao. Drivevlm: The convergence
+ of autonomous driving and large vision-language models. In CoRL, 2024.
+
+M. Toromanoff, E. Wirbel, and F. Moutarde. End-to-end model-free reinforcement learning for urban driving
+ using implicit affordances. In CVPR, 2020.
+
+H. Touvron, T. Lavril, G. Izacard, X. Martinet, M.-A. Lachaux, T. Lacroix, B. Rozière, N. Goyal, E. Hambro,
+ F. Azhar, et al. Llama: Open and efficient foundation language models. arXiv preprint arXiv:2302.13971,
+ 2023a.
+
+H. Touvron, L. Martin, K. Stone, P. Albert, A. Almahairi, Y. Babaei, N. Bashlykov, S. Batra, P. Bhargava,
+ S. Bhosale, et al. Llama 2: Open foundation and fine-tuned chat models. arXiv preprint arXiv:2307.09288,
+ 2023b.
+
+A. Vaswani, N. Shazeer, N. Parmar, J. Uszkoreit, L. Jones, A. N. Gomez, Ł. Kaiser, and I. Polosukhin. Attention
+ is all you need. In NeurIPS, 2017.
+
+O. Vinyals, A. Toshev, S. Bengio, and D. Erhan. Show and tell: A neural image caption generator. In CVPR,
+ 2015.
+
+     22
+
+P. Wang, A. Yang, R. Men, J. Lin, S. Bai, Z. Li, J. Ma, C. Zhou, J. Zhou, and H. Yang. Ofa: Unifying
+   architectures, tasks, and modalities through a simple sequence-to-sequence learning framework. In ICML,
+   2022.
+S. Wang, Z. Yu, X. Jiang, S. Lan, M. Shi, N. Chang, J. Kautz, Y. Li, and J. M. Alvarez. Omnidrive: A holistic
+   llm-agent framework for autonomous driving with 3d perception, reasoning and planning. arXiv preprint
+   arXiv:2405.01533, 2024a.
+T. Wang, X. Zhu, J. Pang, and D. Lin. Fcos3d: Fully convolutional one-stage monocular 3d object detection. In
+   ICCV, 2021.
+T.-H. Wang, A. Maalouf, W. Xiao, Y. Ban, A. Amini, G. Rosman, S. Karaman, and D. Rus. Drive anywhere:
+   Generalizable end-to-end autonomous driving with multi-modal foundation models. In ICRA, 2024b.
+W. Wang, Z. Chen, X. Chen, J. Wu, X. Zhu, G. Zeng, P. Luo, T. Lu, J. Zhou, Y. Qiao, et al. Visionllm: Large
+   language model is also an open-ended decoder for vision-centric tasks. In NeurIPS, 2024c.
+J. Wei, X. Wang, D. Schuurmans, M. Bosma, F. Xia, E. Chi, Q. V. Le, D. Zhou, et al. Chain-of-thought prompting
+   elicits reasoning in large language models. In NeurIPS, 2022.
+P. Wu, X. Jia, L. Chen, J. Yan, H. Li, and Y. Qiao. Trajectory-guided control prediction for end-to-end
+   autonomous driving: A simple yet strong baseline. In NeurIPS, 2022.
+Z. Xu, Y. Zhang, E. Xie, Z. Zhao, Y. Guo, K.-Y. K. Wong, Z. Li, and H. Zhao. Drivegpt4: Interpretable
+   end-to-end autonomous driving via large language model. RA-L, 2024.
+J. Yu, Z. Wang, V. Vasudevan, L. Yeung, M. Seyedhosseini, and Y. Wu. Coca: Contrastive captioners are
+   image-text foundation models. TMLR, 2022.
+T. Yuan, Y. Liu, Y. Wang, Y. Wang, and H. Zhao. Streammapnet: Streaming mapping network for vectorized
+   online hd map construction. In WACV, 2024.
+E. Yurtsever, J. Lambert, A. Carballo, and K. Takeda. A survey of autonomous driving: Common practices and
+   emerging technologies. IEEE access, 2020.
+A. Zareian, K. D. Rosa, D. H. Hu, and S.-F. Chang. Open-vocabulary object detection using captions. In CVPR,
+   2021.
+J.-T. Zhai, Z. Feng, J. Du, Y. Mao, J.-J. Liu, Z. Tan, Y. Zhang, X. Ye, and J. Wang. Rethinking the open-loop
+   evaluation of end-to-end autonomous driving in nuscenes. arXiv preprint arXiv:2305.10430, 2023.
+J. Zhang and E. Ohn-Bar. Learning by watching. In CVPR, 2021.
+Z. Zhang, A. Liniger, D. Dai, F. Yu, and L. Van Gool. End-to-end urban driving by imitating a reinforcement
+   learning coach. In ICCV, 2021.
+
+
+
+
+
+
+
+
+
+
+    23
+

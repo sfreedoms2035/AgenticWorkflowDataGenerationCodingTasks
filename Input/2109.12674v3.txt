@@ -1,0 +1,1021 @@
+arXiv:2109.12674v3 [cs.LG] 16 Jul 2022
+
+
+
+
+
+
+
+
+
+
+        1
+
+    MetaDrive: Composing Diverse Driving
+Scenarios for Generalizable Reinforcement
+        Learning
+
+   Quanyi Li§*, Zhenghao Peng†*, Lan Feng‡, Qihang Zhang†, Zhenghai Xue†, Bolei Zhou♠
+        §Centre for Perceptual and Interactive Intelligence, Hong Kong SAR, China,
+  †The Chinese University of Hong Kong, Hong Kong SAR, China, ‡ETH Zurich, Switzerland,
+        ♠University of California, Los Angeles, USA.
+
+
+     Abstract—Driving safely requires multiple capabilities from human and intelligent agents, such as the generalizability to unseen
+     environments, the safety awareness of the surrounding traffic, and the decision-making in complex multi-agent settings. Despite the great
+     success of Reinforcement Learning (RL), most of the RL research works investigate each capability separately due to the lack of
+     integrated environments. In this work, we develop a new driving simulation platform called MetaDrive to support the research of
+     generalizable reinforcement learning algorithms for machine autonomy. MetaDrive is highly compositional, which can generate an infinite
+     number of diverse driving scenarios from both the procedural generation and the real data importing. Based on MetaDrive, we construct a
+     variety of RL tasks and baselines in both single-agent and multi-agent settings, including benchmarking generalizability across unseen
+     scenes, safe exploration, and learning multi-agent traffic. The generalization experiments conducted on both procedurally generated
+     scenarios and real-world scenarios show that increasing the diversity and the size of the training set leads to the improvement of the RL
+     agent’s generalizability. We further evaluate various safe reinforcement learning and multi-agent reinforcement learning algorithms in
+     MetaDrive environments and provide the benchmarks. Source code, documentation, and demo video are available at
+     https://metadriverse.github.io/metadrive.
+
+     Index Terms—Reinforcement Learning, Autonomous Driving, Simulation.
+        F
+
+1 INTRODUCTION
+G REAT progress has been made in reinforcement learning To better benchmark the generalizability of RL algorithms in
+     (RL), ranging from super-human Go playing [48] to delicate the autonomous driving domain, we develop MetaDrive, a driving
+dexterous in-hand manipulation [2]. Recent progress shows the simulation platform that can compose a wide range of diverse traffic
+promise of applying RL to real-world applications, such as scenarios. MetaDrive holds the key feature of compositionality,
+autonomous driving [16], [18], [50], the power system optimization inducing a diverse set of driving scenarios from procedural
+in smart building [29], the surgical robotics arm [40], and even generation (PG), real data importing, and domain randomization. It
+nuclear fusion [9]. However, generalization remains one of the also supports versatile research topics like safe RL and multi-agent
+fundamental challenges in RL. Even for the common driving task, RL. Every asset in MetaDrive, such as the vehicle, the obstacle,
+an agent that has learned to drive in one town often fails to drive in or the road structure, is defined as an interactive object with many
+another town [10]. There is the critical issue of model overfitting configurable settings restricted in the parameter spaces, which can
+due to the lack of diversity in the existing RL environments [8]. be combined, managed, and actuated to compose new interactive
+Many ongoing efforts have been made to increase the diversity of driving scenarios. As shown in Fig.1 A. and Fig.1 B., through the
+the data produced by the simulators, such as procedural generation procedural generation or the real data importing, interactive and
+in gaming environments [7] and domain randomization in indoor executable scenarios can be generated to train and test learning-
+navigation [23]. In the context of autonomous driving (AD) based driving systems.
+research, many realistic driving simulators [4], [10], [28], [46], Another challenge for generalizable RL research is the scal-
+[61] have been developed with their respective successes. Though ability issue [7]. Conducting experiments to benchmark the
+these simulators address many essential challenges in AD, such generalizability of RL agents requires massive computing resources
+as the realistic rendering of the surroundings in CARLA [10] and and a long training time [8]. To tackle this, MetaDrive incorporates
+the scalable multi-agent simulation in SMARTS [61], they do not a trade-off between the visual rendering and the physical simulation.
+successfully address the aforementioned generalization problem in With the resource saved from photorealistic rendering, a single
+RL, especially the generalization across different scenarios. Since MetaDrive instance with 100 MB size can run realistic physical
+the existing simulators mostly adopt fixed assets such as hand- simulation up to 300 FPS on a standard PC. The developed platform
+crafted traffic driving rules and maps, the scenarios available for is also compatible with common RL training frameworks such as
+training and testing are far from enough to catch up with the RLLib [25] and Stable-Baseline3 [38], which can launch more
+complexity of the real world. than 100 instances to generate batch data in parallel. Furthermore,
+        MetaDrive can be installed with a single command line and
+*Quanyi Li and Zhenghao Peng contribute equally to this work. interact with OpenAI Gym API in the Python environment. With
+
+   2
+
+
+                                                                                                Ramp
+                                                                   Straight      End
+
+                                                                       Roundabout
+
+                                                                   Curve road
+
+                                                                       Straight
+                                                                     Curve road
+                                                           Straight
+                                                                       Intersection
+
+                                                       Start
+
+   Waymo    Argoverse                                  Straight    Ramp    Ramp     Ego Vehicle
+
+       A. Scenarios Reconstructed from Real Dataset                            B. Procedurally Generated Road Network
+
+
+
+
+
+
+
+
+
+
+                 User Interface     Point Cloud               RGB Camera
+
+            navigation:  state:
+       checkpoints         position
+            surrounding:   velocity
+             vehicle_1:    latitude
+              position     longitude
+              velocity     heading
+            checkpoints    length
+       ...      ...
+
+                   Sensory Data     Bird-eye View             Depth Camera
+
+                               C. Multi-modal observations             D. Human Control
+
+   Fig. 1.  A. MetaDrive supports importing maps and traffic flow from real-world dataset. B. A road map procedurally generated from elementary road
+   blocks. C. Multi-modal observations provided by MetaDrive, including Lidar-like point clouds, RGB / depth camera, bird-view semantic map, and
+   scalar sensory data. D. MetaDrive supports the control and demonstration from human subject.
+
+
+           those features, MetaDrive aims to facilitate the development of   divided into standard training and test set. Agents trained in
+   generalizable RL algorithms.                                              scenes generated by PG can also be evaluated in real traffic cases
+              MetaDrive supports a variety of reinforcement learning tasks   to verify the effectiveness of PG, since the scenes are composed
+         because of its compositionality and extensibility. In the current   under a unified structure.
+                development stage, we construct four standard RL tasks and   •        Safe exploration. We study the safe exploration problem in
+           implement their baselines in the context of driving research as   RL, where the agent has to drive under safety constraints. Besides
+   below. The first three tasks are in single-agent setting while the last   the surrounding vehicles, obstacles like broken-down vehicles
+   one is in multi-agent setting:                                            and traffic cones are randomly scattered on the road and a cost is
+    •           Generalization to unseen PG scenarios. Based on procedural   yielded if a collision happens. We test several safe RL algorithms
+              generation, our simulator composes a large number of diverse   to measure their applicability to the safety-critical scenarios.
+         driving scenarios from the elementary road structures and traffic   • Multi-agent traffic simulation. In five typical traffic scenarios
+        vehicles. Those maps and scenarios are further split into training   such as roundabout and intersection, we study the problem of
+           and test sets. we then conduct baseline experiments to evaluate   multi-agent RL for dense traffic simulation. There are 20 to 40
+          the generalizability of different RL methods with respect to the   agents in a scene, where each vehicle is actuated by a continuous
+    road network structures and traffic flows.                               neural control policy. Collective motions can emerge from the
+    •               Generalization to unseen real scenarios. MetaDrive has   coordination of the agents.
+the APIs to import map data collected in real-world such as 2 RELATED WORK
+Waymo dataset [26], [51] and Argoverse dataset [5]. Thus we
+can benchmark the generalizability of RL agents in real traffic RL Environments. A large amount of RL environments have been
+scenarios. These real-world cases are closely examined and developed to benchmark the progress of different RL problems.
+selected by humans to ensure the data fidelity, then they are Arcade Learning Environments [3] and the MuJoCo Simulator
+
+                                                                                                           3
+
+                                                     TABLE 1
+                                 Comparison of representative driving simulators.
+
+   Simulator   Unlimited  Vehicle  Multi-agent  Custom  Lidar or  Real Data  Realistic Visual  In Active Lightweight
+        Scenarios Dynamics Support Map Camera Importing Rendering Maintenance
+   CARLA [10]                3   3                3        3          3   3                        3
+   SUMMIT [4]                3   3                3        3          3   3                        3
+   MACAD [34]                3   3                3        3          3   3                        3
+   GTA V [28]                3                             3              3
+Highway-env [22]                                                                                   3   3
+   TORCS [57]                3                    3        3                                           3
+   Flow [55]                                      3                   3                                3
+ CityFlow [60]                   3                3                   3                                3
+  Sim4CV [31]                3                             3              3
+ Duckietown [6]                                            3          3                            3   3
+  SMARTS [61]                3   3                3        3                                       3   3
+  AIRSIM [47]                3                             3          3   3                        3
+   SUMO [27]                                      3                   3                            3   3
+  MADRaS [42]                3   3                3        3                                           3
+  Udacity [53]               3                    3        3
+ DriverGym [20]                                                       3                            3   3
+ DeepDrive [52]              3                             3              3
+   MetaDrive   3             3   3  3                      3          3                            3   3
+
+
+[54] are widely studied in single-agent RL tasks, and in multi- as Udacity [53], TORCS [57], DeepDrive [52], Duckietown [6],
+agent RL the Particle World Environment [30] and SMAC [41] Highway-env [22] and DriverGym [20], which only simulate
+have become the standard testing grounds. Meta-World [59] is vehicle with simple kinematic model, e.g., Bicycle mode [37], and
+developed for multi-task and meta reinforcement learning. To simplify the driving problem to a high-level discrete control task or
+apply RL algorithms in the real world, one has to consider their provide simplistic driving scenarios. The aforementioned simulators
+safety and robustness in previously unseen scenarios. Safety Gym are mainly designed for the single-agent scenario. In the Multi-
+[39] and ProcGen [7] are proposed to benchmark the safety and agent Reinforcement Learning(MARL) context, CityFlow [60] and
+generalizability of RL algorithms, respectively. Similar to ProcGen FLOW [56] are two macroscopic traffic simulators that are based on
+[7] which uses procedural generation to generate distinct levels SUMO [27] focusing on traffic flow simulation and hence are not
+of video games, our MetaDrive simulator can also procedurally suitable to investigate the detailed behaviors of each learning-based
+generate an infinite number of driving scenes. As shown in the agent. For MARL research, MACAD [34] and MADRaS [42] are
+following sections, most of the aforementioned RL tasks can be two traditional platforms which are built on CARLA [10] and
+implemented and studied in the proposed MetaDrive simulator TORCS [57] respectively. The newly developed SMARTS [61]
+because of its flexibility for extension and customization. provides an excellent testbed for the interaction of RL agents and
+Driving Simulators. Because of public safety concerns, it is social vehicles in atomic traffic scenes. MetaDrive also designs
+difficult to train and test the driving policies in the physical world MARL environments that cover complex scenarios such as tollgate
+on a large scale. Therefore, simulators have been used extensively and parking lot, with a dense population of 50+ agents. Compared
+to prototype and validate autonomous driving research. Apart from to the existing simulators, the proposed MetaDrive holds the key
+MetaDrive, there are lots of existing driving simulators that support feature of compositionality and extensiblity for fostering new
+RL research. Table 1 presents a comprehensive comparison between research opportunity in generalizable reinforcement learning.
+different simulators. The simulators GTA V [28], Sim4CV [31],
+AIRSIM [47], CARLA [10] and its derived project SUMMIT [4], 3
+MACAD [34] realistically preserve the delicate appearance and SYSTEM DESIGN OF METADRIVE
+transition of the physical world, such as lighting conditions, The core feature of MetaDrive is its compositionality. This
+weather system, even the time of a day shift. In contrast to feature comes in two folds: the abstraction of low-level system
+the high-fidelity rendering of these simulators, MetaDrive trades implementation and the high-level aggregation of elementary
+off the visual appearance quality for its high sample efficiency components into traffic scenarios. In low-level implementation, we
+and extensibility, in order to support a wide range of research encapsulate the back-end implementation of the basic components
+topics such as safe RL and multi-agent autonomy. MetaDrive has and the intercommunication between Python API and the extremely
+realistic vehicle dynamics and kinematics where chassis, wheels efficient 3D game engine Panda3D [12]. With the high-level APIs,
+and joints are built on constraints and actuated by Bullet physics we implement various methods to generate traffic flows and diverse
+engine. This feature distinguishes it from other simulators, such road networks. The wrapping of back-end simulation makes it
+
+    4
+
+    Original Scenario  Multi-agent Manager  IDM Traffic Manager  Object Manager
+
+
+
+
+
+
+
+
+
+
+    Fig. 2. MetaDrive can compose new scenarios by combining various managers. The first column shows two original cases from PG and Waymo
+    datasets. In the second column, by replacing the Single-agent Manager with the Multi-agent Manager, we compose the multi-agent navigation tasks
+    in two maps. In the third column, IDM Traffic Manager is added to both maps, enabling responsive traffic vehicles following IDM policies. The last
+    column indicates that it also supports composing safety-critical environments on both PG map and real map by adding the Object Manager.
+
+    convenient and flexible for RL researchers to develop new scenarios              color, size, and so on. The parameters can be directly determined
+    and tasks to prototype their methods in the autonomous driving                    from user-specified configuration or randomly sampled in the pa-
+    domain. The diverse driving scenarios in MetaDrive also become                  rameter space. The object will automatically assign the determined
+    the standard environments to benchmark various RL algorithms. In                  parameters to the internal models. With such design, a developer
+    this section, we first introduce the key designs in MetaDrive and                who wants to create and manipulate an object, such as setting the
+    the abstraction of object classes. We then introduce the procedure          location and velocity of a vehicle, increasing the width of a lane, or
+    of composing diverse scenarios from the elementary components.                   getting nearby objects, can simply call the APIs without touching
+                             the complex back-end simulation system.
+    3.1 Core Concepts                                                                Policy. A policy is a function that takes the object and environ-
+    Object. In MetaDrive, we abstract the object as the intermediate                 mental states as input and determines the action for controllable
+    connector between the simulation engine and the Python environ-                objects or new states for static objects. In each time step, policy
+    ment. Object is the basic entity in driving scenarios, such as vehicle,                of each object will be automatically called and the control
+    obstacle, traffic light, and road structure. In the back-end simulation,             signals, namely the actuation for vehicle or new position for
+    an object is a proxy to two internal models: the physical model and                obstacle, are passed to the objects by calling object.step() or
+    the rendering model. Powered by the Bullet engine, the physical                           object.set_state() functions. The simulation engine then
+    model in various shapes has a rigid body that can participate in               executes those control signals and advances the world for one step.
+    collision detection and motion calculation. For retrieving realistic                 For vehicles, we currently implement a rule-based policy that
+    camera data, the rendering model provides fine-grained rendering                   mixes the cruising, lane changing, emergency stopping behaviors
+    effects such as light reflection, texturing, and shading.                          with various driving models such as IDM and mobile policy [19].
+    In the Python environment, the object class wraps the Furthermore, a well-trained PPO policy [45] is encapsulated in
+aforementioned details, handles the events such as garbage the simulator, serving as another way to control traffic vehicles.
+collection and exposes only the high-level APIs for ma- Additionally, MetaDrive provides policies that accept commands
+nipulating the object and retrieving its information directly, from external controllers such as neural policy and human control.
+such as object.set_state(), object.get_state(), Besides the traffic participants, the road facilities can be also
+object.step(), and object.reset(). This design can not controlled by policies. For instance, in the MARL Tollgate
+only achieve efficient and realistic simulation but enable users to environment Fig. 7 B., the tollgate follows Tollgate Policy which
+manipulate objects and acquire their information with one line releases the vehicle after it halts for a few seconds inside the gate.
+    Python code. Each class of objects has a parameter space that                          The relationship between policies and objects is defined by
+    bounds the possible configurations of the instantiated objects,               users and can be varied during the episode, making it possible to do
+    enabling randomizing and diversifying objects. For instance, a                    a mix-policy simulation. Similar to SMARTS [61], the mix-traffic
+    vehicle has parameters such as wheel friction, suspension stiffness,              simulation can be easily implemented by, for example, creating a
+
+
+
+
+
+
+
+
+
+
+Waymo Map    PG Map
+
+    5
+
+
+
+
+
+
+    Straight  Ramp  Fork  Roundabout  Curve  T-intersection  Intersection
+
+    5 Blocks        20 Blocks
+
+
+
+
+
+
+    7 Blocks
+
+
+
+
+
+
+Fig. 3. First row shows the basic road blocks and the other rows plot the generated maps with different block numbers.
+
+scenario where some vehicles are controlled by neural policies, the for more intriguing research topics. For example, the Object Man-
+other vehicles are actuated by IDM policies. ager in safe driving environments can be plugged into multi-agent
+Manager. Different managers are used to manage objects in environments with a simply engine.register_manager()
+different roles. In MetaDrive, same class of objects might have and we get a new multi-agent environment for safe driving purposes.
+different roles. For example, in a single-agent RL environment, Furthermore, the Reply Traffic Manager in real data replay
+though the ego vehicle and the traffic vehicles are all vehicle environments can be replaced by IDM Traffic Manager to generate
+objects, they have different roles and thus should have different reactive traffic on real maps instead of replaying logged traffic
+policies. Different roles require various data processing pipelines, data. By calling engine.update_manager(), as shown in
+policies, and spawning/recycling rules. The ego vehicle requires Fig. 7 B., the Agent Manager in generalization environments can be
+the environment to provide explicit fine-grained surrounding updated to Multi-agent Manager to benchmark the generalizability
+information and is controlled by the RL agent. In contrast, of existing MARL algorithms. The combination of basic managers
+the traffic vehicles rely on the rule-based policy and can be and their derived managers is thus called composition. As shown
+actuated with less detailed observations and states of other objects. in Fig. 2, we provide some composition results.
+Their spawning rules are also different. The ego vehicle is only
+created when an episode resets, while traffic vehicles will be 4
+recycled if they locate far from the ego vehicle. Therefore, the COMPOSING DIVERSE DRIVING SCENARIOS
+ego vehicle and the traffic vehicles should be managed by the In MetaDrive, a driving scenario can be composed by sequentially
+Agent Manager and the Traffic Manager respectively. A cus- executing four basic Managers: (1) Map Manager, in which PG
+tom manager should implement manager.get_state() and maps or real maps will be randomly sampled for each new episode,
+manager.set_state() for retrieving and setting the states of (2) Traffic Manager, which contains a set of traffic vehicles cruising
+managed objects, manager.step() for invoking policies and in the scene and navigating to their given destinations, (3) Object
+actuating managed objects and manager.reset() for resetting Manager that randomly scatters obstacles in the map to create more
+objects when meeting the termination conditions. challenging and safety-critical scenarios, (4) Agent Manager that
+        manages target vehicles which are actuated by external policies,
+        e.g. RL agents. Other managers for special purposes, such as
+3.2 Workflow for Scenario Composition Tollgate Manager and Traffic Light Manager, are also available and
+Scenario composition in MetaDrive is conducted hierarchically: can work with the four basic managers to compose more scenes.
+MetaDrive environment creates a set of managers according to
+user specification, then the managers spawn objects and assign 4.1 Generating Maps
+policies to those objects if applicable. After the initialization stage, MetaDrive supports two approaches to generate road networks: the
+all objects will run automatically in the environment following procedural generation and importing from real data set.
+their policies while the managers monitor the states of the object Procedural Generation. One of the most important map sources
+and kick off new objects or recycle terminated ones. At each step, is the Procedural Generation (PG). As shown in Fig. 3, ingredients
+information and states of the managed objects will be thrown to used to do PG are a set of road blocks sampled from typical
+the outside of the environment for policies, such as RL policies, to types. Each block preserves properties like lanes, spawn points for
+determine new control signals. locating new vehicles, and sockets for interconnect other blocks.
+    By flexibly combining existing managers, new environments, as We represent a road block using an undirected graph with
+well as the officially released benchmarks, can be easily composed additional features: Gω = {V, E, S, P, ω, Ω}, with nodes V denoting
+
+                                                                                                                                                       6
+    Algorithm 1: Procedural Generation of Maps                                                                              "map_config": {
+                                                                                                                               "type": "block_sequence",
+        Input:   Maximum tries in one block T; Number of blocks                                                                "config": "yY",
+                                                                                                                               "lane_width": 3.5,
+             in each map n; Number of required maps N                                                                       }  "lane_num": 3
+        Result:   A set of maps M = {G(i)
+                       net }i=1,...,N
+    1   # Define the main function to generate a list of maps
+    2   Function main(T, n)                                                                                                 "map_config": {
+                                                                                                                               "type": "block_sequence",
+    3    Initialize an empty list M to store maps                                                                              "config": "RYS",
+                                                                                                                               "lane_width": 3.5,
+    4    while M does not contain N maps do                                                                                 } "lane_num": 4
+    5            Initialize an empty road network Gnet
+    6            Gnet , success=BIG(T, Gnet , n)
+    7            if success is True then
+    8             Append Gnet to M                                                                                          "map_config": {
+                                                                                                                               "type": "block_sequence",
+    9    Return M                                                                                                              "config": "SSSS",
+                                                                                                                               "lane_width": 3.5,
+                                                                                                                               "lane_num": 8
+    10  # Define the Block Incremental Generation (BIG) helper                                                              }
+         function that appends one block to current map if feasible
+         and return current map with a success flag
+    11  Function BIG(T, Gnet , n)
+    12   if Gnet   has n blocks then
+    13           Return Gnet , True                                                                                         "map_config": {
+    14   for 1,    ..., T do                                                                                                   "type": "block_sequence",
+                                                                                                                               "config": "X",
+    15           Create new block Gω = GetNewBlock()                                                                           "lane_width": 4,
+                                                                                                                               "lane_num": 5
+    16           Find the sockets for new block and old blocks:                                                             }
+                  e1 ∼ Gω (S), e2 ∼ Gnet (S)
+    17           Rotate Gω so that e1, e2 have supplementary
+                  heading
+    18           if Gω does not intersect with Gnet then
+    19             Gnet ← Gnet ⋃ Gω
+    20             Gnet , success=BIG(T,Gnet , n)                                                                           "map_config": {
+    21             if success is True then                                                                                     "type": "block_sequence",
+                                                                                                                               "config": "rXrXrXrX",
+    22                Return Gnet , True                                                                                       "lane_width": 8,
+                                                                                                                               "lane_num": 1
+    23             else                                                                                                     }
+    24                Remove the last block from Gnet
+    25   Return Gnet , False
+    26  # Randomly create a block                                            Fig. 4. MetaDrive can derive diverse scenarios with different config in
+    27  Function GetNewBlock()                                               the input config.
+    28   Randomly choose a road block type T ∼ {Staright, ...}
+    29   Instantiate a block and randomize the parameters
+         Gω , ω ∼ ΩT                                                                      rightest lane. The acceleration lane and deceleration lane are
+    30   Return Gω                                                                  attached to the main road to guide the traffic vehicles to the enrty
+                                                                              or exit of the main road.
+                                                                              •           Fork: A structure used to merge or split additional lanes from
+            the joints in the road network and edges E denoting lanes which   the main road and change the number of lanes.•
+            interconnect nodes. At least one node is assigned as the socket               Roundabout: A circular junction with four exits (sockets) with
+    S = {ei₁, ei , ...}, e ∈ E. The socket is usually a short straight road                 a configurable shape. Both roundabout, ramp, and fork aim to
+             2                                                                provide diverse merge scenarios.
+           at the end of lanes which serves as the anchor to connect to the
+            socket of other blocks. Block can preserve several sockets. For   •            Curve: A curve block consists of a circular shape or clothoid
+               instance, Roundabout and T-Intersection have 4 sockets and 3   shape lanes with configurable curvature.•
+          sockets, respectively. Spawn points P can be sampled on lanes for                   T-Intersection: An intersection that can enter and exit in
+       allocation of traffic participants. Apart from the above properties,                 three ways and thus has three sockets. The turning radius is
+            a block type-specific parameter space Ω is defined to bound the   configurable.•
+           possible parameters ω of the block, such as the number of lanes,                  Intersection: A four-way intersection allows bi-directional
+          the lane width, and the road curvature, and so on. The road block               traffic. It is designed to support the research of unprotected
+          is the elementary component that can be assembled into a complete   intersection.
+road network Gωₙₑₜ = {V, E, S, P, ωnet } = Gω₁ ⋃ ... ⋃ Gωₙ by the As illustrated in Algorithm 1, we propose a search-based PG
+procedural generation algorithm. Shown in Fig. 3, the detail of algorithm Block Incremental Generation (BIG), which recursively
+    typical block type T   is summarized as follows:                                  appends block to the existing road network if feasible and reverts
+        the last block otherwise. When adding new block, BIG first
+ • Straight: A straight road is configured by the number of lanes, uniformly chooses a roadblock type T and instantiate a block Gω
+    length, width, and lane line types.                                      with random parameters ω ∼ ΩT     (the function GetNewBlock()).
+ • Ramp: A ramp is a road with an entry or exit existing in the After rotating the new block so the new block’s socket can dock
+
+    7
+
+
+
+
+
+
+
+
+
+
+    Fig. 5. MetaDrive can load real scenarios from Argoverse dataset [5] and Waymo dataset [51].
+
+                                                                                 "block_sequence" indicates generating map containing a
+                                                                                 given sequence of block types. Alternatively, setting type to
+                                                                                 block_num requests the BIG algorithms to produce a map
+                                                                                 containing given number of blocks while the type of blocks should
+                                                                                 be randomized. Detailed annotations of different blocks is given in
+                                                                                 the documentation of the MetaDrive.
+                                                                                 Real Map. Apart from the procedural generation of new scenarios,
+                                                                                 MetaDrive can also import real traffic data from autonomous
+                                                                                 driving datasets. The road network data usually consists of a set of
+                                                                                 lane line center points, such as in Argoverse dataset [5], Waymo
+                                                                                 dataset [26], [51] and OpenStreetMap [15]. Benefiting from the
+                                                                                 unified data structure to represent road networks, MetaDrive can
+                                                                                 seamlessly incorporate real-world data through creating lanes from
+                                                                                 waypoints in the dataset and then building functionalities at those
+                                                                                 lanes, such as the transformation between world coordinates and
+    Fig. 6. A simulation scenario is replicated from the real traffic data of    Frenet coordinates. MetaDrive currently supports Waymo motion
+    Argoverse dataset [5]. The traffic vehicles are actuated by Replay Traffic   dataset [26], [51] and Argoverse motion dataset [5], since they
+    Manager.                                                                     both contain the relationship between lanes, such as the entry
+        lanes, existing lanes, left and right neighboring lanes. We provide
+        the Fig. 5 to show the imported real maps from both datasets. It
+into one socket of the existing network (Line 16, 17), BIG will then is worth noticing that the Waymo dataset includes more diverse
+verify whether the new block intersects with existing blocks (Line road structures and more detailed information such as boundaries
+18). We test the crossover of all edges of Gω and network Gnet . If than the Argoverse dataset. On the other hand, the Waymo dataset
+crossovers exist, then we discard Gω and try a new one. Maximally includes more complete scenarios (approximately 20,000) than the
+T trials will be conducted. If all of them fail, we remove the latest Argoverse dataset (approximately 100). Thus we only conduct real
+block and revert to the previous road network (Line 24). The stop data generalization experiments on Waymo data.
+criterion of BIG is usually the number of blocks. In addition, users
+can also specify the block sequences to sample from the parameter 4.2 Generating Traffic Participants
+spaces to generate maps with same block sequence but in different Traffic Generation. MetaDrive maintains the traffic through Traffic
+shapes. Fig. 3 provides demonstration of generated maps assembled Manager. The Traffic Manager decides when and where to generate
+    by different number of blocks.                                               or recycle traffic vehicles and also assigns policies to vehicles. To
+    The map generation process can be controlled by over- support the compositionality, The attributions of created traffic
+writing the map config, allowing the customization of the vehicles, such as vehicle type, powertrain parameters, behaviors
+road network. When creating the environment, the user can (aggressive or conservative), spawn points, and destinations, can
+pass a config, namely a dictionary, into the environment be customized or randomized.
+    MetaDriveEnv(config) and specify the road network by                         For PG maps, IDM Traffic Manager   is the default traffic
+providing overrides to the default settings of the map. For instance, manager which actuates traffic vehicles according to rule-based
+as shown in Fig. 4, the user can generate a variety of environments IDM policy, so they are responsive to the target vehicles. There are
+such as wide straight roads by modifying the dictionary with two modes to initialize the traffic flow in PG scenarios: Respawn
+few lines of code. In the showcases, we first specify the method mode and Trigger mode. Respawn mode is designed to maintain
+to generate maps. config["map_config"]["type"] = traffic flow density. In Respawn mode, Traffic Manager assigns
+
+
+
+
+
+
+
+
+
+
+MetaDrive  Real Data    Waymo Argoverse
+
+    8
+
+
+
+
+
+
+
+
+
+    Roundabout    PG Map    Bottleneck
+
+
+
+
+
+
+
+
+        Tollgate Parking Lot Intersection
+        A. Safety Environments B. Multi-agent Environments
+
+Fig. 7. A. Safe driving environments where obstacles such as broken down vehicles and traffic cones are randomly scattered on the map. B.
+Multi-agent environments where all agents need to coordinate their driving behaviors to achieve the population efficiency.
+
+traffic vehicles to random spawn points on the map. The traffic 4.3 Sensors and Performance
+vehicles immediately start driving toward their destinations after MetaDrive is implemented based on Panda3D [12] and Bullet
+spawning. When a traffic vehicle terminates, it will be re-positioned Engine. The well-designed rendering system of Panda3D enables
+to an available spawn point. On the contrary, the Trigger mode MetaDrive to construct realistic monitoring and observational data.
+traffic flow is designed to maximize the interaction between target Bullet Engine empowers accurate and efficient physics simulation.
+vehicles and traffic vehicles. The traffic vehicles stay still in MetaDrive provides various kinds of sensory input, as illustrated in
+the spawn points until the target agent enters the trigger zone. Fig.1 C. For low-level sensors, Lidar, RGB cameras, depth cameras
+Taking the Intersection as an example. Traffic vehicles inside the implemented by depth shader can be placed anywhere in the scene
+intersection will be triggered and start moving only when the target with adjustable parameters such as noise distribution, view field,
+vehicle trespasses into the intersection. and the laser number. Meanwhile, MetaDrive can also provide
+    For real maps imported from Argoverse [5] and Waymo high-level scene information as input to the learning policy, such
+dataset [26], [51], IDM Traffic Manager or Replay Traffic Manager as the road information like bending angle, length and direction,
+can be used. When steering vehicles by Replay Traffic Manager, and nearby vehicles’ information like velocity, heading, and profile.
+in the log-reply mode, traffic vehicles strictly reproduce the Note that MetaDrive aims at providing an efficient platform to
+trajectories collected in the real world without any reaction to benchmark RL research, particularly generalizable RL research,
+the surroundings. As shown in Fig. 6, traffic vehicles with lop- therefore we improve the simulation efficiency at the cost of a
+replay policy replicate the behaviors recorded in Argoverse data set. photorealistic rendering effect. As a result, MetaDrive can run at
+When in the IDM control mode, the IDM controller actuates all the 300 FPS in the single-agent environment with 10 rule-based traffic
+traffic vehicles whose initial states, i.e. position are synchronized vehicles and 60 FPS in the multi-agent environment with 40 RL
+with the first frame of log data. After that, they are reactive to the agents.
+ego car and surroundings and make decisions at every step. This, 5 BENCHMARKING REINFORCEMENT LEARNING
+in turn, yields new trajectories different from the recorded data.
+Scattering Obstacles. To compose near-accidental scenarios, TASKS
+Object Manager scatters many obstacles such as cones, crash Based on MetaDrive, we construct four driving tasks corresponding
+barriers as well as broken down vehicles on the road, as shown to different reinforcement learning problems. The first two are in
+in Fig. 7 A. The density of the obstacles determines the difficulty a single-agent setting where the traffic is actuated by rule-based
+of the task. A collision with the obstacle yields a cost for the ego policies (for PG maps) or trajectory replay policies (for real maps),
+vehicle, which can be used to train safe RL algorithms. and a target vehicle is controlled by an external RL agent. The
+Target Vehicles Management. Agent Manager is designed to third task is in the safe driving setting where maps are generated
+register and maintain controllable vehicles in both single-agent by PG and obstacles are scattered randomly. The last task is in the
+and multi-agent environments. It processes and packs information multi-agent setting where a population of agents learns to simulate
+collected from the environment, such as the observations, rewards, a traffic flow and each vehicle is actuated by a continuous control
+and user-specified information with corresponding agent id, and policy. We release the implementation of the baseline algorithms for
+then conveys them to external algorithms for training. Our special reproducible research at https://github.com/metadriverse/metadrive.
+implementation of Multi-agent Manager makes it feasible to
+benchmark both common MARL setting and the mix-motive 5.1 Experimental Setting
+RL [17], [35], where the number of active agents is varying and In all tasks, the objective of RL agents is to steer the target vehicles
+new agents spawn immediately once old ones terminate. with low-level continuous control actions, namely acceleration,
+
+                                                                                                                                  9
+
+                                                              TABLE 2
+                                              Hyper-parameters of benchmarked methods.
+
+    SAC/SAC-Lag Parameters        Value       PPO/PPO-Lag Parameters       Value     IPPO/CCPPO Parameters                    Value
+    Discount Factor γ             0.99        Discount Factor γ            0.99      KL Coefficient                           1.0
+    τ for target network update   0.005       KL Coefficient               0.2       λ for GAE [44]                           0.95
+    Learning Rate                 0.0001      λ for GAE [44]               0.95      Discount Factor γ                        0.99
+    Environmental horizon T       1500        Number of SGD epochs         20        Environmental steps per training batch   1024
+    Steps before Learning start   10,000      Train Batch Size             8000      Number of SGD epochs Kp                  5
+    Buffer Size                   1,000,000   SGD mini batch size          100       SGD mini batch size                      512
+    Prioritized Buffer            True        Learning Rate                0.00005   Learning Rate                            0.0003
+    Train Batch Size              256         Clip Parameter ε             0.2       Environmental horizon T                  1000
+    Initial Alpha                 1.0         Penalty Learning Rate        0.01      Neighborhood radius dn                   40 m
+    Penalty Learning Rate         0.01        CPO Target KL Divergence     0.01      Number of random seeds                   8
+    Cost Limit for SAC-Lag        1           Cost Limit for PPO-Lag/CPO   1         Maximal environment steps                1M
+
+
+
+         SAC                                            PPO                                                Traffic Rule Violation (PPO)
+                                                                                                1.0                                    Training
+     1.0                                            1.0                                                                                Test
+     0.8                                            0.8                                         0.5
+     0.6                                            0.6                                         0.0
+                                                                                                       1  5   10 20 50     100   300       1000
+     0.4                                            0.4                                                       Crash Rate (PPO)
+     0.2                              Training      0.2                            Training     0.2                                    Training
+                                                                                                                                       Test
+     0.0                              Test          0.0                            Test         0.1
+         1  5 10 20 50            100 300     1000      1  5 10 20         50 100    300 1000   0.0
+         Number of Training Scenes                      Number of Training Scenes                      1  5   10 20 50     100   300       1000
+
+    Fig. 8. The generalization result of the agents trained with off-policy RL algorithm Soft Actor-critic (SAC) [14] and on-policy RL algorithm PPO [45].
+    Increasing the number of training scenarios leads to a higher test success rate and lower traffic rule violation and crash probability, which indicates
+    the agent’s generalization is significantly improved. Compared to PPO, the SAC algorithm brings a more stable training performance. The shadow of
+    the curves indicates the standard deviation.
+
+
+brake, and steering. We attempt to unify all tasks with a general at undrivable area. We set c1 = 1 and c2 = 0.1. Sophisticated
+setting of observation, reward function, and evaluation metrics. reward engineering may provide a better supervision signal, which
+Observation. The observation of RL agents is as follows: we leave for future work. For benchmarking Safe RL algorithms,
+ • A 240-dimensional (72-dimensional in MARL) vector denoting collision to vehicles, obstacles, sidewalk and buildings raises a cost
+ the 2D-Lidar-like point clouds with 50m maximum detecting +1 at each time step.
+ distance centering at the target vehicle. Each entry is in [0, 1] Evaluation Metrics. We evaluate a given driving agent for multiple
+ representing the relative distance of the nearest obstacle in the episodes and define the ratio of episodes where the agent arrives at
+ specified direction. the destination as the success rate. The definition is the same for
+ • A vector summarizing the target vehicle’s state such as the traffic rule violation rate (namely driving out of the road) and the
+ steering, heading, velocity, and relative distance to the left and crash rate (crashing other vehicles). Compared to episodic reward,
+ right boundaries. the success rate is a more suitable measurement when evaluating
+ • The navigation information that guides the target vehicle toward generalization, because we have a large number of scenes with
+ the destination. We sparsely spread a set of checkpoints, 50m apart different properties such as the road length and the traffic density,
+ on average, in the route and use the relative positions toward future which makes the reward vary drastically across different scenes.
+ checkpoints as observation to the target vehicle. We conduct experiments on MetaDrive with algorithms mostly
+Reward and Cost Scheme. The reward function is composed of implemented in RLLib [25]. Each trial consumes 2 CPUs with 8
+three parts as follows: parallel rollout workers. All experiments are repeated 5 times with
+        different random seeds.
+        R = c1Rdisp + c2Rspeed + Rterm. (1)
+The displacement reward Rdisp = dt − dt−1, wherein the dt and dt−1 5.2 Generalization to Unseen PG Scenes
+denote the longitudinal movement of the target vehicle in Frenet To benchmark the generalizability of a driving policy, we develop
+coordinates of current lane between two consecutive time steps, an RL environment that can generate an unlimited number of
+provides dense reward to encourage agent to move forward. The diverse driving scenarios through the aforementioned procedural
+speed reward Rspeed = vt/vmax incentivizes agent to drive fast. vt generation algorithm. Traffic flow powered by IDM model in
+and vmax denote the current velocity and the maximum velocity varying density is also added to interact with the target vehicle. We
+(80 km/h), respectively. We also define a sparse terminal reward split the generated scenes into two sets: the training set and the test
+Rterm, which is non-zero only at the last time step. At that step, we set. We train the RL agents only in the training set and evaluate
+set Rdisp = Rspeed = 0 and assign Rterm according to the terminal them in the held-out test set. The generalizability of a trained agent
+state. Rterm is set to +10 if the vehicle reaches the destination, is therefore measured by the test performance. The objective of this
+−5 for crashing others or violating traffic rules such as locating task is to show how the diversity and quantity of training scenarios
+
+
+
+
+
+
+
+
+
+
+Success Rate
+
+
+
+
+
+
+
+
+
+
+Success Rate
+
+    10
+
+
+
+
+
+
+
+
+
+    Number of Real Training Scenes        Number of PG Training Scenes         Real Data Ratio of Training Set
+                  A.                                                           B.             C.
+    Fig. 9.              A. Waymo generalization experiment with a changing number of scenarios contained in training set. B. The test performance of PG-map-
+    trained policies in real-world scenarios. C. Result of the policies trained on 5 training sets consisting of different mixing ratio of real and synthetic
+    data.
+
+    affect the generalizability of the learned policy. Table 2 describes       set. We construct 5 training sets consisting of 100 training cases
+    detailed hyperparameter settings in this experiments.                      where real scenes and PG scenes are mixed in different ratios (0%,
+                 We train the agents with two popular RL algorithms PPO [45]   30%, 50%, 70%, 100%). As shown in Fig. 9 C., increasing the real
+    and SAC [14]. As shown in Fig. 8, the result of improved                   data ratio improves the test success on real test set. The decreasing
+    generalization capacity is observed in the agents trained from             training success rate implies that real scenarios is harder than PG
+    both RL algorithms: First, the overfitting happens if the agent is not     scenes so that it is difficult for SAC to find a good solution.
+    trained with a sufficiently large training set. When N = 1, namely                          These three experiments show that for sim-to-real RL applica-
+the agent is trained in a single map, we can see the significant tions it is critical to ensure that data distributions in the simulator
+performance gap of the learned policies between the training set and real-world are similar. Otherwise, the generalizability shown
+and test set. Second, the generalization ability can be greatly in the simulation can not be well transferred to reality. By building
+strengthened if the agents are trained in more environments. As training environments from real datasets, MetaDrive improves the
+the number of training scenes N increases, the final test success generalization of trained policies in real-world scenarios and thus
+rate keeps increasing while rule violation and crash decrease provides the flexibility to conduct further research.
+drastically. The overfitting is alleviated and the test performance
+can match the training performance when N is higher. The results 5.4 Safe Exploration
+clearly show that increasing the diversity of training environments
+can significantly improve the generalizability of RL agents. It As driving itself is a safety-critical application, it is important to
+also highlights the strength of the compositional simulator for evaluate the safe RL methods under the domain of autonomous
+    generalizable reinforcement learning research.                             driving. We define a new suite of environments to benchmark the
+                                                                               safe exploration in RL. As shown in Fig. 7 A., we randomly place
+    5.3     Generalization to Unseen Real Scenarios                            obstacles on the road. Different from the generalization task, we do
+    MetaDive has the capacity to import real scenarios from au-                not terminate the agent if a collision with obstacle or other vehicle
+    tonomous driving dataset. Currently, we build real-world cases             happens. Instead, we allow the learning agent to continue driving
+    collected by Waymo [26] and split the training set and test set            and record the crash with a cost +1. Thus as a safe exploration
+    so that they consist of 1000 and 100 non-overlapping cases,                task, the learning agent is required to balance the reward and the
+    respectively.                                                              cost. We also evaluate the agents on unseen maps to show their
+                 We conduct three experiments to discover the generalization   generalization ability in the aspect of safety.
+    phenomenon in real cases. Firstly, by changing the number of                                  We evaluate the reward shaping variants (RS) and Lagrangian
+    cases contained in real training sets, we train 9 sets of agents           variants (Lag) of PPO [45] and SAC [14] as well as the Constrained
+    to benchmark the generalizability of SAC [14]. As shown in                 Policy Optimization (CPO) [1]. RS method considers negative cost
+    Fig. 9 A., increasing the training set size can also improve the           as an auxiliary reward while Lagrangian method [39] consider the
+    generalizability of RL agents in real scenarios. With the number of        learning objective as:
+    cases exceeding 100, the test performance is slightly higher than            max min = E[R
+    the training performance. This might because we build the test set             θ λ≥0     τ     θ (τ) − λ (Cθ (τ) − d)],                               (2)
+with meticulous selection by human, while keeping the training wherein Rθ (τ) and Cθ (τ) are the episodic reward and the episodic
+scenarios draw from raw data. Therefore The noise and invalid cost respectively, θ is the policy parameters and d is a given cost
+    cases in the training set undermine the training performance.              threshold. Thus the objective is to maximize episodic accumulative
+                In the second experiment, we evaluate the trained PPO agents   reward while restricting the episodic accumulative cost under a
+    from PG generalization experiment (Sec. 5.2) on the real-world test        predefined threshold.
+    set. The orange line in Fig. 9 B. shows the test performance of those                            Different from existing work which applies Lagrangian to
+    agents in Waymo dataset. We find that increasing the diversity in          SAC directly [13], we additionally equip SAC-Lag with a PID
+    PG training set can not improve the test performance on real-world         controller to update the multiplier to alleviate the oscillation
+    test set. This suggests the sim-to-real gap can not be eliminated by       in the training [49]. All Safe RL algorithms are trained using
+    increasing training data from heterogeneous distribution.                  500,000 steps. The algorithm configuration is in Table 2. We
+                The third experiment verifies whether introducing real cases   also provide two offline learning baselines, BC and CQL [21],
+    in PG training set can improve the test performance in real test           which use 36k human demonstrated transitions in 97% success
+
+
+
+
+
+
+
+
+
+
+Success Rate
+
+
+
+
+
+
+
+
+
+
+Success Rate
+
+
+
+
+
+
+
+
+
+
+Success Rate
+
+                                                                                                                                                                                                                                                                             11
+
+                      Training Episodic Cost                                                                                                                                                                              TABLE 3
+                                                                                                                                          The test performance of different approaches in Safe Exploration.
+        7
+        6                                                                                                                                                                                                                Cumulative    Cumulative  Success Rate
+        5                                                                       Category                                                              Method                             ›    Reward                                      Cost
+        4                                                                                                                                      RL  SAC-RS [14]                                                          327.13 ±7.28   3.38 ±0.60  0.801 ±0.040
+        3                                                                                                                                          PPO-RS [45]                                                         197.27 ±16.24   3.33 ±0.68  0.207 ±0.052
+        2                                                                                                                                          SAC-Lag [49]                                                        324.23 ±14.45   1.90 ±0.44  0.714 ±0.103
+        1                                                                       Safe RL                                                            PPO-Lag [39]                                                        269.51 ±22.54   1.82 ±0.33  0.477 ±0.114
+        0                                                                                                                                            CPO [1]                                                           194.06 ±108.86  1.71 ±1.02  0.210 ±0.290
+            0  1       2                  3     4      5
+                       Sampled Steps                   1e5                      Offline                                                                 BC                                                             101.63 ±16.06   1.00 ±0.45   0.01 ±0.03
+                      Training Success Rate                                     Methods                                                              CQL [21]                                                           156.4 ±31.94   6.82 ±5.1    0.11 ±0.07
+
+        1.0
+        0.8                                                                                                                                        Reward Shaping                            Lagrangian
+                                                                                                                                          3                                                  Train
+        0.6                                                                                                                                                                                  Test
+
+        0.4                                                                                                                               2
+
+        0.2                                                                                                                               1
+        0.0                                                                                                                               0
+            0  1           2              3     4      5
+                              Sampled Steps            1e5                                                                                     1   3 Number of Training Scenes6  15 40   100                                1000 1 3 Number of Training Scenes6  15 40 100 1000
+            PPO-Lag   PPO-RS        SAC-Lag     SAC-RS CPO
+
+    Fig. 10. Since the training time safety is critical to Safe RL, we show
+    the learning progress of different Safe RL methods. Though achieves                                                                                                                  Fig. 11. The episode cost of the trained policies in safety generalization
+    superior sample efficiency, the reward shaping version of SAC induces a                                                                                                                experiment. We observe overfitting and poor safety performance in test
+    peak in the training cost, while the Lagrangian SAC improves the policy    time if trained with few training scenes.
+    while satisfying the safety constraint.
+
+    rate to do offline learning and are totally safe in training time.                                                                                                                         10 to 40 agents are simultaneously running in the environment.
+    To promote imitation learning (IL) and Offline RL research,                                                                                                                              It is difficult to experiment with such dense multi-agent traffic
+    the driving trajectories collected by humans are also released                                                                                                                            in previous simulators due to poor efficiency. In MetaDrive, we
+    at https://github.com/metadriverse/metadrive/releases/download/                                                                                                                          manage to achieve the efficiency of 60 FPS with 40 agents running
+    MetaDrive-0.2.3/human_traj_100_new.json.                                   simultaneously in a shared environment. Fig. 7                                                                B. shows six
+                       As shown in Table 3 and Fig. 10, SAC-RS shows superior                                                                                                                  environments for MARL, and their details are introduced below:
+    performance but causes high safety violations. On the contrary,             •                                                                                                                                          Roundabout: A four-way roundabout with two lanes. 40
+    the Lagrangian SAC can achieve lower cumulative costs while                 vehicles spawn during environment reset. This environment
+    giving up little reward. Meanwhile, PPO is inferior compared                includes merge and split junctions.
+    to SAC, since it is an on-policy algorithm that are less sample-            •                                                                                                                                   Intersection: An unprotected four-way intersection allowing
+    efficient than off-policy methods. Fig. 10 presents the learning            bi-directional traffic as well as U-turns. Negotiation and social
+    dynamics of different Safe RL algorithms. The result suggests               behaviors are expected to solve this environment. We initialize 30
+    that SAC-RS shows the best sample efficiency, but a peak of                 vehicles.
+    episodic cost happens when it learns most efficiently. Noticeably,          •                                                                                                                                Tollgate: Tollgate scene includes narrow roads to spawn agents
+    for BC and CQL, though interaction with environments is not                 and ample space in the middle with multiple tollgates. The
+    required and policy can be learned with zero cost, they all have            tollgates become static obstacles where crashing is prohibited. We
+    worse performance than online learning RL methods. CQL still                request agents to stop within tollgate for 3s. The agent will fail if
+    outperforms BC, indicating that Offline RL method can learn a               they exit the tollgate before being allowed to pass. 40 vehicles are
+    better policy given limited data.                                           initialized. Complex behaviors such as deceleration and queuing
+               We also conduct the safety generalization experiment to verify   are expected. Additional states such as whether the vehicle is in
+    the impact of training sets to testing-time safety performance. We          tollgate and whether the tollgate is blocked are given.•
+    train the PPO-RS and PPO-Lag on training sets with different size                                                                                                                                              Bottleneck: Complementary to Tollgate, Bottleneck contains a
+    and show the training and test episode cost in Fig. 11. When training       narrow bottleneck lane in the middle that forces the vehicles to
+    with few environments, both methods achieve high test costs even if         yield to others. We initialize 20 vehicles in this scene.•
+    the training cost is low. The safety generalizability can be improved                                                                      Parking Lot: A compact environment with 8 parking slots.
+    by increasing the training set diversity. This experimental result          Spawn points are scattered in both parking lots and on external
+    implies the overfitting in safe exploration, which is a critical issue      roads. 10 vehicles spawn initially and need to navigate toward
+    if we want to apply the end-to-end driving system to the real world.        external roads or enter parking lots. In this environment, we
+                                                                                allow agents to reverse their cars to spare space for others. Good
+                                                                                maneuvering and yielding are the keys to solving this task.
+    5.5 Mixed Motive Multi-agent Reinforcement Learning                         •                                                                                                                                    PG Map: All vehicles in PG generated three roadblocks maps
+    We design five multi-agent RL environments in MetaDrive to                  are controlled by RL agents.
+    benchmark the MARL algorithms. Depending on the environments,                                                                                                                                                 These multi-agent environments pose a new challenge under the
+
+
+
+
+
+
+
+
+
+
+Episode Cost
+
+                                                                                                                                                  12
+                                  TABLE 4                                    manually shaping reward and cost function. Our recent works on
+    Success rate (%) of different approaches in Multi-agent RL benchmarks.   human-in-the-loop training [24], [36] provide examples; 3)When
+                                                                             learning from limited offline data, Offline RL outperforms IL by
+      Method        Bottle.  Tollgate   Inter.   Round. Parking   PG Map     a large margin in the safe exploration experiment 3. Also, in our
+       IPO          74.18     74.72     73.93    64.55    20.90   83.82      previous work [36], we train CQL [21] and BC with a large dataset
+       [43]         ± 15.87   ± 15.82   ± 9.18   ± 5.17   ± 5.70  ± 4.40     containing 300,000 transitions collected by a well-trained PPO
+    MF-CCPPO        65.27     48.62     71.58    68.95    14.42   79.63      expert policy. The results show that the CQL can achieve 72%
+       [58]         ± 17.06   ± 32.84   ± 7.79   ± 4.78   ± 4.92  ± 4.71     success rate, while BC only reaches 13%, suggesting that Offline
+     Concat-        51.93     31.92     62.67    64.50    4.73    75.38      RL is an appealing direction for future works.
+      CCPPO         ± 17.03   ± 26.01   ± 12.46  ± 8.46   ± 3.83  ± 8.69
+        CL          66.45     52.99     67.90    81.51    16.17   77.96      6
+       [32]         ± 10.50   ± 22.86   ± 15.00  ± 4.49   ± 8.94  ± 6.95      ETHICAL STATEMENT AND LIMITATIONS
+       CoPO         73.39     79.66     77.79    73.65    20.98   80.24      Ethical              Statement. MetaDrive provides a driving simulation
+       [35]         ± 16.65   ± 13.92   ± 2.95   ± 4.61   ± 3.55  ± 4.21     environment for RL research. Though MetaDrive itself has marginal
+                                                                             negative societal impact, there might be two possible cases that
+    setting of mixed-motive RL, because each constituent agent in this       cause damages. First, if a user applies the trained agent from
+    traffic system is self-interested and the relationship between agents    MetaDrive to a real vehicle, the vehicle may cause accidents due
+    is changing.                                                             to domain gap or uncertainty in neural network/action distribution.
+     We benchmark several MARL algorithms: Independent policy                There is still a long way to go to narrow the sim2real gap. Second,
+    optimization (IPPO) method [43] which uses PPO [45] as the               since MetaDrive allows human subject to control vehicle via
+    individual learners and two centralized critic methods which             keyboard, joystick, or steering wheel, the player may experience,
+    encode the nearby agents’ states into the input of value functions       though the chance is low, discomfort or pain due to exposure to the
+    (centralized critics). We test two variants of centralized critic        fast driving in the MetaDrive 3D visualization.
+    PPO (CCPPO): The first one is the Mean Field (MF) CCPPO,                 Limitations. MetaDrive has limitations in the following aspects:
+    which averages the states of nearby vehicles within 10 meters            First, the image rendering is not realistic as other driving simulators
+    and feeds the mean states to the value network [58]. The second          with photorealistic rendering effects like CARLA [10]. This is
+    variant concatenates the state of K nearest vehicles (K=4 in our         because MetaDrive specifically focuses on the generalizable RL
+    experiment) as a long vector feeding as extra information to             research and thus aims to flexibly compose driving scenarios.
+    the value network [33]. Recently proposed CoPO [35] is also              Second, the generated driving scenes from MetaDrive don’t contain
+    compared, which is a mixed-motive MARL method addressing the             traffic participants such as pedestrians and bicyclists. Third, a
+    coordination problem in multi-agent systems. The hyperparameters         systematic driving scenario description protocol is left for future
+    of used methods can be found in Table 2. Table 4 shows the MARL          work to enable large-scale generation of corner cases such as
+    experiment results. Note that the result is based on MetaDrive 0.2.5     near-accidental scenes for prototyping safe autonomous driving
+    and is different to previous paper [35] due to updates in MetaDrive.     systems [11].
+    We find that the concatenated state of K nearest vehicles hurts the      7
+    performance of CCPPO and leads to worse performance compared              CONCLUSION
+    to MF-CCPPO. We hypothesize this is because in driving tasks             We develop a compositional and extensible driving simulator
+    the neighborhood of ego vehicles is varying all the time while           MetaDrive to facilitate the research of generalizable reinforcement
+    concatenating states greatly expands the input dimension thus            learning. MetaDrive holds the core feature of compositionality,
+    creating difficulty to the learning. The CoPO method [35] achieves       where an infinite number of diverse driving scenarios can be
+    good performance in various environments, due to the local and           composed through both the procedural generation and the real
+    global coordination.                                                     traffic data replay. We construct a variety of RL tasks and baselines
+        in both single-agent and multi-agent settings, including benchmark-
+5.6 Discussion on the Learning-based Driving Policies ing generalizability across unseen scenes, safe exploration, and
+        simulating multi-agent traffic.
+When developing MetaDrive, we ran numerous experiments to Licenses. MetaDrive is released under Apache License 2.0.
+search proper driving policies, and found that the performance of Panda3D, used in MetaDrive as a rendering system for visualization,
+learning-based methods greatly depends on the observation. RL is under the Modified BSD license, which is a free software
+methods learn faster using the state vector observation in Sec. 5.1 license with very few restrictions on usage. Bullet engine is under
+than the first-person view RGB images or top-down semantic map. Zlib license. The vehicle models are collected from Sketchfab
+Also, we find the displacement reward is the most important part under CC BY 4.0 or CC BY-NC 4.0. The skybox images
+of the reward function. We hope these environmental setting can are under CC0 1.0 Universal (CC0 1.0). To support real data
+    provide insights on designing end-to-end driving policy.                 import, MetaDrive is made using the Waymo Open Dataset [26],
+     We have implemented and benchmarked many learning algo-                 [51], provided by Waymo LLC under license terms available
+    rithms for machine autonomy, including Reinforcement Learning,           at https://waymo.com/open. Also, Argoverse is provided free of
+    Imitation Learning (IL), Offline RL methods. The experimental            charge under the Creative Commons Attribution-NonCommercial-
+    results show that 1) Value-based methods (SAC, TD3) is more              ShareAlike 4.0 International Public license. Argoverse code and
+    suitable for driving tasks than policy-based method (PPO, TRPO)          APIs are provided under the MIT license.
+    due to their high sample efficiency and superior success rate (Fig. 8,   Acknowledgement: This project was partially supported by the
+    Table 3); 2) For learning safety, it is important to develop new         Centre for Perceptual and Interactive Intelligence (CPII) Ltd under
+    paradigm incorporating safety constraint into the policy instead of      the Innovation and Technology Fund.
+
+                                                                                                                                                                       13
+    REFERENCES                                                                                      [23] Chengshu Li, Fei Xia, Roberto Martín-Martín, Michael Lingelbach,
+                                                                                                Sanjana Srivastava, Bokui Shen, Kent Vainio, Cem Gokmen, Gokul
+    [1]   Joshua Achiam, David Held, Aviv Tamar, and Pieter Abbeel. Constrained                 Dharan, Tanish Jain, Andrey Kurenkov, Karen Liu, Hyowon Gweon,
+          policy optimization. In Proceedings of the 34th International Conference              Jiajun Wu, Li Fei-Fei, and Silvio Savarese. igibson 2.0: Object-centric
+          on Machine Learning-Volume 70, pages 22–31. JMLR. org, 2017.                          simulation for robot learning of everyday household tasks, 2021.
+[2] OpenAI: Marcin Andrychowicz, Bowen Baker, Maciek Chociej, Rafal [24] Quanyi Li, Zhenghao Peng, and Bolei Zhou. Efficient learning of safe
+          Jozefowicz, Bob McGrew, Jakub Pachocki, Arthur Petron, Matthias                       driving policy via human-ai copilot optimization. International Conference
+          Plappert, Glenn Powell, Alex Ray, et al.        Learning dexterous in-hand            on Representation Learning, 2022.
+          manipulation. The International Journal of Robotics Research, 39(1):3–                [25] Eric Liang, Richard Liaw, Robert Nishihara, Philipp Moritz, Roy Fox,
+          20, 2020.                                                                             Ken Goldberg, Joseph Gonzalez, Michael Jordan, and Ion Stoica. Rllib:
+    [3]   M. G. Bellemare, Y. Naddaf, J. Veness, and M. Bowling. The arcade                     Abstractions for distributed reinforcement learning.     In International
+          learning environment: An evaluation platform for general agents. Journal              Conference on Machine Learning, pages 3053–3062, 2018.
+          of Artificial Intelligence Research, 47:253–279, jun 2013.                      [26]  Waymo LLC. Waymo open dataset: An autonomous driving dataset, 2019.
+[4] Panpan Cai, Yiyuan Lee, Yuanfu Luo, and David Hsu. Summit: A [27] Pablo Alvarez Lopez, Michael Behrisch, Laura Bieker-Walz, Jakob Erd-
+          simulator for urban driving in massive mixed traffic.         In 2020 IEEE            mann, Yun-Pang Flötteröd, Robert Hilbrich, Leonhard Lücken, Johannes
+          International Conference on Robotics and Automation (ICRA), pages                     Rummel, Peter Wagner, and Evamarie Wießner.           Microscopic traffic
+          4023–4029. IEEE, 2020.                                                                simulation using sumo. In The 21st IEEE International Conference on
+    [5]   Ming-Fang Chang, John Lambert, Patsorn Sangkloy, Jagjeet Singh,                       Intelligent Transportation Systems. IEEE, 2018.
+          Slawomir Bak, Andrew Hartnett, De Wang, Peter Carr, Simon Lucey,                       [28] Mark Martinez, Chawin Sitawarin, Kevin Finch, Lennart Meincke, Alex
+          Deva Ramanan, et al. Argoverse: 3d tracking and forecasting with rich                 Yablonski, and Alain Kornhauser. Beyond grand theft auto v for training,
+          maps. In Proceedings of the IEEE/CVF Conference on Computer Vision                    testing and enhancing deep learning in self driving cars. arXiv preprint
+          and Pattern Recognition, pages 8748–8757, 2019.                                       arXiv:1712.01397, 2017.
+[6] Maxime Chevalier-Boisvert, Florian Golemo, Yanjun Cao, Bhairav Mehta, [29] Karl Mason and Santiago Grijalva. A review of reinforcement learning
+          and Liam Paull. Duckietown environments for openai gym. https://github.               for autonomous building energy management. Computers & Electrical
+          com/duckietown/gym-duckietown, 2018.                                                  Engineering, 78:300–312, 2019.
+[7] Karl Cobbe, Christopher Hesse, Jacob Hilton, and John Schulman. [30] Igor Mordatch and Pieter Abbeel. Emergence of grounded compositional
+          Leveraging procedural generation to benchmark reinforcement learning.                 language in multi-agent populations. arXiv preprint arXiv:1703.04908,
+          arXiv preprint arXiv:1912.01588, 2019.                                                2017.
+[8] Karl Cobbe, Oleg Klimov, Chris Hesse, Taehoon Kim, and John Schulman. [31] Matthias Müller, Vincent Casser, Jean Lahoud, Neil Smith, and Bernard
+          Quantifying generalization in reinforcement learning. In International                Ghanem.           Sim4cv: A photo-realistic simulator for computer vision
+          Conference on Machine Learning, pages 1282–1289. PMLR, 2019.                          applications. International Journal of Computer Vision, 126(9):902–919,
+    [9]   Jonas Degrave, Federico Felici, Jonas Buchli, Michael Neunert, Brendan                2018.
+          Tracey, Francesco Carpanese, Timo Ewalds, Roland Hafner, Abbas                        [32] Sanmit Narvekar, Bei Peng, Matteo Leonetti, Jivko Sinapov, Matthew E
+          Abdolmaleki, Diego de Las Casas, et al. Magnetic control of tokamak                   Taylor, and Peter Stone. Curriculum learning for reinforcement learning
+          plasmas through deep reinforcement learning. Nature, 602(7897):414–419,               domains: A framework and survey.         arXiv preprint arXiv:2003.04960,
+          2022.                                                                                 2020.
+[10] Alexey Dosovitskiy, German Ros, Felipe Codevilla, Antonio Lopez, [33] Avik Pal, Jonah Philion, Yuan-Hong Liao, and Sanja Fidler. Emer-
+          and Vladlen Koltun.     CARLA: An open urban driving simulator.         In            gent road rules in multi-agent driving environments.       arXiv preprint
+          Proceedings of the 1st Annual Conference on Robot Learning, pages 1–16,               arXiv:2011.10753, 2020.
+          2017.                                                                                   [34] Praveen Palanisamy. Multi-agent connected autonomous driving using
+    [11] Bernd     Gassmann, Fabian  Oboril,   Cornelius Buerkle,     Shuang    Liu,            deep reinforcement learning. In 2020 International Joint Conference on
+          Shoumeng Yan, Maria Soledad Elli, Ignacio Alvarez, Naveen Aerrabotu,                  Neural Networks (IJCNN), pages 1–7. IEEE, 2020.
+     Suhel Jaber, Peter van Beek, Darshan Iyer, and Jack Weast. Towards [35] Zhenghao Peng, Ka Ming Hui, Chunxiao Liu, Bolei Zhou, et al.
+          standardization of av safety: C++ library for responsibility sensitive safety.        Learning to simulate self-driven particles system with coordinated policy
+          In 2019 IEEE Intelligent, Vehicles Symposium (IV), 2019.                              optimization.      Advances in Neural Information Processing Systems, 34,
+    [12]  Mike Goslin and Mark R Mine. The panda3d graphics engine. Computer,                   2021.
+          37(10):112–114, 2004.                                                                 [36] Zhenghao Peng, Quanyi Li, Chunxiao Liu, and Bolei Zhou. Safe driving
+    [13] Sehoon Ha, Peng Xu, Zhenyu Tan, Sergey Levine, and Jie Tan. Learning                   via expert guided policy optimization. In 5th Annual Conference on Robot
+          to walk in the real world with minimal human effort, 2020.                            Learning, 2021.
+    [14] Tuomas Haarnoja, Aurick Zhou, Pieter Abbeel, and Sergey Levine. Soft                     [37] Philip Polack, Florent Altché, Brigitte d’Andréa Novel, and Arnaud
+          actor-critic: Off-policy maximum entropy deep reinforcement learning                  de La Fortelle.       The kinematic bicycle model: A consistent model for
+          with a stochastic actor. In International Conference on Machine Learning,             planning feasible trajectories for autonomous vehicles? In 2017 IEEE
+          pages 1861–1870, 2018.                                                                intelligent vehicles symposium (IV), pages 812–818. IEEE, 2017.
+[15] Mordechai Haklay and Patrick Weber. Openstreetmap: User-generated [38] Antonin Raffin, Ashley Hill, Adam Gleave, Anssi Kanervisto, Maximilian
+          street maps. IEEE Pervasive computing, 7(4):12–18, 2008.                              Ernestus, and Noah Dormann. Stable-baselines3: Reliable reinforcement
+    [16]  Junning Huang, Sirui Xie, Jiankai Sun, Qiurui Ma, Chunxiao Liu, Jianping              learning implementations.           Journal of Machine Learning Research,
+          Shi, Dahua Lin, and Bolei Zhou. Learning a decision module by imitating               22(268):1–8, 2021.
+          driver’s control behaviors, 2019.                                               [39] Alex Ray, Joshua Achiam, and Dario Amodei.               Benchmarking safe
+    [17] Natasha Jaques, Angeliki Lazaridou, Edward Hughes, Çaglar Gülçehre,                    exploration in deep reinforcement learning. openai, 2019.
+     Pedro A Ortega, DJ Strouse, Joel Z Leibo, and Nando de Freitas. [40] Florian Richter, Ryan K Orosco, and Michael C Yip. Open-sourced
+          Intrinsic social motivation via causal influence in multi-agent rl. corr              reinforcement learning environments for surgical robotics. arXiv preprint
+          abs/1810.08647 (2018).    arXiv preprint arXiv:1810.08647, 2018.                      arXiv:1903.02090, 2019.
+[18] Alex Kendall, Jeffrey Hawke, David Janz, Przemyslaw Mazur, Daniele [41] Mikayel Samvelyan, Tabish Rashid, Christian Schroeder De Witt, Gregory
+          Reda, John-Mark Allen, Vinh-Dieu Lam, Alex Bewley, and Amar Shah.                     Farquhar, Nantas Nardelli, Tim GJ Rudner, Chia-Man Hung, Philip HS
+          Learning to drive in a day. In 2019 International Conference on Robotics              Torr, Jakob Foerster, and Shimon Whiteson. The starcraft multi-agent
+          and Automation (ICRA), pages 8248–8254. IEEE, 2019.                                   challenge. arXiv preprint arXiv:1902.04043, 2019.
+    [19] Arne Kesting, Martin Treiber, and Dirk Helbing. General lane-changing                       [42] Anirban Santara, Sohan Rudra, Sree Aditya Buridi, Meha Kaushik,
+          model mobil for car-following models.      Transportation Research Record,            Abhishek Naik, Bharat Kaul, and Balaraman Ravindran. Madras: Multi
+          1999(1):86–94, 2007.                                                                  agent driving simulator.     Journal of Artificial Intelligence Research,
+    [20] Parth Kothari, Christian Perone, Luca Bergamini, Alexandre Alahi, and                  70:1517–1555, 2021.
+          Peter Ondruska. Drivergym: Democratising reinforcement learning for                    [43] Christian Schroeder de Witt, Tarun Gupta, Denys Makoviichuk, Viktor
+          autonomous driving. arXiv preprint arXiv:2111.06889, 2021.                            Makoviychuk, Philip HS Torr, Mingfei Sun, and Shimon Whiteson. Is
+    [21] Aviral Kumar, Aurick Zhou, George Tucker, and Sergey Levine. Con-                      independent learning all you need in the starcraft multi-agent challenge?
+          servative q-learning for offline reinforcement learning.    arXiv preprint            arXiv e-prints, pages arXiv–2011, 2020.
+          arXiv:2006.04779, 2020.                                                                  [44] John Schulman, Philipp Moritz, Sergey Levine, Michael Jordan, and
+    [22] Edouard Leurent.            An environment for autonomous driving decision-            Pieter Abbeel. High-dimensional continuous control using generalized
+          making. https://github.com/eleurent/highway-env, 2018.                                advantage estimation, 2018.
+
+                                                                                                                                  14
+
+            [45] John Schulman, Filip Wolski, Prafulla Dhariwal, Alec Radford, and     Quanyi Li is a research assistant at Centre for
+      Oleg Klimov. Proximal policy optimization algorithms.         arXiv preprint     Perceptual and Interactive Intelligence (CPII), the
+      arXiv:1707.06347, 2017.                                                          Chinese University of Hong Kong (CUHK). He
+              [46] Radu Serban, Michael Taylor, Dan Negrut, and Alessandro Tasora.     received the B.Eng. degree in communication
+                Chrono:: Vehicle: template-based ground vehicle modelling and sim-     engineering from Beijing University of Posts and
+      ulation.     International Journal of Vehicle Performance, 5(1):18–39, 2019.     Telecommunications. He is interested in embod-
+        [47] Shital Shah, Debadeepta Dey, Chris Lovett, and Ashish Kapoor. Airsim:     ied AI and its generalizability, safety, interactivity
+          High-fidelity visual and physical simulation for autonomous vehicles. In     and interpretability.
+      Field and Service Robotics, 2017.
+       [48] David Silver, Aja Huang, Chris J Maddison, Arthur Guez, Laurent Sifre,
+               George Van Den Driessche, Julian Schrittwieser, Ioannis Antonoglou,
+           Veda Panneershelvam, Marc Lanctot, et al. Mastering the game of go with
+            deep neural networks and tree search. nature, 529(7587):484–489, 2016.     Zhenghao Peng is a Ph.D. Candidate in Depart-
+[49] Adam Stooke, Joshua Achiam, and Pieter Abbeel.              Responsive safety     ment of Computer Science at University of Cali-
+             in reinforcement learning by pid lagrangian methods. In International     fornia, Los Angeles (UCLA). He received M.Phil.
+      Conference on Machine Learning, pages 9133–9143. PMLR, 2020.                     degree in Department of Information Engineering
+[50] Jiankai Sun, Hao Sun, Tian Han, and Bolei Zhou.                Neuro-symbolic     at the Chinese University of Hong Kong (CUHK)
+      program search for autonomous driving decision module design.             In     and B.Eng. at Shanghai Jiao Tong university. His
+      Conference on Robot Learning, pages 21–30. PMLR, 2021.                           research interests are multi-agent reinforcement
+             [51] Pei Sun, Henrik Kretzschmar, Xerxes Dotiwalla, Aurelien Chouard,     learning and human-AI interaction. This work is
+           Vijaysai Patnaik, Paul Tsui, James Guo, Yin Zhou, Yuning Chai, Benjamin     done while he was at CUHK.
+             Caine, et al. Scalability in perception for autonomous driving: Waymo
+               open dataset. In Proceedings of the IEEE/CVF Conference on Computer
+      Vision and Pattern Recognition, pages 2446–2454, 2020.
+          [52] Deepdrive Team. Deepdrive: a simulator that allows anyone with a pc     Lan Feng   is a master student majoring    in
+       to push the state-of-the-art in self-driving. https://github.com/deepdrive/     robotics, system, and control at Eidgenössische
+      deepdrive.                                                                       Technische Hochschule Zürich (ETH Zurich). He
+       [53] Udacity Team. Udacity’s self-driving car simulator: A self-driving car     received B.Eng. degree in Wuhan University
+[54]  simulator built with unity. https://github.com/udacity/self-driving-car-sim.     (WHU). His research focuses on AI’s general-
+              Emanuel Todorov, Tom Erez, and Yuval Tassa. Mujoco: A physics engine     izability and safety.
+             for model-based control. In 2012 IEEE/RSJ International Conference on
+      Intelligent Robots and Systems, pages 5026–5033. IEEE, 2012.
+            [55] Eugene Vinitsky, Aboudy Kreidieh, Luc Le Flem, Nishant Kheterpal,
+                    Kathy Jang, Cathy Wu, Fangyu Wu, Richard Liaw, Eric Liang, and
+                Alexandre M Bayen. Benchmarks for reinforcement learning in mixed-
+      autonomy traffic.            In Conference on Robot Learning, pages 399–409,
+      2018.                                                                            Qihang Zhang is a Ph.D. Candidate in Depart-
+              [56] Cathy Wu, Aboudy Kreidieh, Kanaad Parvate, Eugene Vinitsky, and     ment of Information Engineering at the Chinese
+             Alexandre M Bayen. Flow: Architecture and benchmarking for reinforce-     University of Hong Kong (CUHK). He received
+       ment learning in traffic control. arXiv preprint arXiv:1710.05465, page 10,     the B.Eng. degree in computer science and tech-
+      2017.                                                                            nology from Zhejiang University (ZJU) in 2021.
+            [57] Bernhard Wymann, Eric Espié, Christophe Guionneau, Christos Dimi-     His research interest lies in embodied intelligence
+      trakakis, Rémi Coulom, and Andrew Sumner.             Torcs, the open racing     and machine autonomy and learning.
+      car simulator. Software available at http://torcs. sourceforge. net, 4(6):2,
+      2000.
+                [58] Yaodong Yang, Rui Luo, Minne Li, Ming Zhou, Weinan Zhang, and
+              Jun Wang. Mean field multi-agent reinforcement learning. In Jennifer
+             Dy and Andreas Krause, editors, Proceedings of the 35th International
+               Conference on Machine Learning, volume 80 of Proceedings of Machine
+      Learning Research, pages 5571–5580. PMLR, 10–15 Jul 2018.
+         [59] Tianhe Yu, Deirdre Quillen, Zhanpeng He, Ryan Julian, Karol Hausman,     Zhenghai Xue is a PhD student in the School
+      Chelsea Finn, and Sergey Levine.                 Meta-world: A benchmark and     of Computer Science and Engineering, Nanyang
+          evaluation for multi-task and meta reinforcement learning. In Conference     Technological University (NTU) Singapore. He
+[60]  on Robot Learning, pages 1094–1100. PMLR, 2020.                                  received a B.S. in the School of Artificial Intel-
+              Huichu Zhang, Siyuan Feng, Chang Liu, Yaoyao Ding, Yichen Zhu, Zihan     ligence, Nanjing University (NJU) in 2022. He
+               Zhou, Weinan Zhang, Yong Yu, Haiming Jin, and Zhenhui Li. Cityflow:     worked as a research assistant in the Depart-
+             A multi-agent reinforcement learning environment for large scale city     ment of Information Engineering at the Chinese
+                 traffic scenario. In The World Wide Web Conference, WWW ’19, page     University of Hong Kong (CUHK) in 2021. His
+                     3620–3624, New York, NY, USA, 2019. Association for Computing     research interest is reinforcement learning.
+      Machinery.
+         [61] Ming Zhou, Jun Luo, Julian Villella, Yaodong Yang, David Rusu, Jiayu
+                   Miao, Weinan Zhang, Montgomery Alban, Iman Fadakar, Zheng Chen,
+                 Aurora Chongxi Huang, Ying Wen, Kimia Hassanzadeh, Daniel Graves,
+                       Dong Chen, Zhengbang Zhu, Nhat Nguyen, Mohamed Elsayed, Kun     Bolei Zhou   is an Assistant Professor in the
+                   Shao, Sanjeevan Ahilan, Baokuan Zhang, Jiannan Wu, Zhengang Fu,     Computer Science Department at the University
+              Kasra Rezaee, Peyman Yadmellat, Mohsen Rohani, Nicolas Perez Nieves,     of California, Los Angeles (UCLA). He earned
+             Yihan Ni, Seyedershad Banijamali, Alexander Cowen Rivers, Zheng Tian,     his Ph.D. from MIT in 2018. His research inter-
+                    Daniel Palenicek, Haitham bou Ammar, Hongbo Zhang, Wulong Liu,     est lies at the intersection of computer vision
+              Jianye Hao, and Jun Wang. Smarts: Scalable multi-agent reinforcement     and machine autonomy, focusing on enabling
+      learning training school for autonomous driving, 2020.                           interpretable human-AI interaction. He and his
+                                                                                       colleagues have developed a number of widely
+                                                                                       used interpretation methods such as CAM and
+                                                                                       Network Dissection, as well as computer vision
+                                                                                       benchmarks Places and ADE20K. He is an asso-
+                                                              ciate editor for Pattern Recognition and has been area chair for CVPR,
+                                                                ICCV, ECCV, and AAAI. He received MIT Tech Review’s Innovators under
+          35 in Asia-Pacific Award.
+

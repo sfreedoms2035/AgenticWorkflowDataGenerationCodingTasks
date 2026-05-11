@@ -1,0 +1,1210 @@
+arXiv:2002.00444v2  [cs.LG]  23 Jan 2021
+
+
+
+
+
+
+
+
+
+
+        1
+
+  Deep Reinforcement Learning
+for Autonomous Driving: A Survey
+
+    B Ravi Kiran1, Ibrahim Sobh2, Victor Talpaert3, Patrick Mannion4,
+    Ahmad A. Al Sallab2, Senthil Yogamani5, Patrick Pérez6
+
+
+
+  Abstract—With the development of deep representation learn- decision process, which is formalized under the classical
+ing, the domain of reinforcement learning (RL) has become settings of Reinforcement Learning (RL), where the agent is
+a powerful learning framework now capable of learning com- required to learn and represent its environment as well as
+plex policies in high dimensional environments. This review
+summarises deep reinforcement learning (DRL) algorithms and act optimally given at each instant [1]. The optimal action
+provides a taxonomy of automated driving tasks where (D)RL is referred to as the policy.
+    methods have been employed, while addressing key computa-                    In this review we   cover   the notions of    reinforcement
+tional challenges in real world deployment of autonomous driving learning, the taxonomy of tasks where RL is a promising
+agents. It also delineates adjacent domains such as behavior solution especially in the domains of driving policy, predictive
+cloning, imitation learning, inverse reinforcement learning that
+are related but are not classical RL algorithms. The role of perception, path and motion planning, and low level controller
+simulators in training agents, methods to validate, test and design. We also focus our review on the different real world
+    robustify existing solutions in RL are discussed.                                  deployments of RL in the domain of autonomous driving
+  Index Terms—Deep reinforcement learning, Autonomous driv- expanding our conference paper [2] since their deployment has
+ing, Imitation learning, Inverse reinforcement learning, Con- not been reviewed in an academic setting. Finally, we motivate
+troller learning, Trajectory optimisation, Motion planning, Safe users by demonstrating the key computational challenges and
+    reinforcement learning.                                                     risks when applying current day RL algorithms such imitation
+                                                                                  learning, deep Q learning, among others. We also note from
+                                     I. INTRODUCTION                            the trends of publications in figure 2 that the use of RL or
+                      Autonomous driving (AD)1 systems constitute of multiple      Deep RL applied to autonomous driving or the self driving
+    perception level tasks that have now achieved high precision             domain is an emergent field. This is due to the recent usage of
+    on account of deep learning architectures. Besides the per-                   RL/DRL algorithms domain, leaving open multiple real world
+    ception, autonomous driving systems constitute of multiple                   challenges in implementation and deployment. We address the
+    tasks where classical supervised learning methods are no more                open problems in VI.
+    applicable. First, when the prediction of the agent’s action                    The main contributions of this work can be summarized as
+    changes future sensor observations received from the envi-                   follows:
+    ronment under which the autonomous driving agent operates,                   •    Self-contained overview of RL background for the auto-
+    for example the task of optimal driving speed in an urban                       motive community as it is not well known.
+    area. Second, supervisory signals such as time to collision                  •  Detailed literature review of using RL for different au-
+    (TTC), lateral error w.r.t to optimal trajectory of the agent,                  tonomous driving tasks.
+    represent the dynamics of the agent, as well uncertainty in                  •    Discussion of the key challenges and opportunities for
+    the environment. Such problems would require defining the                       RL applied to real world autonomous driving.
+    stochastic cost function to be maximized. Third, the agent is                  The rest of the paper is organized as follows. Section II
+    required to learn new configurations of the environment, as                   provides an overview of components of a typical autonomous
+    well as to predict an optimal decision at each instant while               driving system. Section III provides an introduction to rein-
+    driving in its environment. This represents a high dimensional            forcement learning and briefly discusses key concepts. Section
+    space given the number of unique configurations under which               IV discusses more sophisticated extensions on top of the basic
+    the agent & environment are observed, this is combinatorially                RL framework. Section V provides an overview of RL applica-
+    large. In all such scenarios we are aiming to solve a sequential             tions for autonomous driving problems. Section VI discusses
+     1Navya, Paris. ravi.kiran@navya.tech                                       challenges in deploying RL for real-world autonomous driving
+  2Valeo Cairo AI team, Egypt.  ibrahim.sobh, ahmad.el- systems. Section VII concludes this paper with some final
+    sallab@{valeo.com}                                                           remarks.
+         3U2IS, ENSTA Paris, Institut Polytechnique de Paris & AKKA Technolo-
+    gies, France. victor.talpaert@ensta.fr
+        4School of Computer Science, National University of Ireland, Galway.            II. COMPONENTS OF AD SYSTEM
+    patrick.mannion@nuigalway.ie5                                                  Figure 1 comprises of the standard blocks of an AD system
+     6Valeo Vision Systems. senthil.yogamani@valeo.com                           demonstrating the pipeline  from sensor stream to   control
+     Valeo.ai. patrick.perez@valeo.com
+    1For easy reference, the main acronyms used in this article are listed in      actuation. The sensor architecture in a modern autonomous
+    Appendix (Table IV).                                                           driving system notably includes multiple sets of cameras,
+
+    2
+
+
+
+
+                 Scene Understanding
+      Sense    Perceive & Localize      Scene Representation    Plan & Decide     Control
+      =       °                Hl 9=                          =    E
+    (     ) sites                                             |_==  |
+                                             slr      | ath &&  Motion planning   Velocity
+      Cameras  Object Detection      Sensor Fusion                                Velocity profile
+
+
+          Object Map                                          Driving Policy  Acceleration&
+       RADAR  Semantic     Segmentation     Behavior Predictio        feta        Steering Braking
+    Ultrasonics
+
+          Decision making & Planning
+
+    Fig. 1. Standard components in a modern autonomous driving systems pipeline listing the various tasks. The key problems addressed by these modules are
+    Scene Understanding, Decision and Planning.
+
+
+radars and LIDARs as well as a GPS-GNSS system for be localized within the map. The first reliable demonstrations
+absolute localisation and inertial measurement Units (IMUs) of automated driving by Google were primarily reliant on
+that provide 3D pose of the vehicle in space. localisation to pre-mapped areas. Because of the scale of
+  The goal of the perception module is the creation of an the problem, traditional mapping techniques are augmented
+intermediate level representation of the environment state (for by semantic object detection for reliable disambiguation. In
+example bird-eye view map of all obstacles and agents) that is addition, localised high definition maps (HD maps) can be
+to be later utilised by a decision making system that ultimately used as a prior for object detection.
+produces the driving policy. This state would include lane
+position, drivable zone, location of agents such as cars & C. Planning and Driving policy
+pedestrians, state of traffic lights and others. Uncertainties
+in the perception propagate to the rest of the information Trajectory planning is a crucial module in the autonomous
+chain. Robust sensing is critical for safety thus using redundant driving pipeline. Given a route-level plan from HD maps or
+sources increases confidence in detection. This is achieved GPS based maps, this module is required to generate motion-
+by a combination of several perception tasks like semantic level commands that steer the agent.
+segmentation [3], [4], motion estimation [5], depth estimation Classical motion planning ignores dynamics and differential
+[6], soiling detection [7], etc which can be efficiently unified constraints while using translations and rotations required to
+into a multi-task model [8], [9]. move an agent from source to destination poses [11]. A robotic
+        agent capable of controlling 6-degrees of freedom (DOF) is
+A. Scene Understanding said to be holonomic, while an agent with fewer controllable
+  This key module maps the abstract mid-level representation DOFs than its total DOF is said to be non-holonomic. Classical
+of the perception state obtained from the perception module to algorithms such as A∗ algorithm based on Djisktra’s algorithm
+the high level action or decision making module. Conceptually, do not work in the non-holonomic case for autonomous
+three tasks are grouped by this module: Scene understanding, driving. Rapidly-exploring random trees (RRT) [12] are non-
+Decision and Planning as seen in figure 1 module aims to holonomic algorithms that explore the configuration space by
+provide a higher level understanding of the scene, it is built random sampling and obstacle free path generation. There are
+on top of the algorithmic tasks of detection or localisation. various versions of RRT currently used in for motion planning
+By fusing heterogeneous sensor sources, it aims to robustly in autonomous driving pipelines.
+generalise to situations as the content becomes more abstract.
+This information fusion provides a general and simplified D. Control
+context for the Decision making components. A controller defines the speed, steering angle and braking
+  Fusion provides a sensor agnostic representation of the envi- actions necessary over every point in the path obtained from
+ronment and models the sensor noise and detection uncertain- a pre-determined map such as Google maps, or expert driving
+ties across multiple modalities such as LIDAR, camera, radar, recording of the same values at every waypoint. Trajectory
+ultra-sound. This basically requires weighting the predictions tracking in contrast involves a temporal model of the dynamics
+in a principled way. of the vehicle viewing the waypoints sequentially over time.
+B. Localization and Mapping Current vehicle control methods are founded in classical op-
+        timal control theory which can be stated as a minimisation of
+  Mapping is one of the key pillars of automated driving [10]. a cost function x˙ = f (x(t), u(t)) defined over a set of states x(t)
+Once an area is mapped, current position of the vehicle can and control actions u(t). The control input is usually defined
+
+                                                                                                                                                           3
+
+                         Stators        Cotes (Mean)                                                (Mean)
+                                                                                           =
+
+     sw              ww
+
+                         20                       m2  ma     ms         we  27     20     2     mews                me
+     = Publications  tota)        (tote)
+
+    Fig. 2. Trend of publications for keywords 1. "reinforcement learning", 2."deep reinforcement", and 3."reinforcement learning" AND ("autonomous cars" OR
+    "autonomous vehicles" OR "self driving") for academic publication trends from this [13].
+
+    over a finite time horizon and restricted on a feasible state           Function Approximators                                 Challenges
+    space x ∈ Xfree [14]. The velocity control are based on classical       ot → s     (SRL)                             Sample Complexity, Validation,
+                                                                                      t                               Safe-exploration, Credit assignment,
+    methods of closed loop control such as PID (proportional-                        CNNs  ee        ]                    Simulator-Real Gap, Learning
+                                                                                  RL methods             Vehicle/RL Agent
+    integral-derivative) controllers, MPC (Model predictive con-              Value/Policy-based  State         st ∈ S
+                                                                                 Actor-Critic
+    trol). PIDs aim to minimise a cost function constituting of                 On/Off policy          S either continuous
+                                                                            Model-based/Model-free         or discrete    π :S → A
+    three terms current error with proportional term, effect of                                                                   Driving Policy
+    past errors with integral term, and effect of future errors with            reward rt                    action at  stochastic/deterministic
+    the derivative term. While the family of MPC methods aim                             observation ot               discrete/continuous
+    to stabilize the behavior of the vehicle while tracking the
+    specified path [15]. A review on controllers, motion planning
+    and learning based approaches for the same are provided in                  ( Real-world )  Environment                Simulator
+    this review [16] for interested readers. Optimal control and                Bl                                             g
+    reinforcement learning are intimately related, where optimal
+    control can be viewed as a model based reinforcement learning
+    problem where the dynamics of the vehicle/environment are
+    modeled by well defined differential equations. Reinforcement               simulator-to-real gap
+learning methods were developed to handle stochastic control
+problems as well ill-posed problems with unknown rewards Fig. 3. A graphical decomposition of the different components of an RL
+and state transition probabilities. Autonomous vehicle stochas- algorithm. It also demonstrates the different challenges encountered while
+        training a D(RL) algorithm.
+tic control is large domain, and we advise readers to read the
+survey on this subject by authors in [17].
+                     III. REINFORCEMENT LEARNING                        exploiting knowledge learned about the expected utility (i.e.
+        discounted sum of expected future rewards) of different state-
+  Machine learning (ML) is a process whereby a computer action pairs. One of the main challenges in reinforcement
+program learns from experience to improve its performance at learning is managing the trade-off between exploration and
+a specified task [18]. ML algorithms are often classified under exploitation. To maximize the rewards it receives, an agent
+one of three broad categories: supervised learning, unsuper- must exploit its knowledge by selecting actions which are
+vised learning and reinforcement learning (RL). Supervised known to result in high rewards. On the other hand, to
+learning algorithms are based on inductive inference where discover such beneficial actions, it has to take the risk of
+the model is typically trained using labelled data to perform trying new actions which may lead to higher rewards than
+classification or regression, whereas unsupervised learning en- the current best-valued actions for each system state. In other
+compasses techniques such as density estimation or clustering words, the learning agent has to exploit what it already knows
+applied to unlabelled data. By contrast, in the RL paradigm in order to obtain rewards, but it also has to explore the
+an autonomous agent learns to improve its performance at unknown in order to make better action selections in the future.
+an assigned task by interacting with its environment. Russel Examples of strategies which have been proposed to manage
+and Norvig define an agent as “anything that can be viewed this trade-off include ≤-greedy and softmax. When adopting
+as perceiving its environment through sensors and acting the ubiquitous ≤-greedy strategy, an agent either selects an
+upon that environment through actuators” [19]. RL agents action at random with probability 0 < ≤ < 1, or greedily
+are not told explicitly how to act by an expert; rather an selects the highest valued action for the current state with
+agent’s performance is evaluated by a reward function R. the remaining probability 1 − ≤. Intuitively, the agent should
+For each state experienced, the agent chooses an action and explore more at the beginning of the training process when
+receives an occasional reward from its environment based on little is known about the problem environment. As training
+the usefulness of its decision. The goal for the agent is to progresses, the agent may gradually conduct more exploitation
+maximize the cumulative rewards received over its lifetime. than exploration. The design of exploration strategies for RL
+Gradually, the agent can increase its long-term reward by agents is an area of active research (see e.g. [20]).
+
+                                                                                                                               4
+
+  Markov decision processes (MDPs) are considered the de directly. Dynamic programming (DP) refers to a collection of
+facto standard when formalising sequential decision making algorithms that can be used to compute optimal policies given
+problems involving a single RL agent [21]. An MDP consists a perfect model of the environment in terms of reward and
+of a set S of states, a set A of actions, a transition function transition functions. Unlike DP, in Monte Carlo methods there
+T and a reward function R [22], i.e. a tuple < S, A, T , R >. is no assumption of complete environment knowledge. Monte
+When in any state s ∈ S, selecting an action a ∈ A will result Carlo methods are incremental in an episode-by-episode sense.
+in the environment entering a new state s′ ∈ S with a transition Upon the completion of an episode, the value estimates and
+probability T (s, a, s′) ∈ (0,1), and give a reward R(s, a). This policies are updated. Temporal Difference (TD) methods, on
+process is illustrated in Fig. 3. The stochastic policy π : S → D the other hand, are incremental in a step-by-step sense, making
+is a mapping from the state space to a probability over the set them applicable to non-episodic scenarios. Like Monte Carlo
+of actions, and π(a|s) represents the probability of choosing methods, TD methods can learn directly from raw experience
+action a at state s. The goal is to find the optimal policy without a model of the environment’s dynamics. Like DP, TD
+π∗, which results in the highest expected sum of discounted methods learn their estimates based on other estimates.
+rewards [21]:
+        π∗ = argmaxπ  Eπ{ H∑−1γkrk+1 | s0 = s},          (1)    A. Value-based methods
+        ︸                    k=0  ︷︷  ︸                                     Q-learning is one of the most commonly used RL algo-
+                               :=Vπ(s)                          rithms. It is a model-free TD algorithm that learns estimates of
+        the utility of individual state-action pairs (Q-functions defined
+for all states s ∈ S, where rk = R(sk, ak) is the reward at time in Eqn. 2). Q-learning has been shown to converge to the
+k and Vπ(s), the ‘value function’ at state s following a policy optimum state-action values for a MDP with probability 1,
+π, is the expected ‘return’ (or ‘utility’) when starting at s and so long as all actions in all states are sampled infinitely
+following the policy π thereafter [1]. An important, related often and the state-action values are represented discretely
+concept is the action-value function, a.k.a.‘Q-function’ defined [23]. In practice, Q-learning will learn (near) optimal state-
+    as:  Qπ(s, a) = Eπ{ H∑−1γkrk+1 | s0 = s, a0 = a}.    (2)    action values provided a sufficient number of samples are
+                                                                obtained for each state-action pair. If a Q-learning agent has
+        k=0                                                     converged to the optimal Q values for a MDP and selects
+The discount factor γ ∈ [0,1] controls how an agent regards actions greedily thereafter, it will receive the same expected
+future rewards. Low values of γ encourage myopic behaviour sum of discounted rewards as calculated by the value function
+where an agent will aim to maximise short term rewards, with π∗ (assuming that the same arbitrary initial starting state
+whereas high values of γ cause agents to be more forward- is used for both). Agents implementing Q-learning update their
+looking and to maximise rewards over a longer time frame. Q values according to the following update rule:
+    The horizon  H refers to the number of time steps in the     Q(s, a) ← Q(s, a) + α[r + γ max Q(s′, a′) − Q(s, a)],       (3)
+MDP. In infinite-horizon problems H = ∞, whereas in episodic         a′∈A
+domains H has a finite value. Episodic domains may terminate where Q(s, a) is an estimate of the utility of selecting action
+after a fixed number of time steps, or when an agent reaches a in state s, α ∈ [0,1] is the learning rate which controls the
+a specified goal state. The last state reached in an episodic degree to which Q values are updated at each time step, and
+domain is referred to as the terminal state. In finite-horizon γ ∈ [0,1] is the same discount factor used in Eqn. 1. The
+or goal-oriented domains discount factors of (close to) 1 may theoretical guarantees of Q-learning hold with any arbitrary
+be used to encourage agents to focus on achieving the goal, initial Q values [23]; therefore the optimal Q values for a MDP
+whereas in infinite-horizon domains lower discount factors can be learned by starting with any initial action value function
+may be used to strike a balance between short- and long- estimate. The initialisation can be optimistic (each Q(s, a)
+term rewards. If the optimal policy for a MDP is known, returns the maximum possible reward), pessimistic (minimum)
+then Vπ∗ may be used to determine the maximum expected or even using knowledge of the problem to ensure faster
+discounted sum of rewards available from any arbitrary initial convergence. Deep Q-Networks (DQN) [24] incorporates a
+state. A rollout is a trajectory produced in the state space variant of the Q-learning algorithm [25], by using deep neural
+by sequentially applying a policy to an initial state. A MDP networks (DNNs) as a non-linear Q function approximator
+satisfies the Markov property, i.e. system state transitions are over high-dimensional state spaces (e.g. the pixels in a frame
+dependent only on the most recent state and action, not on of an Atari game). Practically, the neural network predicts the
+the full history of states and actions in the decision process. value of all actions without the use of any explicit domain-
+Moreover, in many real-world application domains, it is not specific information or hand-designed features. DQN applies
+possible for an agent to observe all features of the environment experience replay technique to break the correlation between
+state; in such cases the decision-making problem is formulated successive experience samples and also for better sample
+as a partially-observable Markov decision process (POMDP). efficiency. For increased stability, two networks are used where
+Solving a reinforcement learning task means finding a policy the parameters of the target network for DQN are fixed for
+π that maximises the expected discounted sum of rewards a number of iterations while updating the parameters of the
+over trajectories in the state space. RL agents may learn online network. Readers are directed to sub-section III-E for
+value function estimates, policies and/or environment models a more detailed introduction to the use of DNNs in Deep RL.
+
+                                                                                                                                                   5
+
+    B. Policy-based methods                                                           determine whether the result of the selected action was better
+  The difference between value-based and policy-based meth- or worse than expected. Both networks need their gradient to
+ods is essentially a matter of where the burden of optimality learn. Let J(θ) := Eπθ [r] represent a policy objective function,
+resides. Both method types must propose actions and evaluate where θ designates the parameters of a DNN. Policy gradient
+the resulting behaviour, but while value-based methods focus methods search for local maximum of J(θ). Since optimization
+on evaluating the optimal cumulative reward and have a policy in continuous action spaces could be costly and slow, the
+follows the recommendations, policy-based methods aim to DPG (Direct Policy Gradient) algorithm represents actions
+estimate the optimal policy directly, and the value is a sec- as parameterised function μ(s|θμ), where θμ refers to the
+ondary if calculated at all. Typically, a policy is parameterised parameters of the actor network. Then the unbiased estimate
+    as a neural network πθ. Policy gradient methods use gradient      of the policy gradient gradient step is given as:{           }
+    descent to estimate the parameters of the policy that maximise               ∇
+    the expected reward. The result can be a stochastic policy            θ J = −Eπθ       (g − b) logπθ(a|s)                      ,             (5)
+where actions are selected by sampling, or a deterministic where b is the baseline. While using b ≡ 0 is the simplification
+policy. Many real-world applications have continuous action that leads to the REINFORCE formulation. Williams [27]
+spaces. Deterministic policy gradient (DPG) algorithms [26] explains a well chosen baseline can reduce variance leading
+[1] allow reinforcement learning in domains with continuous to a more stable learning. The baseline, b can be chosen
+actions. Silver et al. [26] proved that a deterministic policy as Vπ(s), Qπ(s, a) or ‘Advantage’ Aπ(s, a) based methods.
+gradient exists for MDPs satisfying certain conditions, and Deep Deterministic Policy Gradient (DDPG) [30] is a model-
+that deterministic policy gradients have a simple model-free free, off-policy (please refer to subsection III-D for a detailed
+form that follows the gradient of the action-value function. distinction), actor-critic algorithm that can learn policies for
+As a result, instead of integrating over both state and action continuous action spaces using deep neural net based function
+spaces in stochastic policy gradients, DPG integrates over approximation, extending prior work on DPG to large and
+the state space only leading to fewer samples in problems high-dimensional state-action spaces. When selecting actions,
+with large action spaces. To ensure sufficient exploration, exploration is performed by adding noise to the actor policy.
+actions are chosen using a stochastic policy, while learning a Like DQN, to stabilise learning a replay buffer is used to
+deterministic target policy. The REINFORCE [27] algorithm minimize data correlation. A separate actor-critic specific
+is a straight forward policy-based method. The discounted target network is also used. Normal Q-learning is adapted with
+cumulative reward gt = ∑Hk=−01 γkrk+t+1 at one time step is a restricted number of discrete actions, and DDPG also needs
+calculated by playing the entire episode, so no estimator is a straightforward way to choose an action. Starting from Q-
+required for policy evaluation. The parameters are updated into learning, we extend Eqn. 2 to define the optimal Q-value and
+    the direction of the performance gradient:                        optimal action as Q∗ and a∗.
+                         θ ← θ + αγt g∇logπθ(a|s),         (4)            Q∗(s, a) = max Qπ(s, a),     a∗ = argmax Q∗(s, a).                     (6)
+    where α is the learning rate for a stable incremental update.                   π                                          a
+    Intuitively, we want to encourage state-action pairs that result                    In the case of Q-learning, the action is chosen according to
+in the best possible returns. Trust Region Policy Optimization the Q-function as in Eqn. 6. But DDPG chains the evaluation
+(TRPO) [28], works by preventing the updated policies from of Q after the action has already been chosen according to the
+deviating too much from previous policies, thus reducing the policy. By correcting the Q-values towards the optimal values
+chance of a bad update. TRPO optimises a surrogate objective using the chosen action, we also update the policy towards the
+function where the basic idea is to limit each policy gradient optimal action proposition. Thus two separate networks work
+update as measured by the Kullback-Leibler (KL) divergence at estimating Q∗ and π∗.
+    between the current and the new proposed policy. This method      Asynchronous  Advantage     Actor                       Critic (A3C) [31] uses
+    results in monotonic improvements in policy performance.                           asynchronous gradient descent for optimization of deep neural
+    While Proximal Policy Optimization (PPO) [29] proposed a                             network controllers. Deep reinforcement learning algorithms
+    clipped surrogate objective function by adding a penalty for                                based on experience replay such as DQN and DDPG have
+    having a too large policy change. Accordingly, PPO policy                            demonstrated considerable success in difficult domains such
+    optimisation is simpler to implement, and has better sample                            as playing Atari games. However, experience replay uses a
+    complexity while ensuring the deviation from the previous                                 large amount of memory to store experience samples and
+    policy is relatively small.                                                          requires off-policy learning algorithms. In A3C, instead of
+                                                                      using an experience  replay                    buffer,  agents  asynchronously
+    C. Actor-critic methods                                                            execute on multiple parallel instances of the environment. In
+        addition to the reducing correlation of the experiences, the
+  Actor-critic methods are hybrid methods that combine the parallel actor-learners have a stabilizing effect on training
+benefits of policy-based and value-based algorithms. The process. This simple setup enables a much larger spectrum
+policy structure that is responsible for selecting actions is of on-policy as well as off-policy reinforcement learning
+known as the ‘actor’. The estimated value function criticises algorithms to be applied robustly using deep neural networks.
+the actions made by the actor and is known as the ‘critic’. A3C exceeded the performance of the previous state-of-the-
+After each action selection, the critic evaluates the new state to art at the time on the Atari domain while training for half
+
+                                                                                                                                   6
+
+    the time on a single multi-core CPU instead of a GPU by           knowledge about the current situation, and the value function
+    combining several ideas. It also demonstrates how using an        is a linear combination of long and short term memories.
+    estimate of the value function as the previously explained            Learning algorithms can be on-policy or off-policy depend-
+baseline b reduces variance and improves convergence time. ing on whether the updates are conducted on fresh trajectories
+By defining the advantage as Aπ(a, s) = Qπ(s, a) − Vπ(s), the generated by the policy or by another policy, that could be
+expression of the policy gradient from Eqn. 5 is rewritten generated by an older version of the policy or provided by an
+as ∇θL = −E∥πθ{Aπ(a, ∥s) logπθ(a|s)}. The critic is trained to expert. On-policy methods such as SARSA [37], estimate the
+minimize 1 ∥
+        2 Aπ (a, s)∥2. The intuition of using advantage value of a policy while using the same policy for control.
+        θthan just discounted returns is to allow the However, off-policy methods such as Q-learning [25], use
+estimates rather
+agent to determine not just how good its actions were, but also two policies: the behavior policy, the policy used to generate
+how much better they turned out to be than expected, leading behavior; and the target policy, the one being improved on. An
+to reduced variance and more stable training. The A3C model advantage of this separation is that the target policy may be
+also demonstrated good performance in 3D environments such deterministic (greedy), while the behavior policy can continue
+as labyrinth exploration. Advantage Actor Critic (A2C) is to sample all possible actions, [1].
+a synchronous version of the asynchronous advantage actor
+critic model, that waits for each agent to finish its experience E. Deep reinforcement learning (DRL)
+before conducting an update. The performance of both A2C
+    and A3C is comparable. Most greedy policies must alternate         Tabular representations are the simplest way to store learned
+    between exploration and exploitation, and good exploration        estimates (of e.g. values, policies or models), where each state-
+    visits the states where the value estimate is uncertain. This     action pair has a discrete estimate associated with it. When
+    way, exploration focuses on trying to find the most uncertain     estimates are represented discretely, each additional feature
+    state paths as they bring valuable information. In addition to    tracked in the state leads to an exponential growth in the
+    advantage, explained earlier, some methods use the entropy as     number of state-action pair values that must be stored [38].
+    the uncertainty quantity. Most A3C implementations include        This problem is commonly referred to in the literature as the
+    this as well. Two methods with common authors are energy-         “curse of dimensionality”, a term originally coined by Bellman
+    based policies [32] and more recent and with widespread use,      [39]. In simple environments this is rarely an issue, but it
+    the Soft Actor Critic (SAC) algorithm [33], both rely on adding   may lead to an intractable problem in real-world applications,
+    an entropy term to the reward function, so we update the policy   due to memory and/or computational constraints. Learning
+    objective from Eqn. 1 to Eqn. 7. We refer readers to [33] for     over a large state-action space is possible, but may take an
+    an in depth explanation of the expression                         unacceptably long time to learn useful policies. Many real-
+      π∗MaxEnt = argmaxEπ{ ∑[r(st , at ) + αH(π(.|st ))]}, (7) world domains feature continuous state and/or action spaces;
+    π  t                                                              these can be discretised in many cases. However, large discreti-
+                                                                      sation steps may limit the achievable performance in a domain,
+    shown here for illustration of how the entropy H is added.        whereas small discretisation steps may result in a large state-
+                                                                      action space where obtaining a sufficient number of samples
+    D. Model-based (vs. Model-free) & On/Off Policy methods           for each state-action pair is impractical. Alternatively, function
+        approximation may be used to generalise across states and/or
+  In practical situations, interacting with the real environment actions, whereby a function approximator is used to store and
+could be limited due to many reasons including safety and retrieve estimates. Function approximation is an active area
+cost. Learning a model for environment dynamics may reduce of research in RL, offering a way to handle continuous state
+the amount of interactions required with the real environ- and/or action spaces, mitigate against the state-action space
+ment. Moreover, exploration can be performed on the learned explosion and generalise prior experience to previously unseen
+models. In the case of model-based approaches (e.g. Dyna- state-action pairs. Tile coding is one of the simplest forms
+Q [34], R-max [35]), agents attempt to learn the transition of function approximation, where one tile represents multiple
+function T and reward function R, which can be used when states or state-action pairs [38]. Neural networks are also
+making action selections. Keeping a model approximation of commonly used to implement function approximation, one of
+the environment means storing knowledge of its dynamics, and the most famous examples being Tesuaro’s application of RL
+allows for fewer, and sometimes, costly environment interac- to backgammon [40]. Recent work has applied deep neural
+tions. By contrast, in model-free approaches such knowledge networks as a function approximation method; this emerging
+is not a requirement. Instead, model-free learners sample the paradigm is known as deep reinforcement learning (DRL).
+underlying MDP directly in order to gain knowledge about DRL algorithms have achieved human level performance (or
+the unknown model, in the form of value function estimates above) on complex tasks such as playing Atari games [24] and
+for example. In Dyna-2 [36], the learning agent stores long- playing the board game Go [41].
+    term and short-term memories, where a memory is defined                In DQN [24] it is demonstrated how a convolutional neural
+as the set of features and corresponding parameters used by network can learn successful control policies from just raw
+an agent to estimate the value function. Long-term memory video data for different Atari environments. The network
+is for general domain knowledge which is updated from real was trained end-to-end and was not provided with any game
+experience, while short-term memory is for specific local specific information. The input to the convolutional neural
+
+        7
+
+network consists of a 84×84×4 tensor of 4 consecutive stacked difference methods like Q-learning.
+frames used to capture the temporal information. Through DRQN [46] applied a modification to the DQN by com-
+consecutive layers, the network learns how to combine features bining a Long Short Term Memory (LSTM) with a Deep Q-
+in order to identify the action most likely to bring the best Network. Accordingly, the DRQN is capable of integrating in-
+outcome. One layer consists of several convolutional filters. formation across frames to detect information such as velocity
+For instance, the first layer uses 32 filters with 8 × 8 kernels of objects. DRQN showed to generalize its policies in case of
+with stride 4 and applies a rectifier non linearity. The second complete observations and when trained on Atari games and
+layer is 64 filters of 4×4 with stride 2, followed by a rectifier evaluated against flickering games, it was shown that DRQN
+non-linearity. Next comes a third convolutional layer of 64 generalizes better than DQN.
+filters of 3 × 3 with stride 1 followed by a rectifier. The last
+intermediate layer is composed of 512 rectifier units fully IV. EXTENSIONS TO REINFORCEMENT LEARNING
+connected. The output layer is a fully-connected linear layer This section introduces and discusses some of the main
+with a single output for each valid action. For DQN training extensions to the basic single-agent RL paradigms which
+stability, two networks are used while the parameters of the have been introduced over the years. As well as broadening
+target network are fixed for a number of iterations while the applicability of RL algorithms, many of the extensions
+updating the online network parameters. For practical reasons, discussed here have been demonstrated to improve scalability,
+the Q(s, a) function is modeled as a deep neural network learning speed and/or converged performance in complex
+that predicts the value of all actions given the input state. problem domains.
+Accordingly, deciding what action to take requires performing
+a single forward pass of the network. Moreover, in order
+to increase sample efficiency, experiences of the agent are A. Reward shaping
+stored in a replay memory (experience replay), where the Q- As noted in Section III, the design of the reward function
+learning updates are conducted on randomly selected samples is crucial: RL agents seek to maximise the return from the
+from the replay memory. This random selection breaks the reward function, therefore the optimal policy for a domain
+correlation between successive samples. Experience replay is defined with respect to the reward function. In many real-
+enables reinforcement learning agents to remember and reuse world application domains, learning may be difficult due to
+experiences from the past where observed transitions are stored sparse and/or delayed rewards. RL agents typically learn how
+for some time, usually in a queue, and sampled uniformly from to act in their environment guided merely by the reward signal.
+this memory to update the network. However, this approach Additional knowledge can be provided to a learner by the
+simply replays transitions at the same frequency that they were addition of a shaping reward to the reward naturally received
+originally experienced, regardless of their significance. An from the environment, with the goal of improving learning
+alternative method is to use two separate experience buckets, speed and converged performance. This principle is referred
+one for positive and one for negative rewards [42]. Then a fixed to as reward shaping. The term shaping has its origins in the
+fraction from each bucket is selected to replay. This method field of experimental psychology, and describes the idea of
+is only applicable in domains that have a natural notion of rewarding all behaviour that leads to the desired behaviour.
+binary experience. Experience replay has also been extended Skinner [47] discovered while training a rat to push a lever that
+with a framework for prioritising experience [43], where any movement in the direction of the lever had to be rewarded
+important transitions, based on the TD error, are replayed to encourage the rat to complete the task. Analogously to
+more frequently, leading to improved performance and faster the rat, a RL agent may take an unacceptably long time to
+training when compared to the standard experience replay discover its goal when learning from delayed rewards, and
+approach. shaping offers an opportunity to speed up the learning process.
+  The max operator in standard Q-learning and DQN uses the Reward shaping allows a reward function to be engineered in a
+same values both to select and to evaluate an action resulting way to provide more frequent feedback signal on appropriate
+in over optimistic value estimates. In Double DQN (D-DQN) behaviours [48], which is especially useful in domains with
+[44] the over estimation problem in DQN is tackled where the sparse rewards. Generally, the return from the reward function
+greedy policy is evaluated according to the online network and is modified as follows: r′ = r+ f where r is the return from the
+uses the target network to estimate its value. It was shown that original reward function R, f is the additional reward from a
+this algorithm not only yields more accurate value estimates, shaping function F, and r′ is the signal given to the agent
+but leads to much higher scores on several games. by the augmented reward function R′. Empirical evidence
+  In Dueling network architecture [45] the state value function has shown that reward shaping can be a powerful tool to
+and associated advantage function are estimated, and then improve the learning speed of RL agents [49]. However, it
+combined together to estimate action value function. The can have unintended consequences. The implication of adding
+advantage of the dueling architecture lies partly in its ability a shaping reward is that a policy which is optimal for the
+to learn the state-value function efficiently. In a single-stream augmented reward function R′ may not in fact also be optimal
+architecture only the value for one of the actions is updated. for the original reward function R. A classic example of
+However in dueling architecture, the value stream is updated reward shaping gone wrong for this exact reason is reported
+with every update, allowing for better approximation of the by [49] where the experimented bicycle agent would turn in
+state values, which in turn need to be accurate for temporal circle to stay upright rather than reach its goal. Difference
+
+                                                                                                                           8
+
+rewards (D) [50] and potential-based reward shaping (PBRS) c ∈ C. Therefore, a regular MDP or SG can be extended to
+[51] are two commonly used shaping approaches. Both D a Multi-Objective MDP (MOMDP) or Multi-Objective SG
+and PBRS have been successfully applied to a wide range of (MOSG) by modifying the return of the reward function. For a
+application domains and have the added benefit of convenient more complete overview of MORL beyond the brief summary
+theoretical guarantees, meaning that they do not suffer from presented in this section, the interested reader is referred to
+the same issues as the unprincipled reward shaping approaches recent surveys [60], [61].
+described above (see e.g. [51]–[55]).
+        D. State Representation Learning (SRL)
+    B. Multi-agent reinforcement learning (MARL)                  State Representation Learning refers to feature extraction
+  In multi-agent reinforcement learning, multiple RL agents & dimensionality reduction to represent the state space with
+are deployed into a common environment. The single-agent its history conditioned by the actions and environment of the
+MDP framework becomes inadequate when multiple au- agent. A complete review of SRL for control is discussed
+tonomous agents act simultaneously in the same domain. in [62]. In the simplest form SRL maps a high dimensional
+Instead, the more general stochastic game (SG) may be used in vector ot into a small dimensional latent space st . The inverse
+the case of a Multi-Agent System (MAS) [56]. A SG is defined operation decodes the state back into an estimate of the
+as a tuple < S, A1...N , T , R1...N >, where N is the number of original observation oˆt . The agent then learns to map from
+agents, S is the set of system states, Ai is the set of actions the latent space to the action. Training the SRL chain is
+for agent i (and A is the joint action set), T is the transition unsupervised in the sense that no labels are required. Reducing
+function, and Ri is the reward function for agent i. The SG the dimension of the input effectively simplifies the task as
+looks very similar to the MDP framework, apart from the it removes noise and decreases the domain’s size as shown
+addition of multiple agents. In fact, for the case of N = 1 a SG in [63]. SRL could be a simple auto-encoder (AE), though
+then becomes a MDP. The next system state and the rewards various methods exist for observation reconstruction such as
+received by each agent depend on the joint action a of all of the Variational Auto-Encoders (VAE) or Generative Adversarial
+agents in a SG, where a is derived from the combination of the Networks (GANs), as well as forward models for predicting
+individual actions ai for each agent in the system. Each agent the next state or inverse models for predicting the action given
+may have its own local state perception si , which is different a transition. A good learned state representation should be
+to the system state s (i.e. individual agents are not assumed to Markovian; i.e. it should encode all necessary information to
+have full observability of the system). Note also that each be able to select an action based on the current state only, and
+agent may receive a different reward for the same system not any previous states or actions [62], [64].
+state transition, as each agent has its own separate reward
+function Ri . In a SG, the agents may all have the same goal E. Learning from Demonstrations
+    (collaborative SG), totally opposing goals (competitive SG),        Learning from Demonstrations (LfD) is used by humans
+or there may be elements of collaboration and competition to acquire new skills in an expert to learner knowledge
+between agents (mixed SG). Whether RL agents in a MAS transmission process. LfD is important for initial exploration
+will learn to act together or at cross-purposes depends on the where reward signals are too sparse or the input domain is
+    reward scheme used for a specific application.                too large to cover. In LfD, an agent learns to perform a
+    C. Multi-objective reinforcement learning                     task from demonstrations, usually in the form of state-action
+        pairs, provided by an expert without any feedback rewards.
+  In multi-objective reinforcement learning (MORL) the re- However, high quality and diverse demonstrations are hard to
+ward signal is a vector, where each component represents the collect, leading to learning sub-optimal policies. Accordingly,
+performance on a different objective. The MORL framework learning merely from demonstrations can be used to initialize
+was developed to handle sequential decision making problems the learning agent with a good or safe policy, and then
+where tradeoffs between conflicting objective functions must reinforcement learning can be conducted to enable the dis-
+be considered. Examples of real-world problems with multiple covery of a better policy by interacting with the environment.
+objectives include selecting energy sources (tradeoffs between Combining demonstrations and reinforcement learning has
+fuel cost and emissions) [57] and watershed management been conducted in recent research. AlphaGo [41], combines
+(tradeoffs between generating electricity, preserving reservoir search tree with deep neural networks, initializes the policy
+levels and supplying drinking water) [58]. Solutions to MORL network by supervised learning on state-action pairs provided
+problems are often evaluated using the concept of Pareto by recorded games played by human experts. Additionally, a
+dominance [59] and MORL algorithms typically seek to learn value network is trained to tell how desirable a board state is.
+or approximate the set of non-dominated solutions. MORL By conducting self-play and reinforcement learning, AlphaGo
+problems may be defined using the MDP or SG framework as is able to discover new stronger actions and learn from its
+appropriate, in a similar manner to single-objective problems. mistakes, achieving super human performance. More recently,
+The main difference lies in the definition of the reward AlphaZero [65], developed by the same team, proposed a
+function: instead of returning a single scalar value r, the general framework for self-play models. AlphaZero is trained
+reward function R in multi-objective domains returns a vector entirely using reinforcement learning and self play, starting
+r consisting of the rewards for each individual objective from completely random play, and requires no prior knowledge
+
+                                                                                                                                      9
+
+    of human players. AlphaZero taught itself from scratch how         functions is important. Leurent et al. [75] provided a compre-
+    to master the games of chess, shogi, and Go game, beating a        hensive review of the different state and action representations
+    world-champion program in each case. In [66] it is shown that      which are used in autonomous driving research. Commonly
+    given the initial demonstration, no explicit exploration is nec-   used state space features for an autonomous vehicle include:
+    essary, and we can attain near-optimal performance. Measuring      position, heading and velocity of ego-vehicle, as well as other
+    the divergence between the current policy and the expert policy    obstacles in the sensor view extent of the ego-vehicle. To avoid
+    for optimization is proposed in [67]. DQfD [68] pre-trains the     variations in the dimension of the state space, a Cartesian or
+    agent and uses expert demonstrations by adding them into           Polar occupancy grid around the ego vehicle is frequently
+    the replay buffer with additional priority. Moreover, a training   employed. This is further augmented with lane information
+    framework that combines learning from both demonstrations          such as lane number (ego-lane or others), path curvature,
+    and reinforcement learning is proposed in [69] for fast learning   past and future trajectory of the ego-vehicle, longitudinal
+    agents. Two policies close to maximizing the reward function       information such as Time-to-collision (TTC), and finally scene
+    can still have large differences in behaviour. To avoid degener-   information such as traffic laws and signal locations.
+    ating a solution which would fit the reward but not the original                Using raw sensor data such as camera images, LiDAR,
+behaviour, authors [70] proposed a method for enforcing that radar, etc. provides the benefit of finer contextual information,
+the optimal policy learnt over the rewards should still match while using condensed abstracted data reduces the complexity
+the observed policy in behavior. Behavior Cloning (BC) is of the state space. In between, a mid-level representation such
+applied as a supervised learning that maps states to actions as 2D bird eye view (BEV) is sensor agnostic but still close to
+based on demonstrations provided by an expert. On the other the spatial organization of the scene. Fig. 4 is an illustration
+hand, Inverse Reinforcement Learning (IRL) is about inferring of a top down view showing an occupancy grid, past and
+the reward function that justifies demonstrations of the expert. projected trajectories, and semantic information about the
+IRL is the problem of extracting a reward function given scene such as the position of traffic lights. This intermediary
+observed, optimal behavior [71]. A key motivation is that the format retains the spatial layout of roads when graph-based
+reward function provides a succinct and robust definition of representations would not. Some simulators offer this view
+a task. Generally, IRL algorithms can be expensive to run, such as Carla or Flow (see Table V-C).
+    requiring reinforcement learning in an inner loop between                 A vehicle policy must control a number of different actu-
+cost estimation to policy training and evaluation. Generative ators. Continuous-valued actuators for vehicle control include
+Adversarial Imitation Learning (GAIL) [72] introduces a way steering angle, throttle and brake. Other actuators such as
+to avoid this expensive inner loop. In practice, GAIL trains a gear changes are discrete. To reduce complexity and allow
+policy close enough to the expert policy to fool a discriminator. the application of DRL algorithms which work with discrete
+This process is similar to GANs [73], [74]. The resulting action spaces only (e.g. DQN), an action space may be
+policy must travel the same MDP states as the expert, or the discretised uniformly by dividing the range of continuous
+discriminator would pick up the differences. The theory behind actuators such as steering angle, throttle and brake into equal-
+GAIL is an equation simplification: qualitatively, if IRL is sized bins (see Section VI-C). Discretisation in log-space
+going from demonstrations to a cost function and RL from a has also been suggested, as many steering angles which are
+cost function to a policy, then we should altogether be able selected in practice are close to the centre [76]. Discretisation
+to go from demonstration to policy in a single equation while does have disadvantages however; it can lead to jerky or
+    avoiding the cost function estimation.                             unstable trajectories if the step values between actions are too
+                                                                       large. Furthermore, when selecting the number of bins for an
+    V. REINFORCEMENT LEARNING FOR AUTONOMOUS                           actuator there is a trade-off between having enough discrete
+    DRIVING TASKS                                                      steps to allow for smooth control, and not having so many
+  Autonomous driving tasks where RL could be applied steps that action selections become prohibitively expensive to
+include: controller optimization, path planning and trajectory evaluate. As an alternative to discretisation, continuous values
+optimization, motion planning and dynamic path planning, for actuators may also be handled by DRL algorithms which
+development of high-level driving policies for complex nav- learn a policy directly, (e.g. DDPG). Temporal abstractions
+igation tasks, scenario-based policy learning for highways, options framework [77]) may also be employed to simplify
+intersections, merges and splits, reward learning with inverse the process of selecting actions, where agents select options
+reinforcement learning from expert data for intent prediction instead of low-level actions. These options represent a sub-
+for traffic actors such as pedestrian, vehicles and finally policy that could extend a primitive action over multiple time
+learning of policies that ensures safety and perform risk steps.
+    estimation. Before discussing the applications of DRL to AD                Designing reward functions for DRL agents for autonomous
+    tasks we briefly review the state space, action space and          driving is still very much an open question. Examples of
+    rewards schemes in autonomous driving setting.                     criteria for AD tasks include: distance travelled towards a
+                                                                       destination [78], speed of the ego vehicle [78]–[80], keeping
+    A. State Spaces, Action Spaces and Rewards                         the ego vehicle at a standstill [81], collisions with other road
+                                                                       users or scene objects [78], [79], infractions on sidewalks [78],
+             To successfully apply DRL to autonomous driving tasks,    keeping in lane, and maintaining comfort and stability while
+    designing appropriate state spaces, action spaces, and reward      avoiding extreme acceleration, braking or steering [80], [81],
+
+                                                                                                                                    10
+
+    and following traffic rules [79].                                 Traffic Safety Administration report [108]. The systems are
+                                                                      evaluated in   critical scenarios such as: Ego-vehicle     loses
+    B. Motion Planning & Trajectory optimization                      control, ego-vehicle reacts to unseen obstacle, lane change
+        Motion planning is the task of ensuring the existence of a    to evade slow leading vehicle among others. The scores of
+    path between target and destination points. This is necessary     agents are evaluated as a function of the aggregated distance
+    to plan trajectories for vehicles over prior maps usually aug-    travelled in different circuits, and total points discounted due
+    mented with semantic information. Path planning in dynamic        to infractions.
+    environments and varying vehicle dynamics is a key prob-
+    lem in autonomous driving, for example negotiating right to       D. LfD and IRL for AD applications
+    pass through in an intersection [87], merging into highways.               Early work on Behavior Cloning (BC) for driving cars in
+    Recent work by authors [89] contains real world motions by        [109], [110] presented agents that learn form demonstrations
+    various traffic actors, observed in diverse interactive driving   (LfD) that tries to mimic the behavior of an expert. BC is
+    scenarios. Recently, authors demonstrated an application of       typically implemented as a supervised learning, and accord-
+    DRL (DDPG) for AD using a full-sized autonomous vehicle           ingly, it is hard for BC to adapt to new, unseen situations.
+    [90]. The system was first trained in simulation, before being    An architecture for learning a convolutional neural network,
+    trained in real time using on board computers, and was able       end to end, in self-driving cars domain was proposed in
+    to learn to follow a lane, successfully completing a real-        [111], [112]. The CNN is trained to map raw pixels from
+    world trial on a 250 metre section of road. Model-based deep      a single front facing camera directly to steering commands.
+    RL algorithms have been proposed for learning models and          Using a relatively small training dataset from humans/experts,
+    policies directly from raw pixel inputs [91], [92]. In [93],      the system learns to drive in traffic on local roads with or
+    deep neural networks have been used to generate predictions in    without lane markings and on highways. The network learns
+    simulated environments over hundreds of time steps. RL is also    image representations that detect the road successfully, without
+    suitable for Control. Classical optimal control methods like      being explicitly trained to do so. Authors of [113] proposed
+    LQR/iLQR are compared with RL methods in [94]. Classical          to learn comfortable driving trajectories optimization using
+    RL methods are used to perform optimal control in stochastic      expert demonstration from human drivers using Maximum
+    settings, for example the Linear Quadratic Regulator (LQR)        Entropy Inverse RL. Authors of [114] used DQN as the
+    in linear regimes and iterative LQR (iLQR) for non-linear         refinement step in IRL to extract the rewards, in an effort
+    regimes are utilized. A recent study in [95] demonstrates that    learn human-like lane change behavior.
+    random search over the parameters for a policy network can
+    perform as well as LQR.
+                                                                      VI. REAL WORLD CHALLENGES AND FUTURE
+    C. Simulator & Scenario generation tools                                             PERSPECTIVES
+           Autonomous driving datasets address supervised learning            In this section, challenges for conducting reinforcement
+setup with training sets containing image, label pairs for learning for real-world autonomous driving are presented
+various modalities. Reinforcement learning requires an en- and discussed along with the related research approaches for
+vironment where state-action pairs can be recovered while solving them.
+modelling dynamics of the vehicle state, environment as well
+as the stochasticity in the movement and actions of the
+environment and agent respectively. Various simulators are A. Validating RL systems
+    actively used for training and validating reinforcement learn-    Henderson et al.        [115] described challenges in validating
+ing algorithms. Table V-C summarises various high fidelity reinforcement learning methods focusing on policy gradient
+perception simulators capable of simulating cameras, LiDARs methods for continuous control algorithms such as PPO,
+and radar. Some simulators are also capable of providing the DDPG and TRPO as well as in reproducing benchmarks. They
+vehicle state and dynamics. A complete review of sensors and demonstrate with real examples that implementations often
+simulators utilised within the autonomous driving community have varying code-bases and different hyper-parameter values,
+is available in [105] for readers. Learned driving policies are and that unprincipled ways to estimate the top-k rollouts
+stress tested in simulated environments before moving on to could lead to incoherent interpretations on the performance
+costly evaluations in the real world. Multi-fidelity reinforce- of the reinforcement learning algorithms, and further more on
+ment learning (MFRL) framework is proposed in [106] where how well they generalize. Authors concluded that evaluation
+multiple simulators are available. In MFRL, a cascade of could be performed either on a well defined common setup
+simulators with increasing fidelity are used in representing or on real-world tasks. Authors in [116] proposed automated
+state dynamics (and thus computational cost) that enables generation of challenging and rare driving scenarios in high-
+the training and validation of RL algorithms, while finding fidelity photo-realistic simulators. These adversarial scenarios
+near optimal policies for the real world with fewer expensive are automatically discovered by parameterising the behavior
+real world samples using a remote controlled car. CARLA of pedestrians and other vehicles on the road. Moreover, it is
+Challenge [107] is a Carla simulator based AD competition shown that by adding these scenarios to the training data of
+with pre-crash scenarios characterized in a National Highway imitation learning, the safety is increased.
+
+    11
+
+
+                         TT TH:
+      EII     BE     I                1   jueInI      El         H                       bo\     5        8
+      [                               I               IH         |
+                                                               EEE
+
+    Fig. 4. Bird Eye View (BEV) 2D representation of a driving scene. Left demonstrates an occupancy grid. Right shows the combination of semantic information
+    (traffic lights) with past (red) and projected (green) trajectories. The ego car is represented by a green rectangle in both images.
+
+     AD Task         (D)RL method & description                                      Improvements & Tradeoffs
+     Lane Keep       1. Authors [82] propose a DRL system for discrete actions       1. This study concludes that using continuous actions provide
+                     (DQN) and continuous actions (DDAC) using the TORCS             smoother trajectories, though on the negative side lead to
+                     simulator (see Table V-C) 2. Authors [83] learn discretised     more restricted termination conditions & slower convergence
+                     and continuous policies using DQNs and Deep Deterministic       time to learn. 2. Removing memory replay in DQNs help
+                     Actor Critic (DDAC) to follow the lane and maximize average     for faster convergence & better performance. The one hot
+                     velocity.                                                       encoding of action space resulted in abrupt steering control.
+                                                                                     While DDAC’s continuous policy helps smooth the actions
+                                                                                     and provides better performance.
+     Lane Change     Authors     [84] use Q-learning  to  learn a policy for ego-    This approach is more robust compared to traditional ap-
+                     vehicle to perform no operation, lane change to left/right,     proaches which consist in defining fixed way points, velocity
+                     accelerate/decelerate.                                          profiles and curvature of path to be followed by the ego
+                                                                                     vehicle.
+     Ramp Merging    Authors [85] propose recurrent architectures namely LSTMs       Past history of the state information is used to perform the
+                     to model longterm dependencies for ego vehicles ramp merg-      merge more robustly.
+                     ing into a highway.
+     Overtaking      Authors [86] propose Multi-goal RL policy that is learnt by     Improved speed for lane keeping and overtaking with collision
+                     Q-Learning or Double action Q-Learning(DAQL) is employed        avoidance.
+                     to determine individual action decisions based on whether the
+                     other vehicle interacts with the agent for that particular goal.
+     Intersections   Authors use DQN to evalute the Q-value for state-action pairs   Creep-Go actions defined by authors enables the vehicle to
+                     to negotiate intersection [87],                                 maneuver intersections with restricted spaces and visibility
+        more safely
+     Motion Planning Authors [88] propose an improved A∗ algorithm to learn a Smooth control behavior of vehicle and better peformance
+        heuristic function using deep neural netowrks over image- compared to multi-step DQN
+        based input obstacle map
+        TABLE I
+        LIST OF AD TASKS THAT REQUIRE D(RL) TO LEARN A POLICY OR BEHAVIOR.
+
+
+
+B. Bridging the simulation-reality gap the prediction of steering in the real world domain with only
+        ground truth from the simulated domain. Authors remark that
+  Simulation-to-real-world transfer learning is an active do- there were no pairwise correspondences between images in the
+main, since simulations are a source large & cheap data with simulated training set and the unlabelled real-world image set.
+perfect annotations. Authors [117] train a robot arm to grasp Similarly, [121] performs domain adaptation to map real world
+objects in the real world by performing domain adaption images to simulated images. In contrast to sim-to-real methods
+from simulation-to-reality, at both feature-level and pixel- they handle the reality gap during deployment of agents in real
+level. The vision-based grasping system achieved comparable scenarios, by adapting the real camera streams to the synthetic
+performance with 50 times fewer real-world samples. Authors modality, so as to map the unfamiliar or unseen features of
+in [118], randomized the dynamics of the simulator during real images back into the simulated environment and states.
+training. The resulting policies were capable of generalising to The agents have already learnt a policy in simulation.
+different dynamics without requiring retraining on real system.
+In the domain of autonomous driving, authors [119] train
+an A3C agent using simulation-real translated images of the C. Sample efficiency
+driving environment. Following which, the trained policy was Animals are usually able to learn new tasks in just a few
+evaluated on a real world driving dataset. trials, benefiting from their prior knowledge about the environ-
+  Authors in [120] addressed the issue of performing imitation ment. However, one of the key challenges for reinforcement
+learning in simulation that transfers well to images from real learning is sample efficiency. The learning process requires too
+world. They achieved this by unsupervised domain translation many samples to learn a reasonable policy. This issue becomes
+between simulated and real world images, that enables learning more noticeable when collection of valuable experience is
+
+        12
+
+Simulator Description
+CARLA [78] Urban simulator, Camera & LIDAR streams, with depth & semantic segmentation, Location information
+TORCS [96] Racing Simulator, Camera stream, agent positions, testing control policies for vehicles
+AIRSIM [97] Camera stream with depth and semantic segmentation, support for drones
+GAZEBO (ROS) [98] Multi-robot physics simulator employed for path planning & vehicle control in complex 2D & 3D maps
+SUMO [99] Macro-scale modelling of traffic in cities motion planning simulators are used
+DeepDrive [100] Driving simulator based on unreal, providing multi-camera (eight) stream with depth
+Constellation [101] NVIDIA DRIVE ConstellationTM simulates camera, LIDAR & radar for AD (Proprietary)
+MADRaS [102] Multi-Agent Autonomous Driving Simulator built on top of TORCS
+Flow [103] Multi-Agent Traffic Control Simulator built on top of SUMO
+Highway-env [104] A gym-based environment that provides a simulator for highway based road topologies
+Carcraft Waymo’s simulation environment (Proprietary)
+        TABLE II
+  SIMULATORS FOR RL APPLICATIONS IN ADVANCED DRIVING ASSISTANCE SYSTEMS (ADAS) AND AUTONOMOUS DRIVING.
+
+
+expensive or even risky to acquire. In the case of robot control RL algorithms is presented in [128]. Rather than designing a
+and autonomous driving, sample efficiency is a difficult issue “fast” reinforcement learning algorithm, it is represented as a
+due to the delayed and sparse rewards found in typical settings, recurrent neural network, and learned from data. In Model-
+along with an unbalanced distribution of observations in a Agnostic Meta-Learning (MAML) proposed in [129], the
+    large state space.                                                  meta-learner seeks to find an initialisation for the parameters
+               Reward shaping enables the agent to learn intermediate   of a neural network, that can be adapted quickly for a new
+    goals by designing a more frequent reward function to en-           task using only few examples. Reptile [130] includes a similar
+    courage the agent to learn faster from fewer samples. Authors       model. Authors [131] present simple gradient-based meta-
+    in [122] design a second "trauma" replay memory that contains       learning algorithm.
+    only collision situations in order to pool positive and negative      Efficient state representations : World models proposed in
+    experiences at each training step.                                  [132] learn a compressed spatial and temporal representation
+                IL boostrapped RL: Further efficiency can be achieved   of the environment using VAEs. Further on a compact and
+    where the agent first learns an initial policy offline perform-     simple policy directly from the compressed state representa-
+    ing imitation learning from roll-outs provided by an expert.        tion.
+    Following which, the agent can self-improve by applying RL
+    while interacting with the environment.
+               Actor Critic with Experience Replay (ACER) [123], is a   D. Exploration issues with Imitation
+    sample-efficient policy gradient algorithm that makes use of a        In imitation learning, the agent makes use of trajectories
+    replay buffer, enabling it to perform more than one gradient        provided by an expert. However, the distribution of states
+    update using each piece of sampled experience, as well as a         the expert encounters usually does not cover all the states
+    trust region policy optimization method.                            the trained agent may encounter during testing. Furthermore
+  Transfer learning is another approach for sample effi- imitation assumes that the actions are independent and iden-
+ciency, which enables the reuse of previously trained policy for tically distributed (i.i.d.). One solution consists in using the
+a source task to initialize the learning of a target task. Policy Data Aggregation (DAgger) methods [133] where the end-
+composition presented in [124] propose composing previously to-end learned policy is executed, and extracted observation-
+learned basis policies to be able to reuse them for a novel task, action pairs are again labelled by the expert, and aggregated
+which leads to faster learning of new policies. A survey on to the original expert observation-action dataset. Thus, iter-
+transfer learning in RL is presented in [125]. Multi-fidelity atively collecting training examples from both reference and
+reinforcement learning (MFRL) framework [106] showed to trained policies explores more valuable states and solves this
+transfer heuristics to guide exploration in high fidelity simu- lack of exploration. Following work on Search-based Struc-
+lators and find near optimal policies for the real world with tured Prediction (SEARN) [133], Stochastic Mixing Iterative
+fewer real world samples. Authors in [126] transferred policies Learning (SMILE) trains a stochastic stationary policy over
+learnt to handle simulated intersections to real world examples several iterations and then makes use of a geometric stochastic
+    between DQN agents.                                                 mixing of the policies trained. In a standard imitation learning
+  Meta-learning algorithms enable agents adapt to new tasks scenario, the demonstrator is required to cover sufficient states
+and learn new skills rapidly from small amounts of ex- so as to avoid unseen states during test. This constraint is
+periences, benefiting from their prior knowledge about the costly and requires frequent human intervention. More re-
+world. Authors of [127] addressed this issue through training cently, Chauffeurnet [134] demonstrated the limits of imitation
+a recurrent neural network on a training set of interrelated learning where even 30 million state-action samples were
+tasks, where the network input includes the action selected insufficient to learn an optimal policy that mapped bird-eye
+in addition to the reward received in the previous time step. view images (states) to control (action). The authors propose
+Accordingly, the agent is trained to learn to exploit the the use of simulated examples which introduced perturbations,
+structure of the problem dynamically and solve new problems higher diversity of scenarios such as collisions and/or going
+by adjusting its hidden state. A similar approach for designing off the road. The featurenet includes an agent RNN that
+
+                                                                                                                                      13
+
+outputs the way point, agent box position and heading at each performs well in most scenarios. In order to enable DRL to
+iteration. Authors [135] identify limits of imitation learning, escape local optima, speed up the training process and avoid
+and train a DNN end-to-end using the ego vehicles on input danger conditions or accidents, Survival-Oriented Reinforce-
+raw image, and 2d and 3d locations of neighboring vehicles ment Learning (SORL) model is proposed in [144], where
+to simultaneously predict the ego-vehicle action as well as survival is favored over maximizing total reward through
+    neighbouring vehicle trajectories.                                   modeling the autonomous driving problem as a constrained
+                                                                         MDP and introducing Negative-Avoidance Function to learn
+    E. Intrinsic Reward functions                                        from previous failure. The SORL model was found to be
+  In controlled simulated environments such as games, an not sensitive to reward function and can use different DRL
+explicit reward signal is given to the agent along with its sensor algorithms like DDPG. Furthermore, a comprehensive survey
+stream. However, in real-world robotics and autonomous driv- on safe reinforcement learning can be found in [145] for
+ing deriving, designing a good reward functions is essential interested readers.
+so that the desired behaviour may be learned. The most
+common solution has been reward shaping [136] and consists G. Multi-agent reinforcement learning
+    in supplying additional well designed rewards to the agent to                Autonomous driving is a fundamentally multi-agent task;
+    encourage the optimization into the direction of the optimal         as well as the ego vehicle being controlled by an agent,
+    policy. Rewards as already pointed earlier in the paper, could       there will also be many other actors present in simulated
+    be estimated by inverse RL (IRL) [137], which depends on             and real world autonomous driving settings, such as pedes-
+    expert demonstrations. In the absence of an explicit reward          trians, cyclists and other vehicles. Therefore, the continued
+    shaping and expert demonstrations, agents can use intrinsic          development of explicitly multi-agent approaches to learning
+    rewards or intrinsic motivation [138] to evaluate if their actions   to drive autonomous vehicles is an important future research
+    were good or not. Authors of [139] define curiosity as the error     direction. Several prior methods have already approached the
+    in an agent’s ability to predict the consequence of its own          autonomous driving problem using a MARL perspective, e.g.
+    actions in a visual feature space learned by a self-supervised       [142], [146]–[149].
+    inverse dynamics model. In [140] the agent learns a next state                One important area where MARL techniques could be very
+predictor model from its experience, and uses the error of beneficial is in high-level decision making and coordination
+the prediction as an intrinsic reward. This enables that agent between groups of autonomous vehicles, in scenarios such
+to determine what could be a useful behavior even without as overtaking in highway scenarios [149], or negotiating
+    extrinsic rewards.                                                   intersections without signalised control. Another area where
+                                                                         MARL approaches could be of benefit is in the development
+    F. Incorporating safety in DRL                                       of adversarial agents for testing autonomous driving policies
+            Deploying an autonomous vehicle in real environments after   before deployment [148], i.e. agents controlling other vehicles
+    training directly could be dangerous. Different approaches to        in a simulation that learn to expose weaknesses in the be-
+    incorporate safety into DRL algorithms are presented here.           haviour of autonomous driving policies by acting erratically or
+    For imitation learning based systems, Safe DAgger [141]              against the rules of the road. Finally, MARL approaches could
+    introduces a safety policy that learns to predict the error          potentially have an important role to play in developing safe
+    made by a primary policy trained initially with the supervised       policies for autonomous driving [142], as discussed earlier.
+    learning approach, without querying a reference policy. An
+    additional safe policy takes both the partial observation of                          VII. CONCLUSION
+    a state and a primary policy as inputs, and returns a binary             Reinforcement learning is still an active and emerging area
+    label indicating whether the primary policy is likely to deviate     in real-world autonomous driving applications. Although there
+    from a reference policy without querying it. Authors of [142]        are a few successful commercial applications, there is very
+    addressed safety in multi-agent Reinforcement Learning for           little literature or large-scale public datasets available. Thus we
+    Autonomous Driving, where a balance is maintained between            were motivated to formalize and organize RL applications for
+    unexpected behavior of other drivers or pedestrians and not          autonomous driving. Autonomous driving scenarios involve in-
+    to be too defensive, so that normal traffic flow is achieved.        teracting agents and require negotiation and dynamic decision
+    While hard constraints are maintained to guarantee the safety        making which suits RL. However, there are many challenges to
+    of driving, the problem is decomposed into a composition of          be resolved in order to have mature solutions which we discuss
+    a policy for desires to enable comfort driving and trajectory        in detail. In this work, a detailed theoretical reinforcement
+    planning. The deep reinforcement learning algorithms for con-        learning is presented, along with a comprehensive literature
+    trol such as DDPG and safety based control are combined in           survey about applying RL for autonomous driving tasks.
+    [143], including artificial potential field method that is widely    Challenges,  future research directions and       opportunities
+    used for robot path planning. Using TORCS environment,               are discussed in section VI. This includes : validating the
+    the DDPG is applied first for learning a driving policy in           performance of RL based systems, the simulation-reality gap,
+    a stable and familiar environment, then policy network and           sample efficiency, designing good reward functions, incorpo-
+    safety-based control are combined to avoid collisions. It was        rating safety into decision making RL systems for autonomous
+    found that combination of DRL and     safety-based         control   agents.
+
+14
+
+
+Framework                       Description
+OpenAI Baselines [150]          Set of high-quality implementations of different RL and DRL algorithms. The main goal for these
+                                Baselines is to make it easier for the research community to replicate, refine and create reproducible
+                                research.
+Unity ML Agents Toolkit [151]   Implements core RL algorithms, games, simulations environments for training RL or IL based agents .
+RL Coach [152]                  Intel AI Lab’s implementation of modular RL algorithms implementation with simple integration of new
+                                environments by extending and reusing existing components.
+Tensorflow Agents [153]         RL algorithms package with Bandits from TF.
+rlpyt [154]                     implements deep Q-learning, policy gradients algorithm families in a single python package
+bsuite [155]                    DeepMind   Behaviour Suite  for Reinforcement Learning aims at defining metrics for     RL agents.
+                                Automating evaluation and analysis.
+                                                            TABLE III
+    OPEN-SOURCE FRAMEWORKS AND PACKAGES FOR STATE OF THE ART RL/DRL ALGORITHMS AND EVALUATION.
+
+
+
+      Reinforcement learning results are usually difficult to re-                                REFERENCES
+produce and are highly sensitive to hyper-parameter choices,
+which are often not reported in detail. Both researchers and         [1]  R. S. Sutton and A. G. Barto, Reinforcement Learning: An Introduction
+practitioners need to have a reliable starting point where                (Second Edition).    MIT Press, 2018. 1, 4, 5, 6
+the well known reinforcement learning algorithms are imple-          [2]  V. Talpaert., I. Sobh., B. R. Kiran., P. Mannion., S. Yogamani., A. El-
+                                                                          Sallab., and P. Perez., “Exploring applications of deep reinforcement
+mented, documented and well tested. These frameworks have                 learning for real-world autonomous driving systems,” in Proceedings of
+been covered in table VI-G.                                               the 14th International Joint Conference on Computer Vision, Imaging
+          The development of explicitly multi-agent reinforcement         and Computer Graphics Theory and Applications - Volume 5 VISAPP:
+                                                                          VISAPP,, INSTICC.    SciTePress, 2019, pp. 564–572. 1
+learning approaches to the autonomous driving problem is             [3]  M. Siam,   S.     Elkerdawy, M. Jagersand, and  S. Yogamani,         “Deep
+also an important future challenge that has not received a lot            semantic segmentation for automated driving: Taxonomy, roadmap and
+of attention to date. MARL techniques have the potential to               challenges,” in 2017 IEEE 20th international conference on intelligent
+                                                                          transportation systems (ITSC).  IEEE, 2017, pp. 1–8. 2
+make coordination and high-level decision making between             [4]  K. El Madawi, H. Rashed, A. El Sallab, O. Nasr, H. Kamel, and
+groups of autonomous vehicles easier, as well as providing                S. Yogamani, “Rgb and lidar fusion based 3d semantic segmentation for
+new opportunities for testing and validating the safety of                autonomous driving,” in 2019 IEEE Intelligent Transportation Systems
+                                                                          Conference (ITSC).     IEEE, 2019, pp. 7–12. 2
+autonomous driving policies.                                         [5]  M. Siam, H. Mahgoub, M. Zahran, S. Yogamani, M. Jagersand, and
+          Furthermore, implementation of RL algorithms is a chal-         A. El-Sallab, “Modnet: Motion and appearance based moving object
+lenging task for  researchers     and    practitioners. This work         detection network for autonomous driving,” in 2018 21st International
+                                                                          Conference on Intelligent Transportation Systems (ITSC).       IEEE, 2018,
+presents examples of well known and active open-source RL                 pp. 2859–2864. 2
+frameworks that provide well documented implementations              [6]  V. R. Kumar, S. Milz, C. Witt, M. Simon, K. Amende, J. Petzold,
+that enables the opportunity of using, evaluating and extending           S. Yogamani, and T. Pech, “Monocular fisheye camera depth estimation
+different RL algorithms. Finally, We hope that this overview              using sparse lidar supervision,” in 2018 21st International Conference
+                                                                          on Intelligent Transportation Systems (ITSC).        IEEE, 2018, pp. 2853–
+paper encourages further research and applications.                  [7]  2858. 2
+                                                                          M. Uˇriˇcáˇr, P. Kˇrížek, G. Sistu, and S. Yogamani, “Soilingnet: Soiling
+ A2C, A3C         Advantage Actor Critic, Asynchronous A2C                detection on automotive surround-view cameras,” in 2019 IEEE Intel-
+ BC               Behavior Cloning                                        ligent Transportation Systems Conference (ITSC).           IEEE, 2019, pp.
+ DDPG             Deep DPG                                           [8]  67–72. 2
+ DP               Dynamic Programming                                     G. Sistu, I. Leang, S. Chennupati, S. Yogamani, C. Hughes, S. Milz, and
+ DPG              Deterministic PG                                        S. Rawashdeh, “Neurall: Towards a unified visual perception model for
+ DQN              Deep Q-Network                                          automated driving,” in        2019 IEEE Intelligent Transportation Systems
+ DRL              Deep RL                                            [9]  Conference (ITSC).   IEEE, 2019, pp. 796–803. 2
+ IL               Imitation Learning                                      S. Yogamani, C. Hughes, J. Horgan, G. Sistu, P. Varley, D. O’Dea,
+ IRL              Inverse RL                                              M. Uricár, S. Milz, M. Simon, K. Amende              et al., “Woodscape: A
+ LfD              Learning from Demonstration                             multi-task, multi-camera fisheye dataset for autonomous driving,” in
+ MAML             Model-Agnostic Meta-Learning                            Proceedings of the IEEE International Conference on Computer Vision,
+ MARL             Multi-Agent RL                                    [10]  2019, pp. 9308–9318. 2
+ MDP              Markov Decision Process                                 S. Milz, G. Arbeiter, C. Witt, B. Abdallah, and S. Yogamani, “Visual
+ MOMDP            Multi-Objective MDP                                     slam for automated driving: Exploring the applications of deep learn-
+ MOSG             Multi-Objective SG                                      ing,” in Proceedings of the IEEE Conference on Computer Vision and
+ PG               Policy Gradient                                   [11]  Pattern Recognition Workshops, 2018, pp. 247–257. 2
+ POMDP            Partially Observed MDP                                  S. M. LaValle, Planning Algorithms.           New York, NY, USA: Cambridge
+ PPO              Proximal Policy Optimization                      [12]  University Press, 2006. 2
+ QL               Q-Learning                                              S. M. LaValle and J. James J. Kuffner, “Randomized kinodynamic
+ RRT              Rapidly-exploring Random Trees                          planning,”        The International Journal of Robotics Research, vol. 20,
+ SG               Stochastic Game                                         no. 5, pp. 378–400, 2001. 2
+ SMDP             Semi-Markov Decision Process                      [13]  T. D. Team.     Dimensions   publication trends. [Online].      Available:
+ TDL              Time Difference Learning                                https://app.dimensions.ai/discover/publication 3
+ TRPO             Trust Region Policy Optimization                  [14]  Y. Kuwata, J. Teo, G. Fiore, S. Karaman, E. Frazzoli, and J. P. How,
+                                                                          “Real-time motion planning with applications to autonomous urban
+                                      TABLE IV                            driving,” IEEE Transactions on Control Systems Technology, vol. 17,
+                  ACRONYMS RELATED TO REINFORCEMENT LEARNING (RL).  [15]  no. 5, pp. 1105–1118, 2009. 3
+                                                                          B. Paden, M. Cáp, ˇ  S. Z. Yong, D. Yershov, and E. Frazzoli, “A survey of
+                                                                          motion planning and control techniques for self-driving urban vehicles,”
+
+15
+
+
+      IEEE Transactions on intelligent vehicles, vol. 1, no. 1, pp. 33–55,          [40]  G. Tesauro,    “Td-gammon,  a self-teaching   backgammon         program,
+      2016. 3                                                                             achieves master-level play,” Neural Computing, vol. 6, no. 2, Mar. 1994.
+[16]  W. Schwarting, J. Alonso-Mora, and D. Rus, “Planning and decision-                  6
+      making for autonomous vehicles,” Annual Review of Control, Robotics,          [41]  D. Silver, A. Huang, C. J. Maddison, A. Guez, L. Sifre, G. Van
+      and Autonomous Systems, no. 0, 2018. 3                                              Den Driessche, J. Schrittwieser, I. Antonoglou, V. Panneershelvam,
+[17]  S. Kuutti, R. Bowden, Y. Jin, P. Barber, and S. Fallah, “A survey                   M. Lanctot et al., “Mastering the game of go with deep neural networks
+      of deep learning applications to autonomous vehicle control,” IEEE                  and tree search,” nature, vol. 529, no. 7587, pp. 484–489, 2016. 6, 8
+      Transactions on Intelligent Transportation Systems, 2020. 3                   [42]  K. Narasimhan, T. Kulkarni, and R. Barzilay, “Language understanding
+[18]  T. M. Mitchell, Machine learning, ser. McGraw-Hill series in computer               for text-based games using deep reinforcement learning,” in          Pro-
+      science.         Boston (Mass.), Burr Ridge (Ill.), Dubuque (Iowa): McGraw-         ceedings of the 2015 Conference on Empirical Methods in Natural
+      Hill, 1997. 3                                                                       Language Processing.           Association for Computational Linguistics,
+[19]  S. J. Russell and P. Norvig, Artificial intelligence: a modern approach             2015, pp. 1–11. 7
+      (3rd edition).   Prentice Hall, 2009. 3                                       [43]  T. Schaul, J. Quan, I. Antonoglou, and D. Silver, “Prioritized experience
+[20]  Z.-W. Hong, T.-Y. Shann, S.-Y. Su, Y.-H. Chang, T.-J. Fu, and C.-                   replay,” arXiv preprint arXiv:1511.05952, 2015. 7
+      Y. Lee, “Diversity-driven exploration strategy for deep reinforcement         [44]  H. Van Hasselt, A. Guez, and D. Silver, “Deep reinforcement learning
+      learning,” in         Advances in Neural Information Processing Systems 31,         with double q-learning.” in AAAI, vol. 16, 2016, pp. 2094–2100. 7
+      S. Bengio, H. Wallach, H. Larochelle, K. Grauman, N. Cesa-Bianchi,            [45]  Z. Wang, T. Schaul, M. Hessel, H. Van Hasselt, M. Lanctot, and
+      and R. Garnett, Eds., 2018, pp. 10 489–10 500. 3                                    N. De Freitas, “Dueling network architectures for deep reinforcement
+[21]  M. Wiering and M. van Otterlo, Eds., Reinforcement Learning: State-                 learning,” arXiv preprint arXiv:1511.06581, 2015. 7
+      of-the-Art.   Springer, 2012. 4                                               [46]  M. Hausknecht and P. Stone, “Deep recurrent q-learning for partially
+[22]  M. L.     Puterman, Markov     Decision    Processes:   Discrete Stochastic         observable mdps,” CoRR, abs/1507.06527, 2015. 7
+      Dynamic Programming, 1st ed.                  New York, NY, USA: John Wiley   [47]  B. F. Skinner,       The behavior of organisms: An experimental analysis.
+      & Sons, Inc., 1994. 4                                                               Appleton-Century, 1938. 7
+[23]  C. J. Watkins and P. Dayan, “Technical note: Q-learning,”           Machine   [48]  E. Wiewiora, “Reward shaping,” in Encyclopedia of Machine Learning
+      Learning, vol. 8, no. 3-4, 1992. 4                                                  and Data Mining, C. Sammut and G. I. Webb, Eds.               Boston, MA:
+[24]  V. Mnih, K. Kavukcuoglu, D. Silver, A. A. Rusu, J. Veness, M. G.                    Springer US, 2017, pp. 1104–1106. 7
+      Bellemare, A. Graves, M. Riedmiller, A. K. Fidjeland, G. Ostrovski            [49]  J. Randløv and P. Alstrøm, “Learning to drive a bicycle using re-
+      et al., “Human-level control through deep reinforcement learning,”                  inforcement learning and shaping,” in    Proceedings of the Fifteenth
+      Nature, vol. 518, 2015. 4, 6                                                        International Conference on Machine Learning, ser. ICML ’98.          San
+[25]  C. J. C. H. Watkins, “Learning from delayed rewards,” Ph.D. disserta-               Francisco, CA, USA: Morgan Kaufmann Publishers Inc., 1998, pp.
+      tion, King’s College, Cambridge, 1989. 4, 6                                         463–471. 7
+[26]  D. Silver, G. Lever, N. Heess, T. Degris, D. Wierstra, and M. Ried-           [50]  D. H. Wolpert, K. R. Wheeler, and K. Tumer, “Collective intelligence
+      miller, “Deterministic policy gradient algorithms,” in ICML, 2014. 5                for control of distributed dynamical systems,” EPL (Europhysics Let-
+[27]  R. J. Williams, “Simple statistical gradient-following algorithms for               ters), vol. 49, no. 6, p. 708, 2000. 8
+      connectionist reinforcement learning,”        Machine Learning, vol. 8, pp.   [51]  A. Y. Ng, D. Harada, and S. J. Russell, “Policy invariance under
+      229–256, 1992. 5                                                                    reward transformations: Theory and application to reward shaping,”
+[28]  J. Schulman, S. Levine, P. Abbeel, M. Jordan, and P. Moritz, “Trust                 in       Proceedings of the Sixteenth International Conference on Machine
+      region policy optimization,” in         International Conference on Machine         Learning, ser. ICML ’99, 1999, pp. 278–287. 8
+      Learning, 2015, pp. 1889–1897. 5                                              [52]  S. Devlin and D. Kudenko, “Theoretical considerations of potential-
+[29]  J. Schulman, F. Wolski, P. Dhariwal, A. Radford, and O. Klimov, “Prox-              based reward shaping for multi-agent systems,” in Proceedings of the
+      imal policy optimization algorithms,” arXiv preprint arXiv:1707.06347,              10th International Conference on Autonomous Agents and Multiagent
+      2017. 5                                                                       [53]  Systems (AAMAS), 2011. 8
+[30]  T. P. Lillicrap, J. J. Hunt, A. Pritzel, N. Heess, T. Erez, Y. Tassa,               P. Mannion, S. Devlin, K. Mason, J. Duggan, and E. Howley, “Policy
+      D. Silver, and D. Wierstra, “Continuous control with deep reinforce-                invariance under reward transformations for multi-objective reinforce-
+      ment learning.” in 4th International Conference on Learning Represen-         [54]  ment learning,” Neurocomputing, vol. 263, 2017. 8
+      tations, ICLR 2016, San Juan, Puerto Rico, May 2-4, 2016, Conference                M. Colby and K. Tumer, “An evolutionary game theoretic analysis of
+      Track Proceedings, Y. Bengio and Y. LeCun, Eds., 2016. 5                            difference evaluation functions,” in       Proceedings of the 2015 Annual
+[31]  V. Mnih, A. P. Badia, M. Mirza, A. Graves, T. Lillicrap, T. Harley,                 Conference on Genetic and Evolutionary Computation.            ACM, 2015,
+      D. Silver, and K. Kavukcuoglu, “Asynchronous methods for deep rein-           [55]  pp. 1391–1398. 8
+      forcement learning,” in International Conference on Machine Learning,               P. Mannion, J. Duggan, and E. Howley, “A theoretical and empirical
+      2016. 5                                                                             analysis of reward transformations in multi-objective stochastic games,”
+[32]  T. Haarnoja, H. Tang, P. Abbeel, and S. Levine, “Reinforcement                      in         Proceedings of the 16th International Conference on Autonomous
+      learning with deep energy-based policies,” in Proceedings of the 34th         [56]  Agents and Multiagent Systems (AAMAS), 2017. 8
+      International    Conference  on    Machine Learning     - Volume 70,   ser.         L. Bu¸soniu, R. Babuška, and B. Schutter, “Multi-agent reinforcement
+      ICML’17.      JMLR.org, 2017, pp. 1352–1361. 6                                      learning: An overview,” in Innovations in Multi-Agent Systems and Ap-
+[33]  T. Haarnoja, A. Zhou, K. Hartikainen, G. Tucker, S. Ha, J. Tan,                     plications - 1, ser. Studies in Computational Intelligence, D. Srinivasan
+      V. Kumar, H. Zhu, A. Gupta, P. Abbeel            et al., “Soft actor-critic   [57]  and L. Jain, Eds.  Springer Berlin Heidelberg, 2010, vol. 310. 8
+      algorithms & applications,” arXiv:1812.05905, 2018. 6                               P. Mannion, K. Mason, S. Devlin, J. Duggan, and E. Howley, “Multi-
+[34]  R. S. Sutton, “Integrated architectures for learning, planning, and                 objective dynamic dispatch optimisation using multi-agent reinforce-
+      reacting based on approximating dynamic programming,” in Machine                    ment learning,” in       Proceedings of the 15th International Conference
+      Learning Proceedings 1990.         Elsevier, 1990. 6                          [58]  on Autonomous Agents and Multiagent Systems (AAMAS), 2016. 8
+[35]  R. I. Brafman and M. Tennenholtz, “R-max-a general polynomial time                  K. Mason, P. Mannion, J. Duggan, and E. Howley, “Applying multi-
+      algorithm for near-optimal reinforcement learning,” Journal of Machine              agent reinforcement learning to watershed management,” in Proceed-
+      Learning Research, vol. 3, no. Oct, 2002. 6                                         ings of the Adaptive and Learning Agents workshop (at AAMAS 2016),
+                                                                                          2016. 8
+[36]  D. Silver, R. S. Sutton, and M. Müller, “Sample-based learning and            [59]  V. Pareto, Manual of political economy.  OUP Oxford, 1906. 8
+      search with permanent and transient memories,” in Proceedings of the          [60]  D. M. Roijers, P. Vamplew, S. Whiteson, and R. Dazeley, “A survey
+      25th international conference on Machine learning.           ACM, 2008, pp.         of multi-objective sequential decision-making,”     Journal of Artificial
+      968–975. 6                                                                          Intelligence Research, vol. 48, pp. 67–113, 2013. 8
+[37]  G. A. Rummery and M. Niranjan, “On-line Q-learning using con-                 [61]  R. R˘adulescu, P. Mannion, D. M. Roijers, and A. Nowé, “Multi-
+      nectionist systems,” Cambridge University Engineering Department,                   objective multi-agent decision making: a utility-based analysis and
+      Cambridge, England, Tech. Rep. TR 166, 1994. 6                                      survey,”       Autonomous Agents and Multi-Agent Systems, vol. 34, no. 1,
+[38]  R. S. Sutton and A. G. Barto, “Reinforcement learning an introduction–              p. 10, 2020. 8
+      second edition, in progress (draft),” 2015. 6                                 [62]  T. Lesort, N. Diaz-Rodriguez, J.-F. Goudou, and D. Filliat, “State
+[39]  R. Bellman, Dynamic Programming.              Princeton, NJ, USA: Princeton         representation learning for control: An overview,”       Neural Networks,
+      University Press, 1957. 6                                                           vol. 108, pp. 379 – 392, 2018. 8
+
+16
+
+
+[63]  A. Raffin, A. Hill, K. R. Traoré, T. Lesort, N. D. Rodríguez, and           [85]  P. Wang and C.-Y. Chan, “Formulation of deep reinforcement learning
+      D. Filliat, “Decoupling feature extraction from policy learning: assess-          architecture toward autonomous driving for on-ramp merge,” in Intel-
+      ing benefits of state representation learning in goal based robotics,”            ligent Transportation Systems (ITSC), 2017 IEEE 20th International
+      CoRR, vol. abs/1901.08651, 2019. 8                                                Conference on.   IEEE, 2017, pp. 1–6. 11
+[64]  W. Böhmer, J. T. Springenberg, J. Boedecker, M. Riedmiller, and             [86]  D. C. K. Ngai and N. H. C. Yung, “A multiple-goal reinforcement
+      K.  Obermayer,     “Autonomous  learning  of state representations     for        learning method for complex vehicle overtaking maneuvers,”        IEEE
+      control: An emerging field aims to autonomously learn state represen-             Transactions on Intelligent Transportation Systems, vol. 12, no. 2, pp.
+      tations for reinforcement learning agents from their real-world sensor            509–522, 2011. 11
+      observations,”     KI-Künstliche Intelligenz, vol. 29, no. 4, pp. 353–362,  [87]  D. Isele, R. Rahimi, A. Cosgun, K. Subramanian, and K. Fujimura,
+      2015. 8                                                                           “Navigating occluded intersections with autonomous vehicles using
+[65]  D. Silver, J. Schrittwieser, K. Simonyan, I. Antonoglou, A. Huang,                deep reinforcement learning,” in 2018 IEEE International Conference
+      A. Guez, T. Hubert, L. Baker, M. Lai, A. Bolton et al., “Mastering the            on Robotics and Automation (ICRA).          IEEE, 2018, pp. 2034–2039.
+      game of go without human knowledge,” Nature, vol. 550, no. 7676, p.               10, 11
+      354, 2017. 8                                                                [88]  A. Keselman, S. Ten, A. Ghazali, and M. Jubeh, “Reinforcement learn-
+[66]  P. Abbeel and A. Y. Ng, “Exploration and apprenticeship learning                  ing with a* and a deep heuristic,”    arXiv preprint arXiv:1811.07745,
+      in reinforcement learning,” in       Proceedings of the 22nd international        2018. 11
+      conference on Machine learning.      ACM, 2005, pp. 1–8. 9                  [89]  W. Zhan, L. Sun, D. Wang, H. Shi, A. Clausse, M. Naumann, J. Küm-
+[67]  B. Kang, Z. Jie, and J. Feng, “Policy optimization with demonstra-                merle, H. Königshof, C. Stiller, A. de La Fortelle, and M. Tomizuka,
+      tions,” in         International Conference on Machine Learning, 2018, pp.        “INTERACTION Dataset: An INTERnational, Adversarial and Coop-
+      2474–2483. 9                                                                      erative moTION Dataset in Interactive Driving Scenarios with Semantic
+[68]  T. Hester, M. Vecerik, O. Pietquin, M. Lanctot, T. Schaul, B. Piot,               Maps,” arXiv:1910.03088 [cs, eess], 2019. 10
+      D. Horgan, J. Quan, A. Sendonaris, I. Osband et al., “Deep q-learning       [90]  A. Kendall, J. Hawke, D. Janz, P. Mazur, D. Reda, J.-M. Allen, V.-D.
+      from demonstrations,” in Thirty-Second AAAI Conference on Artificial              Lam, A. Bewley, and A. Shah, “Learning to drive in a day,” in 2019
+      Intelligence, 2018. 9                                                             International Conference on Robotics and Automation (ICRA).      IEEE,
+[69]  S. Ibrahim and D. Nevin, “End-to-end framework for fast learning                  2019, pp. 8248–8254. 10
+      asynchronous agents,” in the 32nd Conference on Neural Information          [91]  M. Watter, J. Springenberg, J. Boedecker, and M. Riedmiller, “Embed
+      Processing Systems, Imitation Learning and its Challenges in Robotics             to control: A locally linear latent dynamics model for control from raw
+      workshop, 2018. 9                                                                 images,” in Advances in neural information processing systems, 2015.
+[70]  P. Abbeel and A. Y. Ng, “Apprenticeship learning via inverse rein-                10
+      forcement learning,” in      Proceedings of the twenty-first international  [92]  N. Wahlström, T. B. Schön, and M. P. Deisenroth, “Learning deep
+      conference on Machine learning.  ACM, 2004, p. 1. 9                               dynamical models from image pixels,” IFAC-PapersOnLine, vol. 48,
+[71]  A. Y. Ng, S. J. Russell      et al., “Algorithms for inverse reinforcement        no. 28, pp. 1059–1064, 2015. 10
+      learning.” in ICML, 2000. 9                                                 [93]  S. Chiappa, S. Racanière, D. Wierstra, and S. Mohamed, “Recurrent
+[72]  J. Ho and S. Ermon, “Generative adversarial imitation learning,” in               environment simulators,” in     5th International Conference on Learn-
+      Advances in Neural Information Processing Systems, 2016, pp. 4565–                ing Representations, ICLR 2017, Toulon, France, April 24-26, 2017,
+      4573. 9                                                                           Conference Track Proceedings.  OpenReview.net, 2017. 10
+[73]  I. Goodfellow, J. Pouget-Abadie, M. Mirza, B. Xu, D. Warde-Farley,          [94]  B. Recht, “A tour of reinforcement learning: The view from contin-
+      S. Ozair, A. Courville, and Y. Bengio, “Generative adversarial nets,”             uous control,” Annual Review of Control, Robotics, and Autonomous
+      in         Advances in Neural Information Processing Systems 27, 2014, pp.        Systems, 2008. 10
+      2672–2680. 9                                                                [95]  H. Mania, A. Guy, and B. Recht, “Simple random search of static
+[74]  M. Uˇriˇcáˇr, P. Kˇrížek, D. Hurych, I. Sobh, S. Yogamani, and P. Denny,          linear policies is competitive for reinforcement learning,” in Advances
+      “Yes, we gan: Applying adversarial techniques for autonomous driv-                in Neural Information Processing Systems 31, S. Bengio, H. Wallach,
+      ing,” Electronic Imaging, vol. 2019, no. 15, pp. 48–1, 2019. 9                    H. Larochelle, K. Grauman, N. Cesa-Bianchi, and R. Garnett, Eds.,
+[75]  E. Leurent, Y. Blanco, D. Efimov, and O.-A. Maillard, “A survey of                2018, pp. 1800–1809. 10
+      state-action representations for autonomous driving,”        HAL archives,  [96]  B. Wymann, E. Espié, C. Guionneau, C. Dimitrakakis, R. Coulom, and
+      2018. 9                                                                           A. Sumner, “Torcs, the open racing car simulator,” Software available
+[76]  H. Xu, Y. Gao, F. Yu, and T. Darrell, “End-to-end learning of driving             at http://torcs. sourceforge. net, vol. 4, 2000. 12
+      models from large-scale video datasets,” in        Proceedings of the IEEE  [97]  S. Shah, D. Dey, C. Lovett, and A. Kapoor, “Airsim: High-fidelity
+      conference on computer vision and pattern recognition, 2017, pp.                  visual and physical simulation for autonomous vehicles,” in Field and
+      2174–2182. 9                                                                      Service Robotics. Springer, 2018, pp. 621–635. 12
+[77]  R. S. Sutton, D. Precup, and S. Singh, “Between mdps and semi-mdps:         [98]  N. Koenig and A. Howard, “Design and use paradigms for gazebo, an
+      A framework     for  temporal abstraction in reinforcement      learning,”        open-source multi-robot simulator,” in 2004 International Conference
+      Artificial intelligence, vol. 112, no. 1-2, pp. 181–211, 1999. 9                  on Intelligent Robots and Systems (IROS), vol. 3.      IEEE, 2004, pp.
+[78]  A.  Dosovitskiy,   G.    Ros, F. Codevilla, A. Lopez, and   V.     Koltun,        2149–2154. 12
+      “CARLA: An open urban driving simulator,” in            Proceedings of the  [99]  P. A. Lopez, M. Behrisch, L. Bieker-Walz, J. Erdmann, Y.-P. Flötteröd,
+      1st Annual Conference on Robot Learning, 2017, pp. 1–16. 9, 12                    R. Hilbrich, L. Lücken, J. Rummel, P. Wagner, and E. Wießner, “Micro-
+[79]  C. Li and K. Czarnecki, “Urban driving with multi-objective deep                  scopic traffic simulation using sumo,” in The 21st IEEE International
+      reinforcement learning,” in Proceedings of the 18th International Con-            Conference on Intelligent Transportation Systems.   IEEE, 2018. 12
+ ference on Autonomous Agents and MultiAgent Systems. International [100] C. Quiter and M. Ernst, “deepdrive/deepdrive: 2.0,” Mar. 2018.
+      Foundation for Autonomous Agents and Multiagent Systems, 2019, pp.                [Online]. Available: https://doi.org/10.5281/zenodo.1248998 12
+      359–367. 9, 10                                                             [101]  Nvidia, “Drive Constellation now available,” https://blogs.nvidia.com/
+[80]  S. Kardell and M. Kuosku, “Autonomous vehicle control via deep                    blog/2019/03/18/drive-constellation-now-available/, 2019,    [accessed
+      reinforcement learning,” Master’s thesis, Chalmers University of Tech-            14-April-2019]. 12
+      nology, 2017. 9                                                            [102]  A. S. et al., “Multi-Agent Autonomous Driving Simulator built on
+[81]  J. Chen, B. Yuan, and M. Tomizuka, “Model-free deep reinforcement                 top of TORCS,” https://github.com/madras-simulator/MADRaS, 2019,
+      learning for urban autonomous driving,” in           2019 IEEE Intelligent        [Online; accessed 14-April-2019]. 12
+ Transportation Systems Conference (ITSC). IEEE, 2019, pp. 2765– [103] C. Wu, A. Kreidieh, K. Parvate, E. Vinitsky, and A. M. Bayen, “Flow:
+      2771. 9                                                                           Architecture and benchmarking for reinforcement learning in traffic
+[82]  A. E. Sallab, M. Abdou, E. Perot, and S. Yogamani, “End-to-end                    control,” CoRR, vol. abs/1710.05465, 2017. 12
+ deep reinforcement learning for lane keeping assist,” in MLITS, NIPS [104] E. Leurent, “A collection of environments for autonomous driv-
+      Workshop, vol. 2, 2016. 11                                                        ing and tactical decision-making tasks,” https://github.com/eleurent/
+[83]  A.-E. Sallab, M. Abdou, E. Perot, and S. Yogamani, “Deep reinforce-               highway-env, 2019, [Online; accessed 14-April-2019]. 12
+ ment learning framework for autonomous driving,” Electronic Imaging, [105] F. Rosique, P. J. Navarro, C. Fernández, and A. Padilla, “A systematic
+      vol. 2017, no. 19, pp. 70–76, 2017. 11                                            review of perception system and simulators for autonomous vehicles
+[84]  P. Wang, C.-Y. Chan, and A. de La Fortelle, “A reinforcement learning             research,” Sensors, vol. 19, no. 3, p. 648, 2019. 10
+ based approach for automated lane change maneuvers,” in 2018 IEEE [106] M. Cutler, T. J. Walsh, and J. P. How, “Reinforcement learning with
+      Intelligent Vehicles Symposium (IV).         IEEE, 2018, pp. 1379–1384. 11        multi-fidelity simulators,” in   2014 IEEE International Conference on
+
+    17
+
+
+       Robotics and Automation (ICRA). IEEE, 2014, pp. 3888–3895. 10, [127] J. X. Wang, Z. Kurth-Nelson, D. Tirumala, H. Soyer, J. Z. Leibo,
+           12                                                                             R. Munos, C. Blundell, D. Kumaran, and M. Botvinick, “Learning
+    [107]  F. C. German Ros, Vladlen Koltun and A. M. Lopez, “Carla au-                   to reinforcement learn,” Complete CogSci 2017 Proceedings, 2016. 12
+       tonomous driving challenge,” https://carlachallenge.org/, 2019, [Online; [128] Y. Duan, J. Schulman, X. Chen, P. L. Bartlett, I. Sutskever, and
+           accessed 14-April-2019]. 10                                                    P. Abbeel, “Fast reinforcement learning via slow reinforcement learn-
+    [108]  W. G. Najm, J. D. Smith, M. Yanagisawa et al., “Pre-crash scenario ty-         ing,” arXiv preprint arXiv:1611.02779, 2016. 12
+       pology for crash avoidance research,” United States. National Highway [129] C. Finn, P. Abbeel, and S. Levine, “Model-agnostic meta-learning
+           Traffic Safety Administration, Tech. Rep., 2007. 10                            for fast adaptation of deep networks,” in        Proceedings of the 34th
+    [109]  D. A. Pomerleau, “Alvinn: An autonomous land vehicle in a neural               International  Conference on Machine Learning     -  Volume 70,     ser.
+           network,” in Advances in neural information processing systems, 1989.          ICML’17. JMLR.org, 2017, p. 1126–1135. 12
+           10                                                                      [130]  A. Nichol, J. Achiam, and J. Schulman, “On first-order meta-learning
+    [110]  D. Pomerleau, “Efficient training of artificial neural networks for            algorithms,” CoRR, abs/1803.02999, 2018. 12
+       autonomous navigation,” Neural Computation, vol. 3, no. 1, 1991. 10 [131] M. Al-Shedivat, T. Bansal, Y. Burda, I. Sutskever, I. Mordatch, and
+    [111]  M. Bojarski, D. Del Testa, D. Dworakowski, B. Firner, B. Flepp,                P. Abbeel, “Continuous adaptation via meta-learning in nonstationary
+           P. Goyal, L. D. Jackel, M. Monfort, U. Muller, J. Zhang et al., “End           and competitive environments,” in        6th International Conference on
+           to end learning for self-driving cars,” in          NIPS 2016 Deep Learning    Learning Representations, ICLR 2018, Vancouver, BC, Canada, April
+           Symposium, 2016. 10                                                            30 - May 3, 2018, Conference Track Proceedings.          OpenReview.net,
+    [112]  M. Bojarski, P. Yeres, A. Choromanska, K. Choromanski, B. Firner,              2018. 12
+       L. Jackel, and U. Muller, “Explaining how a deep neural net- [132] D. Ha and J. Schmidhuber, “Recurrent world models facilitate policy
+           work trained with end-to-end learning steers a car,”         arXiv preprint    evolution,” in        Advances in Neural Information Processing Systems,
+           arXiv:1704.07911, 2017. 10                                                     2018. 12
+[113] M. Kuderer, S. Gulati, and W. Burgard, “Learning driving styles for [133] S. Ross and D. Bagnell, “Efficient reductions for imitation learning,”
+           autonomous vehicles from demonstration,” in Robotics and Automation            in  Proceedings of the thirteenth international conference on artificial
+           (ICRA), 2015 IEEE International Conference on.              IEEE, 2015, pp.    intelligence and statistics, 2010, pp. 661–668. 12
+           2641–2646. 10                                                           [134]  M. Bansal, A. Krizhevsky, and A. Ogale, “Chauffeurnet: Learning to
+    [114]  S. Sharifzadeh, I. Chiotellis, R. Triebel, and D. Cremers, “Learning           drive by imitating the best and synthesizing the worst,” in    Robotics:
+           to drive using inverse reinforcement learning and deep q-networks,” in         Science and Systems XV, 2018. 12
+           NIPS Workshops, December 2016. 10                                       [135]  T. Buhet, E. Wirbel, and X. Perrotton, “Conditional vehicle trajectories
+    [115]  P.    Henderson,  R.   Islam, P.   Bachman,  J.   Pineau,  D. Precup,   and    prediction in carla urban environment,” in       Proceedings of the IEEE
+           D. Meger, “Deep reinforcement learning that matters,” in Thirty-Second         International Conference on Computer Vision Workshops, 2019. 13
+           AAAI Conference on Artificial Intelligence, 2018. 10                    [136]  A. Y. Ng, D. Harada, and S. Russell, “Policy invariance under reward
+    [116]  Y.    Abeysirigoonawardena,    F. Shkurti,  and   G.   Dudek,   “Generating    transformations: Theory and application to reward shaping,” in ICML,
+           adversarial driving scenarios in high-fidelity simulators,” in 2019 IEEE       vol. 99, 1999, pp. 278–287. 13
+       International Conference on Robotics and Automation (ICRA). ICRA, [137] P. Abbeel and A. Y. Ng, “Apprenticeship learning via inverse rein-
+           2019. 10                                                                       forcement learning,” in    Proceedings of the Twenty-first International
+    [117]  K. Bousmalis, A. Irpan, P. Wohlhart, Y. Bai, M. Kelcey, M. Kalakrish-          Conference on Machine Learning, ser. ICML ’04.     ACM, 2004. 13
+       nan, L. Downs, J. Ibarz, P. Pastor, K. Konolige et al., “Using simulation [138] N. Chentanez, A. G. Barto, and S. P. Singh, “Intrinsically motivated
+           and domain adaptation to improve efficiency of deep robotic grasping,”         reinforcement learning,” in Advances in neural information processing
+           in            2018 IEEE International Conference on Robotics and Automation    systems, 2005, pp. 1281–1288. 13
+           (ICRA).     IEEE, 2018, pp. 4243–4250. 11                               [139]  D. Pathak, P. Agrawal, A. A. Efros, and T. Darrell, “Curiosity-driven
+    [118]  X. B. Peng, M. Andrychowicz, W. Zaremba, and P. Abbeel, “Sim-to-               exploration by self-supervised prediction,” in International Conference
+       real transfer of robotic control with dynamics randomization,” in 2018 [140] on Machine Learning (ICML), vol. 2017, 2017. 13
+           IEEE international conference on robotics and automation (ICRA).               Y. Burda, H. Edwards, D. Pathak, A. Storkey, T. Darrell, and A. A.
+           IEEE, 2018, pp. 1–8. 11                                                        Efros, “Large-scale study of curiosity-driven learning,” arXiv preprint
+[119] Z. W. Xinlei Pan, Yurong You and C. Lu, “Virtual to real rein- [141] arXiv:1808.04355, 2018. 13
+           forcement learning for autonomous driving,” in           Proceedings of the    J. Zhang and K. Cho, “Query-efficient imitation learning for end-to-end
+           British Machine Vision Conference (BMVC), G. B. Tae-Kyun Kim,                  simulated driving,” in Proceedings of the Thirty-First AAAI Conference
+           Stefanos Zafeiriou and K. Mikolajczyk, Eds.           BMVA Press, September    on Artificial Intelligence, San Francisco, California, USA., 2017, pp.
+           2017. 11                                                                [142]  2891–2897. 13
+    [120]  A. Bewley, J. Rigley, Y. Liu, J. Hawke, R. Shen, V.-D. Lam, and                S. Shalev-Shwartz, S.   Shammah,  and A.     Shashua, “Safe,      multi-
+           A. Kendall, “Learning to drive from simulation without real world              agent, reinforcement learning for autonomous driving,” arXiv preprint
+       labels,” in 2019 International Conference on Robotics and Automation [143] arXiv:1610.03295, 2016. 13
+           (ICRA).     IEEE, 2019, pp. 4818–4824. 11                                      X. Xiong, J. Wang, F. Zhang, and K. Li, “Combining deep reinforce-
+    [121]  J.    Zhang,  L.  Tai, P. Yun,   Y.  Xiong,  M.   Liu, J. Boedecker,    and    ment learning and safety based control for autonomous driving,” arXiv
+       W. Burgard, “Vr-goggles for robots: Real-to-sim domain adaptation for [144] preprint arXiv:1612.00147, 2016. 13
+           visual control,” IEEE Robotics and Automation Letters, vol. 4, no. 2,          C. Ye, H. Ma, X. Zhang, K. Zhang, and S. You, “Survival-oriented re-
+           pp. 1148–1155, 2019. 11                                                        inforcement learning model: An effcient and robust deep reinforcement
+    [122]  H. Chae, C. M. Kang, B. Kim, J. Kim, C. C. Chung, and J. W.                    learning algorithm for autonomous driving problem,” in International
+       Choi, “Autonomous braking system via deep reinforcement learning,” [145] Conference on Image and Graphics. Springer, 2017, pp. 417–429. 13
+           2017 IEEE 20th International Conference on Intelligent Transportation          J. Garcıa and F. Fernández, “A comprehensive survey on safe rein-
+           Systems (ITSC), pp. 1–6, 2017. 12                                              forcement learning,” Journal of Machine Learning Research, vol. 16,
+[123] Z. Wang, V. Bapst, N. Heess, V. Mnih, R. Munos, K. Kavukcuoglu, and [146] no. 1, pp. 1437–1480, 2015. 13
+           N. de Freitas, “Sample efficient actor-critic with experience replay,” in      P. Palanisamy, “Multi-agent connected autonomous driving using deep
+           5th International Conference on Learning Representations, ICLR 2017,           reinforcement learning,” in       2020 International Joint Conference on
+       Toulon, France, April 24-26, 2017, Conference Track Proceedings. [147] Neural Networks (IJCNN). IEEE, 2020, pp. 1–7. 13
+           OpenReview.net, 2017. 12                                                       S. Bhalla, S. Ganapathi Subramanian, and M. Crowley, “Deep multi
+                                                                                          agent reinforcement learning for autonomous driving,” in Advances in
+    [124]  R.    Liaw,   S.  Krishnan, A.   Garg, D.   Crankshaw,    J.  E.  Gonzalez,    Artificial Intelligence, C. Goutte and X. Zhu, Eds.       Cham: Springer
+           and K. Goldberg, “Composing meta-policies for autonomous driv-                 International Publishing, 2020, pp. 67–78. 13
+       ing using hierarchical deep reinforcement learning,” arXiv preprint [148] A. Wachi, “Failure-scenario maker for rule-based agent using multi-
+           arXiv:1711.01503, 2017. 12                                                     agent adversarial reinforcement learning and its application to au-
+    [125]  M. E. Taylor and P. Stone, “Transfer learning for reinforcement learning       tonomous driving,” arXiv preprint arXiv:1903.10654, 2019. 13
+       domains: A survey,” Journal of Machine Learning Research, vol. 10, [149] C. Yu, X. Wang, X. Xu, M. Zhang, H. Ge, J. Ren, L. Sun, B. Chen, and
+           no. Jul, pp. 1633–1685, 2009. 12                                               G. Tan, “Distributed multiagent coordinated learning for autonomous
+    [126]  D. Isele and A. Cosgun, “Transferring autonomous driving knowledge             driving in highways based on dynamic coordination graphs,”          IEEE
+           on simulated and real intersections,” in Lifelong Learning: A Reinforce-       Transactions on Intelligent Transportation Systems, vol. 21, no. 2, pp.
+           ment Learning Approach,ICML WORKSHOP 2017, 2017. 12                            735–748, 2020. 13
+
+  18
+
+
+  [150]    P. Dhariwal, C. Hesse, O. Klimov, A. Nichol, M. Plappert, A. Radford,                                 Patrick Mannion is a permanent member of aca-
+               J. Schulman, S. Sidor, Y. Wu, and P. Zhokhov, “Openai baselines,”                            demic staff at National University of Ireland Gal-
+         https://github.com/openai/baselines, 2017. 14                                                       way, where he lectures in Computer Science. He is
+  [151]     A. Juliani, V.-P. Berges, E. Vckay, Y. Gao, H. Henry, M. Mattar, and                               also Deputy Editor of The Knowledge Engineering
+         D. Lange, “Unity: A general platform for intelligent agents,”     arXiv                               Review journal. He received a BEng in Civil En-
+         preprint arXiv:1809.02627, 2018. 14                                                                   gineering, a HDip in Software Development and a
+  [152]        I. Caspi, G. Leibovich, G. Novik, and S. Endrawis, “Reinforcement                              PhD in Machine Learning from National University
+            learning coach,” Dec. 2017. [Online]. Available: https://doi.org/10.                            of Ireland Galway, a PgCert in Teaching & Learning
+         5281/zenodo.1134899 14                                                                                    from Galway-Mayo IT and a PgCert in Sensors
+  [153]  Sergio   Guadarrama,       Anoop    Korattikara,   Oscar Ramirez, Pablo                                for Autonomous Vehicles from IT Sligo. He is a
+         Castro,  Ethan Holly,      Sam  Fishman, Ke     Wang, Ekaterina Gonina,                            former Irish Research Council Scholar and a former
+    Neal Wu, Chris Harris, Vincent Vanhoucke, Eugene Brevdo, Fulbright Scholar. His main research interests include machine learning, multi-
+    “TF-Agents: A library for reinforcement learning in tensorflow,” agent systems, multi-objective optimisation, game theory and metaheuristic
+    https://github.com/tensorflow/agents, 2018, [Online; accessed 25-June- algorithms, with applications to domains such as transportation, autonomous
+         2019]. [Online]. Available: https://github.com/tensorflow/agents 14        vehicles, energy systems and smart grids.
+  [154]           A. Stooke and P. Abbeel, “rlpyt: A research code base for deep
+         reinforcement learning in pytorch,”    arXiv preprint arXiv:1909.01500,
+         2019. 14
+  [155]    I. Osband, Y. Doron, M. Hessel, J. Aslanides, E. Sezener, A. Saraiva,
+           K. McKinney, T. Lattimore, C. Szepezvari, S. Singh et al., “Behaviour
+         suite for reinforcement learning,”     arXiv preprint arXiv:1908.03568,
+         2019. 14                                                                                                Ahmad El Sallab Ahmad El Sallab is the Senior
+                                                                                                               Chief Engineer of Deep Learning at Valeo Egypt,
+                                                                                                                and Senior Expert at Valeo Group. Ahmad has 15
+                                                                                                              years of experience in Machine Learning and Deep
+                                                                                                               Learning, where he acquired his M.Sc. and Ph.D.
+                                                                                                              on 2009 and 2013 in the field. He has worked for
+                                                                                                        reputable multi-national organizations in the industry
+                        B     Ravi      Kiran   is the technical lead of machine                               since 2005 like Intel and Valeo. He has over 35
+                                 learning team at Navya, designing and deploying                               publications and book chapters in Deep Learning
+                             realtime deep learning architectures for perception                              in top IEEE and ACM journals and conferences, in
+                                tasks on autonomous shuttles. During his 6 years                          addition to 30 patents, with applications in Speech,
+                                 in academic research, he has worked on DNNs for    NLP, Computer Vision and Robotics.
+                             video anomaly detection, online time series anomaly
+                             detection, hyperspectral image processing for tumor
+                             detection. He finished his PhD at Paris-Est in 2014
+                             entitled Energetic lattice based optimization which
+                                   was awarded the MSTIC prize. He has worked in
+                                  academic research for over 4 years in embedded
+       programming and in autonomous driving. During his career he has published     Senthil Yogamani                        is an Artificial Intelligence ar-
+  over 40 articles and journals.                                                                             chitect and technical leader at Valeo Ireland. He
+                                                                                                            leads the research and design of AI algorithms for
+                                                                                                                various modules of autonomous driving systems.
+                                                                                                                He has over 14 years of experience in computer
+                                  Ibrahim Sobh Ibrahim has more than 20 years of                             vision and machine learning including 12 years of
+                                  experience in the area of Machine Learning and                            experience in industrial automotive systems. He is
+                                 Software Development. Dr. Sobh received his PhD                              an author of over 90 publications and 60 patents
+                                in Deep Reinforcement Learning for fast learning                        with 1300+ citations. He serves in the editorial board
+                               agents acting in 3D environments. He received his     of     various     leading     IEEE     automotive            conferences
+                                 B.Sc. and M.Sc. degrees in Computer Engineering                               including ITSC, IV and ICVES and advisory board
+                               from Cairo University Faculty of Engineering. His    of various industry consortia including Khronos, Cognitive Vehicles and IS
+                                  M.Sc. Thesis is in the field of Machine Learn-  Auto. He is a recipient of best associate editor award at ITSC 2015 and best
+                               ing applied on automatic documents summarization.    paper award at ITST 2012.
+                            Ibrahim has participated in several related national
+                                and international mega projects, conferences and
+summits. He delivers training and lectures for academic and industrial entities.
+   Ibrahim’s publications including international journals and conference papers
+        are mainly in the machine and deep learning fields. His area of research
+            is mainly in Computer vision, Natural language processing and Speech
+  processing. Currently, Dr. Sobh is a Senior Expert of AI, Valeo.                   Patrick     Pérez                     is Scientific Director of Valeo.ai,
+                                                                                                           a Valeo research lab on artificial intelligence for
+                                                                                                          automotive applications. He is currently on the Edi-
+                                                                                                         torial Board of the International Journal of Computer
+                        Victor Talpaert            is a PhD student at U2IS, EN-                          Vision. Before joining Valeo, Patrick Pérez has been
+                               STA Paris, Institut Polytechnique de Paris, 91120                           Distinguished Scientist at Technicolor (2009-2918),
+                                 Palaiseau, France. His PhD is directed by Bruno                             researcher at Inria (1993-2000, 2004-2009) and at
+                           Monsuez since 2017, the lab speciality is in robotics     Microsoft     Research     Cambridge    (2000-2004).                  His
+                                 and complex systems. His PhD is co-sponsored by     research interests include multimodal scene under-
+                                AKKA Technologies in Gyuancourt, France, through     standing and computational imaging.
+                        the         guidance of AKKA’s      Autonomous   Systems
+                                 Team. This team has a large focus on Autonomous
+                            Driving (AD) and the automotive industry in general.
+                             His PhD subject is learning decision making for AD,
+                                 with assumptions such as a modular AD pipeline,
+        learned features compatible with classic robotic approaches and ontology
+  based hierarchical abstractions.
+

@@ -557,11 +557,13 @@ def build_repair_prompt(validation_report, original_prompt_text):
 
 
 # ── Execution Engine ─────────────────────────────────────────────────────────
-def run_playwright(pdf_path, prompt_file, deep_think=False):
+def run_playwright(pdf_path, prompt_file, deep_think=False, terms_mode=False):
     """Execute the Playwright script and return success boolean."""
     cmd = f'python "{PLAYWRIGHT_SCRIPT}" "{pdf_path}" "{prompt_file}"'
     if deep_think:
         cmd += ' --deep-think'
+    if terms_mode:
+        cmd += f' --output-dir "{OUTPUT_JSON_TERMS_DIR}" --thinking-dir "{OUTPUT_THINK_TERMS_DIR}"'
     result = subprocess.run(cmd, shell=True, cwd=BASE_DIR, capture_output=True, text=True, encoding="utf-8", errors="replace")
     if result.returncode != 0:
         # Check for safety rejection (approx 139 chars) or empty response
@@ -793,14 +795,14 @@ def process_task(pdf_path, doc_short, doc_name, turn, task_idx,
 
         # ── Step 2: Run Playwright (Gemini attempt) ──
         print(f"  🌐 Gemini attempt {gemini_attempts}/{MAX_GEMINI_ATTEMPTS}...")
-        pw_result = run_playwright(effective_input if terms_mode else pdf_path, p_path, deep_think=DEEP_THINK_MODE)
+        pw_result = run_playwright(effective_input if terms_mode else pdf_path, p_path, deep_think=DEEP_THINK_MODE, terms_mode=terms_mode)
         
         # SAFETY RETRY LOGIC
         if pw_result == "SAFETY_REJECTION":
             print(f"  ⚠️ Triggering 'Soft Prompt' retry to bypass safety filters...")
             p_text = build_generation_prompt(variation, turn, task_idx, doc_name, mode, is_soft_retry=True)
             with open(p_path, 'w', encoding='utf-8') as f: f.write(p_text)
-            pw_result = run_playwright(effective_input if terms_mode else pdf_path, p_path, deep_think=DEEP_THINK_MODE)
+            pw_result = run_playwright(effective_input if terms_mode else pdf_path, p_path, deep_think=DEEP_THINK_MODE, terms_mode=terms_mode)
 
         if not pw_result:
             print(f"  ❌ Playwright failed on attempt {gemini_attempts}")

@@ -1,0 +1,370 @@
+Safety Case
+procedure &
+ANSI/UL 4600
+
+
+Eetu Heikkilä, Research scientist
+FIMA Safety sensor workshop
+15.1.2021 VTT – beyond the obvious
+
+Introduction
+
+
+
+ The ANSI/UL 4600 standard was published on
+April 1, 2020
+•  Proposes an approach to support the safety
+   engineering and assurance of autonomous products
+•  Based on developing a claim-based safety case
+ Contents of this presentation:
+•  Brief introduction to the safety case concept
+•  Overview of the UL4600 main points
+
+Safety case concept
+
+
+
+
+
+
+
+
+
+
+15.1.2021 VTT – beyond the obvious
+
+Safety case background
+
+ Safety case is a collection of
+ arguments and evidence to
+ demonstrate the safety of a system
+ •  Follow a claim-argument-evidence
+    pattern
+ •  Supports communication between various
+    stakeholders
+ •  Common practice in various high-risk
+    industries, e.g. offshore, railways, nuclear
+ Safety case can be part of a broader
+ assurance case
+
+Graphical representation                        Goal
+                                                        (claim)
+
+                                                            Assumption
+ Often a graphical representation is           Strategy
+applied to structure the safety case
+•  Various modelling languages have been                    Justification
+   developed to visualize the claim-
+   argument-evidence argumentation and                  Goal    Context
+   additional information related to it
+•  The example on the right includes some
+   elements of a GSN (goal structuring
+   notation) model
+
+                                            Solution        Solution
+                                            (evidence)
+
+Advantages and disadvantages
+
+
+ Advantages of a structured safety case:
+ •  Makes the safety-related reasoning explicit, supporting     V4   %
+    system design and communication between stakeholders
+ Despite being successful in several domains, some
+ criticism towards safety cases has also been
+ presented:
+ •  For complex systems, the safety case itself is also complex     |
+    and can be seen as error-prone and resource-intensive to
+    develop
+ •  Confirmation bias and “paper safety”: it should be ensured      )
+    that the focus is on safety engineering, not on building the
+    safety case just because it is required
+
+ANSI/UL 4600:
+Standard for Safety:
+Evaluation of Autonomous Products
+
+
+
+
+
+15.1.2021 VTT – beyond the obvious
+
+ANSI/UL 4600 background        \d yr
+        |      4
+                                                            =
+ UL is an American safety certification and testing       /
+ company, also active in writing standards        77,
+ The origins of UL 4600 are in automotive industry:    7  7
+ while the standard covers any ”autonomous
+ products”, road vehicles are extensively used as an
+ example
+ Goal of the standard:
+ •  Support for ensuring that acceptably thorough
+    consideration of safety has been performed during
+    design        ~~
+
+ANSI/UL 4600 scope
+
+ The standard aims to provide:
+ •  A generalized standard framework, with the approach of requiring a
+    claim-based safety case that encompasses the material that is
+    needed for safety assurance
+ •  Guidance for consistency and completeness of the safety case
+ •  Assessment criteria to determine the acceptability of the safety
+    case
+ However, it does not aim to provide:
+ •  An overall design process (such as V-style process) that should be
+    followed in design
+ •  Guarantee that conformance with the standard would ensure that
+    the product is safe. The standard is to be used with conjunction of
+    other standards and test methodologies.
+ •  Guidance for products that rely on human supervision.
+ •  Guidance for specific functionality, e.g. related to cargo handling
+
+ANSI/UL 4600 structure
+
+
+
+
+
+Safety case        Risk assessment                Safety case         Assessment of
+format                                            contents            the safety case
+
+•         How the safety     •  Aspects that      •  Technical and    •  Guidance for
+          case should           need to be           non-technical       assessing the
+          be formatted          covered by           aspects that        completeness
+          and what              risk                 the safety          of the safety
+          types of safety       identification       case needs to       case
+          evidence it           and                  cover: how the
+          may include           assessment           identified risks
+                                activities +         are mitigated?
+                                methodology
+
+ANSI/UL 4600 prompt elements
+
+
+ The standard (270 pages in total) consists mostly of prompt
+elements, i.e. “checklists” of aspects that the safety case should
+cover. These prompt elements can be:
+•  Mandatory (deviations are not permitted)
+•  Required (can be omitted only if shown that the prompt is outside the
+   scope of the considered system)
+•  Highly recommended (best practices that should be followed, but can
+   be omitted with an acceptable rationale)
+•  Recommended (optional)
+•  Pitfall (some safety strategies are considered to increase some other
+   risks, which then need to be considered)
+
+    Safety case arguments in ANSI/UL 4600
+
+
+ The standard discusses the following aspects of the safety case
+  argument:
+  • Format of the safety case (defined, consistent goal-argument-evidence
+    syntax, e.g. GSN). Graphical representation is recommended.
+  • Requirements for the format of the evidence and claims (mostly
+    related to clarity and consistency)
+  • Sufficiency of the claims and arguments
+  • Guidance for the logical completeness of the safety case argument
+  • Considerations of evidence sufficiency and validity
+  • Identification of system scope (concept of operations), boundaries and
+    accepted risks
+
+Risk assessment (1/2)
+
+ Following risk assessment activities are
+ required:
+ •  Identification of fault models
+ •  Identification of hazards
+ •  Risk evaluation
+ Fault models: fault models for safety
+ related aspects need to be defined
+ Examples are provided to support fault        Examples from page
+ model definition:        42 in UL4600
+ •  In practice, these are lengthy checklists.
+    E.g. for software faults there are around 30
+    fault types presented.
+
+Risk assessment (2/2)
+
+ Hazard identification:
+ •  Relevant hazards need to be identified and documented. Several
+    methods are proposed, including traditional ones like FMECA, FTA and
+    HAZOP, but also new approaches like STAMP/STPA
+ •  Highly recommended to apply different analysis types: bottom-up, top-down
+    and non-fault based
+ Risk evaluation:
+ •  A criticality level needs to be assigned to each hazard and acceptable risk
+    defined. ALARP or similar principle should be followed.
+
+   Human interaction                 $i
+
+ Safety case shall include consideration of human interactions in      Ni It                                      XN
+   transport, operations and•        maintenance        &*
+                                 Human interaction is introduced before any autonomy-related        3               i
+                                technologies!                                                                      =
+   This includes aspects like:
+   •                             Communication (e.g. acoustic and visual, interfaces, emergency              Fo     [
+   •                             procedures, pedestrian communication, remote communication, V2V)                  A
+                                 Human-settable parameters (e.g. route selection, disobedience of rules  3mee  :   p
+                                 in case of emergency)                                                   yi)
+   •                             Mode changes (changing to manual control for repositioning,                7
+                                 maintenance, testing etc.)                                                 x4
+                                                                                                         SE”
+
+                                                                                                                    =
+                                                                                                               N
+                                                                                                                    \
+
+Autonomy functions
+
+ This section of UL4600 describes the
+autonomy-related functions. For each
+function, hazards and risks need to be
+identified and mitigated:
+•  Autonomy-related implications of the ODD
+•  Sensing
+•  Perception
+•  Machine learning / AI
+•  Planning
+•  Prediction
+•  Trajectory and control
+•  Actuation
+•  Timing
+
+                                                                  tt      v
+Software and SE processes                                      WT wt
+
+ In addition to the actual autonomous product, the            I
+ design tools and development process quality need to             et 1
+ be demonstrated in the safety case:
+  •  Process model:                                               le
+     •  Credible development process needs to be followed,
+     •  for example in reference to IEC61508 or ISO26262.                 ry
+  •     Domain-level best practices need to be incorporated             » ov
+     Software quality
+  •  •  Acceptance criteria                                       0   Corl
+     Defect data                                                        Pr
+  •  •  Failure recording procedures                                   Cla
+     Development process quality
+     •  Organization and process quality assurance
+                                                                        Ls>
+                                                                   gu
+
+Dependability
+
+
+ Acceptable dependability also needs to be demonstrated,
+including consideration of:
+•  Degraded operations (e.g. “limping mode” in case of faults)
+•  Redundancy
+•  Fault detection and mitigation
+•  System robustness
+•  Incident response (detection and reporting of loss events and
+   incidents, mitigation of consequences, post-incident hazards
+   and response)
+•  System timing
+•  Cybersecurity
+•  Data handling, networks
+
+V&V, testing
+
+ Related to V&V and testing, the safety case shall describe:
+•  V&V methods and extent used:
+   •  Description of V&V approaches (peer reviews, static analysis,
+      software unit tests, robustness/stress testing, qualification tests,
+      component tests, etc.) how they are carried out and what are the
+      coverage metrics
+      • Use of several approaches are recommended
+•  Testing:
+   •  Test plan documentation contents are specified in detail (test
+      setup, reporting, etc.). Peer review required, as well as testing
+      repeatability considerations.
+   •  Evaluation of test results, etc.
+
+VTT
+Lifecycle concerns
+
+
+
+  Hazards and risks need to be considered over the entire product lifecycle.
+   Various examples are provided for aspects in different lifecycle phases,
+   such as:
+   •  Requirements/design V&V
+      •                           V&V safety plan
+   •  Manufacturing and deployment                                                                        >
+      •                           Checks, inspections
+
+      •                           Correct components, assembly processes, observation        7          7/8
+   •  Operation                                                                                        7/8
+      •                           Start of mission checks, during mission checks
+   •  •                           Risk mitigation in specific mission phases (refuel, storage, etc.)    if
+      Retirement and disposal•                                                                          il
+                                  Replacement of aged components, disablement at disposal        \      |
+
+Assessment of the safety case (1/2)
+
+ The final section of UL4600 discusses how the safety case
+ should be assessed for conformance with the standard. This
+ includes:
+ •  Determination of whether the safety case addresses the needed
+    prompt elements, in a non-trivial way, and without traceability gaps
+    •  This aims to increase assessment repeatability. The responsibility
+       of safety remains with the system designer, not the assessor.
+ •  Creation of a conformance package for inspection (safety case +
+    conformance assessment plan)
+ •  Self-auditing of the safety case (+documentation of results)
+
+Assessment of the safety case (2/2)
+
+
+•  Independent assessment:
+   •  The entirety of the safety case is provided to an
+      independent assessor, who assesses the system
+      and reports findings
+   •  Demonstrations are performed based on assessor
+      requests
+   •  Use of an accredited, qualified external organization
+      is recommended.
+
+        S13 =NV =
+Summary Tia TT
+ ANSI/UL 4600 is the first cross-domain standard for 5 NE \ AN
+  safety of autonomous systems DAER 3 \\
+  • Describes the contents for an acceptably thorough \ LN
+    safety case for assurance of autonomous systems | \ \\
+  • Does not provide prescriptive requirements for system \
+    performance 2
+  • Focuses on what needs to be included in the safety case
+    – not how the safety evidence should be created \ \
+  • Despite the aim for a general approach, focuses on
+    automotive examples – no known examples yet of \
+  • application in other domains \
+    The standard is being actively developed further and
+    feedback is requested
+        \
+
+For discussion
+
+
+ Would a similar approach be suitable for industrial machinery? Is
+ there a need for something like it?
+ •  Building a comprehensive safety case…
+ •  …or having a document providing UL4600-like checklists to support
+    safety-related considerations?
+ Is it compatible with machinery sector standards?
+ Do you find the graphical representation useful for documenting
+safety-related information?
+
+the obvious
+
+
+
+
+
+
+Eetu Heikkilä       @VTTFinland    www.vtt.fi
+eetu.heikkila@vtt.fi
++358 40 849 5790
+

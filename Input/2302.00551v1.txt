@@ -1,0 +1,590 @@
+arXiv:2302.00551v1 [cs.SE] 31 Jan 2023
+
+
+
+
+
+
+
+
+
+
+Triggering Conditions Analysis and Use Case for
+        Validation of ADAS/ADS Functions
+
+
+    Víctor J. Expósito Jiménez1, Helmut Martin1, Christian Schwarzl1,
+                Georg Macher2, and Eugen Brenner2
+
+    1 Virtual Vehicle Research GmbH, Inffeldgasse 21a, 8010 Graz, Austria
+{victor.expositojimenez,helmut.martin,christian.schwarzl}@v2c2.at
+    2 Graz University of Technology, Rechbauerstraße 12, 8010, Graz, Austria
+                 {georg.macher,brenner}@tugraz.at
+
+
+
+    Abstract. Safety in the automotive domain is a well-known topic, which
+    has been in constant development in the past years. The complexity of
+    new systems that add more advanced components in each function has
+    opened new trends that have to be covered from the safety perspective. In
+    this case, not only the specification and requirements have to be covered
+    but also scenarios, which cover all relevant information of the vehicle
+    environment. Many of them are not yet still sufficient defined or con-
+    sidered. In this context, Safety of the Intended Functionality (SOTIF)
+    appears to ensure the system when it might fail because of technological
+    shortcomings or misuses by users.
+    An identification of the plausibly insufficiencies of ADAS/ADS functions
+    has to be done to discover the potential triggering conditions that can
+    lead to these unknown scenarios, which might effect a hazardous be-
+    haviour. The main goal of this publication is the definition of an use
+    case to identify these triggering conditions that have been applied to the
+    collision avoidance function implemented in our self-developed mobile
+    Hardware-in-Loop (HiL) platform.
+
+    Keywords: Triggering Conditions · SOTIF · ADAS · Automated Driv-
+    ing Systems
+
+
+1 Introduction
+
+The validation of the Advanced Driver-Assistance Systems (ADAS)/Automated
+Driving Systems (ADS) has been a topic for numerous research works due to the
+complexity of functions that have been exponentially growing over the years,
+since there are more components and software included in each function and
+their relationships between them (e.g. AI algorithms,...) are getting more chal-
+lenging . Reported public cases [1] [2] with human deaths have occurred in the
+last years, which have given an unreliable picture of the current status of the
+automated driven cars to the public view. Many standards have been developed
+to provide a common framework and to overcome these accidents as much a
+possible in the future in which all aspects related to system dependability have
+
+2 V. Expósito et al.
+
+to be covered. The dependability of a function can be split into three main
+parts according to the origin of the hazard. Functional Safety hazards, effected
+by malfunctions based on hardware and systematics faults, are covered in the
+ISO26262 [3]. Cybersecurity is covered in the ISO/SAE 21434 [4], which is fo-
+cused on external threads. The ISO21448, Safety of the Intended Functionality
+(SOTIF) [5], standard is being developed to cover the gap that has been added
+due to the new requirements and safety standards that ADAS/AD functions
+developments have to face. With more functions dependent on complex sensors
+and algorithms, more unknown scenarios could occur in which the function is
+not designed for. The main goal of the SOTIF standard is to minimize the un-
+known hazardous scenarios due to technical shortcomings or misuses, specially
+the ones that can lead to hazardous situations. Many researches [6] [7] have been
+trying to reuse and link part of the processes described in the ISO26262 into the
+SOTIF standard, such as Hazard Analysis and Risk Assessment (HARA) or
+System-Theoretic Process Analysis (STPA). Another important point for SO-
+TIF is the identification of the limitation of each technology used for automated
+driving [8], which gives more knowledge in order to identify and understand
+the cause of these unknown scenarios. To make the steps more explicit for the
+safety argumentation, the UL4600 [9] provides a checklist of necessary elements
+to ensure that a function is safe in all aspects.
+   The complexity of covering all possible variations and scenarios that can oc-
+cur, make validation of ADAS/AD functions a hard task and there are different
+approaches to face this goal. For example, the validation approach based only
+on real driven miles data would be unpractical and the cost of the process would
+be unacceptable [10]. Another way to support this task would be through simu-
+lations. During the last years, new environment simulators specifically designed
+for this domain, such as CARLA [11] or SVL Simulator [12], have been devel-
+oped. The main issue with this kind of validation is the creation of the realistic
+high-fidelity sensor models, which are highly complex to develop and also need
+huge computational resources and high-performance machines [13] as well as
+the generation of scenarios [14] to cover all possible scenario variations. Authors
+in [15] also include machine learning approaches to get the conclusion that the
+lack of meaningful trained data makes this approach not ready to fully cover the
+whole SOTIF argumentation yet. On the other hand, to avoid the issues pre-
+viously commented, the authors in [16] present an approach purely statistical,
+which could provide a quantitative argument of functions validation. Since some
+concepts could be reused in our research, in this case, the direction of our re-
+search is focused on the decomposition of the function to identify the triggering
+conditions according to the function design.
+   One of the main step of a SOTIF analysis is the definition of the Operation
+Design Domain (ODD), according to the standards such as ISO21448 or UL4600.
+An ODD can be defined as the intended behavior within defined environmental
+condition that the function has been designed to work on. The definition of the
+ODD must include all necessary parameters, which make the definition meaning-
+ful such as constraints to road conditions. There are different approaches for the
+
+    Triggering Conditions Analysis and Use Case 3
+
+
+
+    <
+
+
+
+
+    Function  (mm) {|
+
+
+
+
+    pion;
+
+
+
+
+    Fig. 1. Flowchart of the proposed triggering conditions methodology
+
+
+definition of a ODD, from the described in the PEGASUS project [17] in which
+the ODD definition is split into six different layers according to the functionality
+of the parameters to the description given in the SAKURA project [18] or the
+provided by ASAM in ASAM OpenODD [19]. The authors in [20] present an
+overview of available approaches for the most common ODD definition. These
+approaches provide us with the necessary taxonomy to give the basis to create
+a triggering conditions list. This publication gives an overview of triggering con-
+ditions in automated driving [21], but in our approach, it is based on scenario
+level and not the system as it is described.
+   The structure of the paper at hand is as follows: our approach is explained in
+the next section. Section 2 goes through all blocks of the proposed use case and
+its implementation in the collision avoidance function of our Hardware-in-Loop
+(HiL) platform. Finally, section 3 shows the conclusions and the future outlook
+of our research.
+
+
+
+    2 Use Case and Methodology
+
+
+The proposed methodology is shown in Figure 1 in which the used blocks and
+their relationships are depicted. The main goal of this publication is to show the
+key ideas and process of our use case to give the elements to provide a SOTIF
+argumentation. This is described as a brief basis and further description will be
+given in following research work as a more mature methodology.
+
+4 V. Expósito et al.
+
+2.1 ADAS/ADS Function Description
+
+In this first block, the function and its functionality as well as relevant technical
+aspects are given in order to be able to know the behaviour of the function.
+The use case example in this publication is the collision avoidance function im-
+plemented in our self-developed mobile Hardware-in-Loop (HiL) platform called
+SPIDER [22] [23]. A collision avoidance function could work in two ways, as an
+Automatic Emergency Brake (AEB) or providing an alternative way/evasive ma-
+neuver to reach the target location. For simplicity, only the AEB is implemented
+at this moment on the robot and it will be used in the analysis in this paper.
+The function uses four 16-lines lidar sensors located at each corner (Front-Left,
+Front-Right, Back-Left, Back-Right) to provide redundancy where each point
+is seen, at least, by two sensors and leave the centre of the robot for different
+flexible setups in the future as Figure 2 shows. The data from the lidars are
+fused to generate an occupancy grid, which shows the objects surrounding the
+robot and sends the activation signal to start the emergency brake in case one
+object enters within the delimited zone as the danger zone. According to the
+SAE J3016 Standard [24], it is a Level 4 function since the dynamic driving task
+fallback has no human interaction.
+
+
+
+    imaginary front of SPDER 10Dₘₑₜₑᵣₛ range.
+
+
+        —
+    i | |   1
+            |i
+
+
+                                                 Sensor
+    FoV Sensor 4 (BL)    FoV                      3(BR)
+
+        SPIDER dimensions with vehicle target (Chassis)
+
+
+    Fig. 2. Hardware setup of the collision avoidance function on the HiL Platform (Field
+    of View - FoV, Front Left - FL, Front Right - FR, Back Right - BR, Back Left - BL)
+
+
+   To guarantee that there is no collision on the nominal scenario, the Responsibility-
+Sensitive Safety (RSS) [25] model was implemented as the minimum distance
+before the emergency brake is activated, which formula was adapted for our use
+case. RSS model was chosen since it provides a proven [26] safe distance accord-
+ing to our robot parameters. Ego vehicle is defined as the main actor of interest
+in the scenario, sometimes is also refereed as Vehicle Under Test (VUT). On the
+
+    Triggering Conditions Analysis and Use Case                                  5
+
+other hand, the target vehicle is considered as an element of the scenario and its
+   behaviour is described in the scenario definition. The assumption of zero speed
+of the vehicle located at front of the ego vehicle(target vehicle) was set to zero
+     due to the ODD is only taking into account static objects. Therefore, the RSS
+    equation of the used function is given as follows:
+    d [ 1      2     (v + ρa     )2 ]
+      min = vrρ + 2 amax,accelρ   +     r 2a     max,accel
+        min,brake     +
+
+        [x]+ := max{x, 0}.                                                   (2.1)
+
+      – dmin: Minimum distance to ensure that there is no crash with the obstacle.
+    – vr: Current velocity of the SPIDER (m/s)
+    – ρ: Response time in seconds.
+    – amax,accel: Maximum acceleration of the robot (m/s2).
+    – amax,brake: Minimum braking acceleration of the robot (m/s2).
+
+
+    2.2 Operational Design Domain
+
+          The defined ODD for our use case is a simple one-way road as shown in Figure 3
+    in which there is a static object located at the end of the road within the intended
+         driving path of the robot vehicle. In the definition of this ODD, clear weather
+            conditions as well as dry asphalt are assumed, but these conditions would be
+      modified as a part of the test scenarios in the following sections to identify the
+          triggering conditions of the function. The ego-vehicle, our robot, drives with
+    constant velocity towards the object.
+
+     – Dobject: Distance between the static object and the robot.
+     – Drss: Distance calculated by using the RSS equation from (2.1).
+          – Dρ: The distance that the robot travels until it perceives the object, makes
+        a decision, and sends an actuation signal.
+           – Dact: The distance between the robot activates the actuation process and it
+        is finished.
+     – Dbrake the distance necessary to brake the robot until velocity is zero. Dbrake =
+        Dact + Dρ. In nominal situations, Dbrake = Drss.
+        – Dperception: the perception range of the sensors. Dperception should be longer
+        than Dobject and Dbrake.
+     – μ: the friction factor of the road.
+
+            According to the technical parameters of the function (vr: 50km/h, ρ: 1 sec-
+          ond, amax,accel: 2.0m/s2, and amax,brake: 5.0m/s2), and the used RSS model, is
+             assumed that the maximum RSS minimum distance (Drss) will always be smaller
+    than the range of the perception sensors (Drss,max < Dperception).
+
+    6 V. Expósito et al.
+
+
+                 ;              :
+
+                          z     |
+               [TR    Dace      H
+                 :    Drie
+        HE
+
+        Fig. 3. Operational Design Domain (ODD) for the selected use case
+
+2.3 Triggering Conditions List
+According to the ISO21448 [5] the triggering conditions are the specific condi-
+tions of a scenario that serve as an initiator for a subsequent system reaction
+leading to hazardous behaviour. To identify the possible conditions that can
+bring up the function to unknown hazards, parameters of the defined ODD will
+be modified. An own database with the potential triggering conditions based
+on the taxonomy described in Annex C of the ISO21448[5] and the BSI stan-
+dard [27] was developed for this purpose. This database includes categories and
+different levels of subcategories, which adds granularity to each subcategory.
+For example, the main category is at the top (e.g. environmental conditions,
+road conditions,...) and the more granular conditions are at the bottom (e.g.
+heavy snow). The main category, environmental conditions in this example, fol-
+lows other subcategories such as the weather conditions or illumination and,
+then, these subcategories are split again into other subcategories. In the case
+of weather conditions, this subcategory is split into rain, snow, fog and other
+climate conditions to continue with more fined granularity, which includes dif-
+ferent intensities as light, medium and heavy.. The main purpose of using this
+approach is to provide granularity to cover the maximum variety of situations,
+which should help to discover more shortcomings of function during the analysis.
+
+    2.4           Relevant Scenarios
+    In our use case, a scenario is defined as the combination of the previously defined
+    ODD combined with potential triggering conditions. Based on this definition,
+    the relevant scenarios are the compilation of scenarios that includes the selected
+    triggering conditions in which the output of the function will be analysed to know
+    whether the selected triggering condition could lead to a hazardous behaviour.
+    In this step, only the triggering conditions that makes senses for the defined
+    ODD will be taken into account. For simplicity, in a first iteration only a single
+    triggering condition is added to the ODD to better identify the cause and origin
+    of the hazard.
+
+        Triggering Conditions Analysis and Use Case 7
+
+2.5 Hazard Analysis and Risk Assessment
+
+HARA methodology is always performed in Functional Safety processes in which
+associated hazards to the system are analysed and classified according to the level
+of danger and caused injuries. This classification used the Automotive Safety In-
+tegrity Level (ASIL) which uses the parameters, Exposure (E), which is the
+possibility of occurrence of the hazard within the operation situation; Severity
+(S), which is the estimation of the harm that the hazard might cause; and Con-
+trollability (C) that is ability to avoid the harm (see ISO262626 [3] part 3). But
+unlike the process implemented in fuctional safety standard, the ASIL level is
+not used in the SOTIF analysis process and only the identification of the hazards
+are used.
+   As a part of the HARA analysis and the given scenario, the following iden-
+tified hazards can be extracted: "a collision due to the inability to completely
+brake before reaching an obstacle" and "activation of the emergency brake due
+to a false object detection"
+
+2.6 Qualitative Analysis
+
+In this step, the impact of the defined scenarios on the function has to be anal-
+ysed to know if they could lead to a performance limitation which could further
+effect a hazard. To do this, first, the function is split into the three main cate-
+gories: perception, decision, and actuation. The perception part is also divided
+into perception sense and perception algo, a shorter reference to perception al-
+gorithms. This differentiation is done to separate the part in which perception
+only provides data from the perceived reality through sensor input and percep-
+tion algo in which information is extracted based on that perceived data to get
+any environmental information, e.g. objects, driving road. In this use case, the
+perception sense includes the sensor drivers, data fusion, and some data post-
+processes like filtering ground from the point clouds. The block perception algo
+includes the costmap generator, which generates an occupancy grid from the fil-
+tered point cloud to determine the objects that surround the SPIDER. Decision
+part includes the node, called collision detector, that goes through the generated
+occupancy grid and detects the closest object and its distance to the robot. The
+output of the node is the trigger of the emergency brake in case the object vio-
+lates the calculated allowed minimum distance or the object distance if an object
+is detected but the emergency brake is not yet necessary. Finally, the actuation
+part is done by the commands to steering, braking and propulsion. In the given
+use case it includes the emergency brake from the SPIDER. The main reason for
+this categorization is to identify the components and their location in the system
+architecture in which the performance limitations could occur. For this reason,
+collaboration with domain experts and developers is crucial to better identify
+the origin of the hazards. A discussion has to be done for each selected scenario
+to identify how it could affect the function output. For example, for the scenario
+that includes medium or high snow level, these specific conditions may affect the
+perception sense part of the function, since it can include ghost points in the
+
+8 V. Expósito et al.
+
+perceived data, and the severity of the effect of the limitation is further rated by
+NO/Low/Medium/High (S0-S3). Therefore, this triggering condition could lead
+to the previously identified hazard "activation of the emergency brake due to
+false object detection". Another specific scenario is the one in which the surface
+is slippery due to heavy rain. This kind of surface reduces the friction of the
+wheels (actuation part) and increases the distance necessary to completely stop
+the robot. This triggering condition has an impact on the surface friction of the
+ODD and could lead to the hazard "a collision due to the inability to completely
+brake before reaching an obstacle". Similar discussions have to be done through
+the whole list of selected scenarios to identify the potential hazardous scenarios.
+An excerpt of this analysis can be shown in Figure 4. In this use case, it was
+assumed the controllability (C) of the function is always C3 since it is a level 4
+function and no backup operator is implemented.
+
+
+
+
+    01.0 ps, raion res
+
+
+
+
+
+
+
+
+    Fig. 4. Triggering Conditions Analysis Sheet Excerpt
+
+
+
+
+2.7 Testing and Evaluation
+
+The first step in this process is the definition of the Key Performance Indica-
+tors (KPIs), which captures the behaviour in a nominal scenario and set the
+considered acceptable criteria to release the function. This nominal scenario,
+sometimes also called functional scenario, is the one used in optimal conditions
+without the inclusion of any of the triggering conditions. An example of a KPI
+could be Time To Collision (TTC) [28], which represents the time that the ego
+vehicle needs until it reaches the target vehicle or an obstacle according to the
+current ego and target velocities and its distance between the two vehicles. This
+metric can be defined by the formula (2.2). Similar to RSS formula (2.1), it is
+assumed that vtarget = 0 since there is a static object instead of a target vehicle
+defined in the ODD.
+
+        T T C = d/(vego − vtarget). (2.2)
+
+        Triggering Conditions Analysis and Use Case 9
+
+   Afterwards, the results obtained in the different levels of the verification and
+validation procedures have to be compared with the nominal conditions and
+ensure they are within the defined acceptable limits.
+
+2.8 SOTIF Modifications
+
+The main goal of applying SOTIF measures is to improve the output of the
+function and minimise the risk level that applied triggering conditions might lead
+to. Following the goal of the the principle of ALARP (As Low As Reasonably
+Practicable) [29], which assumes that the efforts to achieve zero risk could be
+not feasible and it has to be taken into account the necessary efforts needed
+to reduce the risk as much as reasonable. For example, there are some cases
+in which it is not possible to further risk reduction or the associated efforts to
+reduce it are not worth it. Returning to the proposed use case, in that case
+where a weather conditions is included as potential triggering conditions in the
+scenario as heavy snow, the visibility is drastically reduced . There is a chance
+that the snow could limit the perception range of the sensors and it can lead to
+the previously defined hazard: "a collision due to the inability to completely brake
+before reaching an obstacle" in which the relationship Dperception < Dbrake could
+apply to lead to the specified hazard. According to the situation, modifications
+have to be applied to improve the output on the specified scenario. For example,
+diversity of sensor technologies, which are stronger against the described issue or
+an external hardware to measure the specific triggering condition (fog level on
+the environment) could be applied to mitigate the occurrence of the hazard. In
+cases in which the effectiveness of the SOTIF measures are not enough to pass
+the defined acceptance criteria level, these scenarios have to be considered and
+evaluated within the "Residual Risk Evaluation" block.
+
+2.9 Residual Risk Quantification
+
+In case the maximum efforts to minimize the risks are reached and there is not
+other possible way or feasible way to further improve the function, the evaluation
+of the existing residual risk has to be calculated. The risk could be expressed in
+a function as follows:
+
+        R = f (S, O)
+   According to the given formula, the risk (R) can be defined by the severity (S)
+and probability of occurrence (O). In this function, the severity is the specified
+in the analysis for the associated hazard. On the other hand, finding the right
+occurrence probabilities of each triggering condition presents a more complex
+problem since there are a wide variety of situations from weather to road condi-
+tions. Moreover, finding or calculating these probabilities could change between
+countries, where the availability of some of them may not be publicly accessible,
+which makes the problem even harder. At the end of this block, a quantitative
+evaluation of each identified risk (R0...RN) should be provided. For example, the
+
+10 V. Expósito et al.
+
+number of kilometres or the number of hours until the function could lead to a
+hazard.
+
+2.10 SOTIF Argumentation
+
+Finally, the output of the previous blocks, which includes the carried out mea-
+sures covered by functional modification and verification measures, such as sim-
+ulations and testing, as well as the remained evaluated risks for each triggering
+condition, are included as inputs for the results of the SOTIF argumentation
+where both, reports (e.g. identified triggering conditions, relevant scenarios...)
+and metrics (e.g. number of hours until hazards behavior appears, KPIs,...),
+should be included.
+
+3 Outlook
+
+In this publication, a methodology to extract and evaluate the triggering condi-
+tions of an ADAS/ADS function is described. Since driven kilometres or simula-
+tions may not be enough in some situations, by using the introduced approach,
+a profound understanding of the system as well as the discovery of unknown
+hazardous scenarios could be provided. The addition of the triggering conditions
+analysis in theuse case helps the engineers to discover the ones that might lead
+to a hazard, and also provide more parameters in order to evaluate the risks
+of the function. For this purpose, the paper goes through all blocks of the pro-
+posed approach in which a description and a goal for each one is given as well as
+the relationship between them. The use case is illustrated by using the collision
+avoidance function implementation in our mobile robot HiL platform .
+   In future research works, the residual risk evaluation will be investigated in
+more detail to be able to provide a quantitative argument at the end of the
+process, which can provide specific metrics (e.g. validated number of kilometres)
+that will be used to characterize the safety of a function to achieve the demanded
+acceptance criteria. Moreover, in the following research, we want to extend this
+methodology in different approaches of the collision avoidance function to see
+how different sensor setups (e.g., RADAR+LIDAR, RADAR+LIDAR+CAMERA)
+can affect the function validation by combination of simulation and real-world
+testing.
+
+Acknowledgments
+
+Research leading to these results has been performed in the project FRACTAL
+A Cognitive Fractal and Secure EDGE based on an unique Open-Safe-Reliable-
+Low Power Hardware Platform Node, under grant agreement No 877056. The
+project is co funded by grants from Germany, Austria, Finland, France, Norway,
+Latvia, Belgium, Italy, Switzerland, and Czech Republic and -Electronic Com-
+ponent Systems for European Leadership Joint Undertaking (ECSEL JU). The
+
+        Triggering Conditions Analysis and Use Case                             11
+
+    publication was written at Virtual Vehicle Research GmbH in Graz and partially
+          funded within the COMET K2 Competence Centers for Excellent Technologies
+         from the Austrian Federal Ministry for Climate Action (BMK), the Austrian
+         Federal Ministry for Digital and Economic Affairs (BMDW), the Province of
+    Styria (Dept. 12) and the Styrian Business Promotion Agency (SFG).
+
+    References
+
+ 1. National Transportation Safety Board (NTSB). (2020) Collision between a
+    Sport Utility Vehicle Operating with Partial Driving Automation and a Crash
+    Attenuator, Mountain View, California, March 23, 2018. [Online]. Available:
+    https://www.ntsb.gov/investigations/AccidentReports/Reports/HAR2001.pdf
+ 2. J.-F. Bonnefon, 18 THE UBER ACCIDENT, 2021, pp. 93–98.
+ 3. “ISO26262: Road vehicles — Functional safety,” International Organization for
+    Standardization, Geneva, CH, Standard, 2018.
+ 4. “ISO/SAE 21434:2021 Road vehicles — Cybersecurity engineering,” International
+    Organization for Standardization, Standard, 2021.
+ 5. “ISO 21448: Road vehicles — Safety of the intended functionality,” International
+    Organization for Standardization, Geneva, CH, Standard, 2021.
+ 6. M. Khatun, M. Glaß, and R. Jung, “Scenario-based extended hara incorporat-
+    ing functional safety and sotif for autonomous driving,” in ESREL-30th European
+    Safety and Reliability Conference, November 2020.
+ 7. D. Kinalzyk, “Sotif process and methods in combination with functional safety,”
+    in Systems, Software and Services Process Improvement, M. Yilmaz, P. Clarke,
+    R. Messnarz, and M. Reiner, Eds. Cham: Springer International Publishing,
+    2021, pp. 612–623.
+ 8. H. Martin, B. Winkler, S. Grubmüller, and D. Watzenig, “Identification of perfor-
+    mance limitations of sensing technologies for automated driving,” in 2019 IEEE
+    International Conference on Connected Vehicles and Expo (ICCVE), 2019, pp. 1–6.
+ 9. “Ul4600 standard for safety: Evaluation of autonomous products,” International
+    Organization for Standardization, Standard, 2021.
+10. N. Kalra and S. M. Paddock, “Driving to safety: How many miles of driving would
+    it take to demonstrate autonomous vehicle reliability?” Transportation Research
+    Part A: Policy and Practice, vol. 94, pp. 182–193, 2016. [Online]. Available:
+    https://www.sciencedirect.com/science/article/pii/S0965856416302129
+11. A. Dosovitskiy, G. Ros, F. Codevilla, A. Lopez, and V. Koltun, “CARLA: An open
+    urban driving simulator,” in Proceedings of the 1st Annual Conference on Robot
+    Learning, 2017, pp. 1–16.
+12. G. Rong, B. H. Shin, H. Tabatabaee, Q. Lu, S. Lemke, M. Možeiko, E. Boise,
+    G. Uhm, M. Gerow, S. Mehta et al., “Lgsvl simulator: A high fidelity simulator for
+    autonomous driving,” arXiv preprint arXiv:2005.03778, 2020.
+13. B. Schlager, S. Muckenhuber, S. Schmidt, H. Holzer, R. Rott, F. M. Maier,
+    K. Saad, M. Kirchengast, G. Stettinger, D. Watzenig, and J. Ruebsam,
+    “State-of-the-art sensor models for virtual testing of advanced driver assistance
+    systems/autonomous driving functions,” SAE International Journal of Connected
+    and Automated Vehicles, vol. 3, no. 3, pp. 233–261, oct 2020. [Online]. Available:
+    https://doi.org/10.4271/12-03-03-0018
+14. C. Pilz, G. Steinbauer, M. Schratter, and D. Watzenig, “Development of a scenario
+    simulation platform to support autonomous driving verification,” in 2019 IEEE
+
+    12   V. Expósito et al.
+
+    International Conference on Connected Vehicles and Expo (ICCVE), 2019, pp.
+    1–7.
+15. A. Abdulazim, M. Elbahaey, and A. Mohamed, “Putting safety of intended
+    functionality sotif into practice,” in SAE WCX Digital Summit. SAE
+    International, apr 2021. [Online]. Available: https://doi.org/10.4271/2021-01-0196
+16. J. Vaicenavicius, T. Wiklund, A. Grigaite, A. Kalkauskas, I. Vysniauskas, and
+    S. D. Keen, “Self-driving car safety quantification via component-level analysis,”
+    SAE International Journal of Connected and Automated Vehicles, vol. 4, no. 1,
+    pp. 35–45, mar 2021. [Online]. Available: https://doi.org/10.4271/12-04-01-0004
+17. M. Scholtes, L. Westhofen, L. R. Turner, K. Lotto, M. Schuldes, H. Weber, N. Wa-
+    gener, C. Neurohr, M. H. Bollmann, F. Körtke, J. Hiller, M. Hoss, J. Bock, and
+    L. Eckstein, “6-layer model for a structured description and categorization of urban
+    traffic and environment,” IEEE Access, vol. 9, pp. 59 131–59 147, 2021.
+18. JAMA and SAKURA. (2021) Automated Driving Safety Evaluation Framework
+    Ver. 1.0 Guidelines for Safety Evaluation of Automated Driving Technology. [On-
+    line]. Available: http://www.jama-english.jp/publications/Automated_Driving_
+    Safety_Evaluation_Framework_Ver1.0.pdf
+19. ASAM e. V. (2021) ASAM OpenODD. [Online]. Available: https://www.asam.
+    net/project-detail/asam-openodd/
+20. M. Ito, “Odd description methods for automated driving vehicle and verifiability
+    for safety,” JUCS - Journal of Universal Computer Science, vol. 27, no. 8, pp.
+    796–810, 2021. [Online]. Available: https://doi.org/10.3897/jucs.72333
+21. A. Mekki-Mokhtar, J.-P. Blanquart, J. Guiochet, D. Powell, and M. Roy, “Safety
+    trigger conditions for critical autonomous systems,” in 2012 IEEE 18th Pacific Rim
+    International Symposium on Dependable Computing, 2012, pp. 61–69.
+22. V. J. Expósito Jiménez, C. Schwarzl, and H. Martin, “Evaluation of an indoor
+    localization system for a mobile robot,” in 2019 IEEE International Conference on
+    Connected Vehicles and Expo (ICCVE), 2019, pp. 1–5.
+23. VIRTUAL VEHICLE Research GmbH. (2021) SPIDER: Mobile Platform for the
+    Development and Testing of Autnomous Driving Functions. [Online]. Available:
+    https://www.v2c2.at/spider/
+24. “Taxonomy and Definitions for Terms Related to Driving Automation Systems for
+    On-Road Motor Vehicles ,” SAE International, Standard, 2021.
+25. S. Shalev-Shwartz, S. Shammah, and A. Shashua, “On a formal model of safe and
+    scalable self-driving cars,” 2018.
+26. B. Gassmann, F. Oboril, C. Buerkle, S. Liu, S. Yan, M. S. Elli, I. Alvarez,
+    N. Aerrabotu, S. Jaber, P. van Beek, D. Iyer, and J. Weast, “Towards standard-
+    ization of av safety: C++ library for responsibility sensitive safety,” in 2019 IEEE
+    Intelligent Vehicles Symposium (IV), 2019, pp. 2265–2271.
+27. “BSI PAS 1883:2020-Operational design domain (ODD) taxonomy for an auto-
+    mated driving system (ADS). Specification,” The British Standards Institution,
+    Standard, 2020.
+28. V. E. Balas and M. M. Balas, “Driver assisting by inverse time to collision,” in
+    2006 World Automation Congress, 2006, pp. 1–6.
+29. M. Malekzadeh and I. Bate, “Making an alarp decision of sufficient testing,” in
+    2014 IEEE 15th International Symposium on High-Assurance Systems Engineer-
+    ing, 2014, pp. 57–64.
+

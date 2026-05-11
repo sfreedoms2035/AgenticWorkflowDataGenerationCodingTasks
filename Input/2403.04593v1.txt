@@ -1,0 +1,2460 @@
+arXiv:2403.04593v1 [cs.CV] 7 Mar 2024
+
+
+
+
+
+
+
+
+
+
+    Embodied Understanding of Driving Scenarios
+
+
+    Yunsong Zhou1,2∗, Linyan Huang1∗, Qingwen Bu1,2∗, Jia Zeng1, Tianyu Li1,
+    2
+Hang Qiu3, Hongzi Zhu2†, Minyi Guo  , Yu Qiao1, and Hongyang Li1†
+
+1 OpenDriveLab at Shanghai AI Lab   2 Shanghai Jiao Tong University
+3 University of California, Riverside
+
+ https://github.com/OpenDriveLab/ELM
+
+
+
+
+
+
+
+    Q: Please give me a visual description of the       Q: Please give a caption for this action.
+    object to the front of the ego car.                 A: He turns the steering wheel to cross the
+    A: A yellow taxi is driving on a street passing     intersection ahead.
+    by trees.      Time
+
+
+        Embodied Language Model (ELM)
+    Q: Has the ego vehicle seen any traffic sign     Q: What happened 30 seconds before in
+    before?                                          the history?
+    A: Yes. The car has seen 1 <go_straight>         A: He drived pass the motorcycle.
+    before.        <x, y, z, t>
+
+        Space
+
+    Q: What are safe  for the ego                    Q: What happened between “starts the
+    vehicle?                                         vehicle" and "passes the black car"?
+    A: Slow down to Keep a safe distance.            A: He drives along the right side of the road.
+
+
+    BLIP2-flant5 (baseline)  <c2>
+
+
+
+     Q: What is the location of <c2> 2 seconds   Q: Please provide the coordinates and   Q: What is the location of <c0>   Q: What will happen in the
+     before in the history?                      category of <c1>.
+     A: Car, 2, 11, -1.                          A: Car, -3, 29, -1.                     A: Pedestrian, 2, 13, 0.          A: He will drive through the junction.
+
+    Fig. 1: ELM is an embodied language model for understanding the long-horizon driv-
+    ing scenarios in space and time. Compared to the vanilla vision-language model (VLM)
+    being confined to the scene description task, we expand a wide spectrum of new tasks
+    to fully leverage the capability of large language models in an embodiment setting.
+    ELM achieves significant improvements in various applications.
+
+
+
+    Abstract. Embodied scene understanding serves as the cornerstone for
+    autonomous agents to perceive, interpret, and respond to open driving
+    scenarios. Such understanding is typically founded upon Vision-Language
+    Models (VLMs). Nevertheless, existing VLMs are restricted to the 2D
+    domain, devoid of spatial awareness and long-horizon extrapolation pro-
+    ficiencies. We revisit the key aspects of autonomous driving and formu-
+    late appropriate rubrics. Hereby, we introduce the Embodied Language
+    Model (ELM), a comprehensive framework tailored for agents’ under-
+    standing of driving scenes with large spatial and temporal spans. ELM
+    incorporates space-aware pre-training to endow the agent with robust
+
+    ∗Equal contribution. †Co-corresponding authors.
+
+2 Y. Zhou et al.
+
+      spatial localization capabilities. Besides, the model employs time-aware
+      token selection to accurately inquire about temporal cues. We instanti-
+      ate ELM on the reformulated multi-faced benchmark, and it surpasses
+      previous state-of-the-art approaches in all aspects. All code, data, and
+      models are accessible.
+
+1 Introduction
+
+Embodied understanding enables intelligent agents (e.g., self-driving vehicles,
+robots, and drones) to interpret instructions and analyze scenes based on their
+experience [28,93]. However, this critical but challenging task is yet to be solved.
+Recently, benefiting from their extensive knowledge and causal reasoning capa-
+bility, vision language models (VLMs) [3, 48, 53, 98] have achieved remarkable
+progress in general vision [10, 46, 49, 56, 61]. The utilization of VLMs provides a
+question-answering framework to engage with a scene and contribute to common
+sense comprehension. When it comes to driving scenarios, embodied approaches
+via VLMs have the potential to surpass both rule-based [25, 70, 72, 82] and data-
+driven learning-based [9, 15, 33, 34] methods in unforeseen scenarios [12, 53, 93].
+   To cope with complex driving scenarios, it is crucial for an embodied agent
+to obtain a complete 4D scene understanding, particularly in extensive spatial
+scale and extended temporal duration. As depicted in Fig. 1, this calls for four
+pivotal capabilities, including 1) description: the agent is able to describe the
+surrounding environments; 2) localization: rather than merely assessing approx-
+imate position, the agent needs to pinpoint a particular object in the 3D space;
+3) memorization : the agent needs to retrieve specific events that have occurred;
+and 4) forecasting: the agent is required to foresee a certain future from the
+given history.
+   Recently, attempts are conducted to incorporate VLMs into the autonomous
+driving domain. Current methods are instrumental in crafting narrations encom-
+passing the surroundings environment [58], traffic participants [16], road com-
+ponents [18], potential interactions [42, 89], and driving behaviors [43, 71, 91].
+Nevertheless, the capabilities of vanilla VLMs are limited to generating narra-
+tive phrases, namely description. Their sense of space and time remain unex-
+plored, as existing works can only describe rough position information [68] and
+achieve information retrieval in a short period [46, 49]. As such, the absence of
+localization, memorization, and forecasting refrains VLMs from the embodied
+understanding of driving scenarios.
+   To this end, we introduce Embodied Language Model (ELM) for the
+proposed driving scene understanding problem. As highlighted in Fig. 1, in con-
+trast to conventional VLMs which only possess description capability, ELM ex-
+tends the capabilities of language models in large spatial and temporal horizons.
+Amongst the newly formulated problem, a suite of tasks and evaluation protocols
+are presented. The key challenges are presented as follows:
+Long horizon in Space. Since VLM decoders are natrually insensitive to num-
+bers, an intuitive solution would be to rewrite the vocabulary [4] and pre-train
+
+        Embodied Understanding of Driving Scenarios 3
+
+models on numerically relevant tasks with the replaced words. However, excessive
+training on a single type of data may lead to catastrophic forgetting [95]. Data
+diversity is therefore of crucial importance. We propose space-aware pre-training
+along with a diverse data collection and auto-labeling process. We orchestrate
+over 3,000 hours of data and 9 million pairs of diverse annotations from the open
+world, incorporating the public autonomous driving datasets nuScenes [8] and
+Waymo [78], the internet-derived dataset YouTube and the egocentric dataset
+Ego4D [28]. This enables the autonomous agent to acquire spatial localization
+competence while preserving the initially robust descriptive aptitudes.
+
+Long horizon in Time. Summarizing long historical time-series data is com-
+putationally burdensome with significant redundancy. A straightforward way is
+to split and sample the video into images [46,49,61]. While there is an attempt to
+summarize a film as a sequence of chronologically occurring events [77], it does
+not allow the agent to recall events from a brief moment in a lengthy video. We
+are of the opinion that the crux lies in enabling the agent to efficiently retrieve the
+most pertinent content from long-term memory based on the given instruction.
+To accomplish this, we opt in a module named time-aware token selection. The
+module encodes each frame into sparse tokens and builds a token bank. A set of
+learnable queries is leveraged to extract the most relevant moment-specific and
+content-specific cues emphasized in the instruction, enabling effective long-term
+information retrieval.
+
+Benchmark. To evaluate ELM and other VLMs, we assemble a new evalua-
+tion suite comprising ten distinct tasks. These tasks encompass evaluations of
+both individual and integrated competencies in description, localization, mem-
+orization, and forecasting, as delineated in Tab. 1. The devised tasks include
+descriptive tasks within the purview of vanilla VLMs, as well as tasks involving
+spatio-temporal localization and dynamic information prediction. While the pri-
+mary focus of this investigation pertains to driving scenarios, it is worth noting
+that the incorporation of daily indoor scenarios can serve as a valuable means
+to assess VLMs’ capacity for long-term event reasoning. The details of the for-
+mulated tasks are described in Sec. 2.
+
+   The contributions are three folds: a) We revive driving scene understand-
+ing by delving into the embodiment philosophy. This involves a deconstruction
+of its definition and basic capabilities, along with a series of novel tasks and a
+comprehensive evaluation benchmark. b) We propose ELM, a vision-language
+model for embodied understanding in driving scenarios. Our proposed space-
+aware pre-training strategy and time-aware token selection enhance agents’ com-
+prehension in long-range four-dimensional space. c) We validate ELM on the
+all-encompassing tasks for cross-domain scenarios. Experimental results demon-
+strate the superiority of our method compared to LLaMA-Adapter V2 [27],
+LLaVA [53], Otter [46], VideoChat [49], etc. Fig. 1 visualizes the achieved im-
+provement compared to BLIP2-flant5 [48] across ten distinct tasks.
+
+    4     Y. Zhou et al.
+
+     Tasks      Fine-tune Dataset                     Capability                 Statistics
+                                  Description Localization Memorization Forecasting S(m) / R(m) T (s) / F #
+     Surrounding Narration                   ✓                               30 / 5  0.5 / 1             142K
+     Traffic Sign Inquiry                    ✓                      ✓        30 / 1  3.5 / 7             20K
+     Action & Decision        nuScenes [8]   ✓                           ✓   30 / 5  3.5 / 7             301K
+     Box Detection                                ✓                          50 / 1  0.5 / 1             232K
+     Tracking                                     ✓                 ✓        50 / 1  3.5 / 7             131K
+     Box Prediction                               ✓                      ✓   50 / 1  3.5 / 7             133K
+     Egocentric Narration                    ✓                               20 / 3    3 / 1             357K
+     Moment Recap             Ego4D [28]     ✓                      ✓        20 / 3  60 / 20             70K
+     Event Query                             ✓                      ✓        20 / 3  60 / 20             70K
+     Activity Prediction                     ✓                           ✓   20 / 3  60 / 20             69K
+
+Table 1: Performing Tasks for Embodied Understanding of Driving Sce-
+narios. We supplement the evaluation of long-term memory with long videos from
+Ego4D [28], which is lacking in self-driving datasets. The gray-colored tasks are already
+applicable to vanilla VLMs. S: the span in space; R: the resolution in space; T: total
+duration; F: the number of frames; #: the number of QA pairs.
+
+
+2 Problem Setup
+
+Based on the analysis of the pivotal competencies involved in embodied under-
+standing, the newly proposed benchmark thoroughly evaluates VLMs from the
+perspective of description, localization, memorization, and forecasting. Utilizing
+the nuScenes [8] and Ego4D [28] datasets, we formulate ten question-answering
+(QA) tasks as listed in Tab. 1.
+   Built on top of the nuScenes dataset, we present three tasks which are for
+prompting embodied agents to provide descriptions of the current scene, recall
+previously observed traffic elements, and predict future states. Furthermore, we
+devise three localization-related tasks, which require embodied agents to deduce
+the 3D positions of 2D query points in the present, past, and future. Complet-
+ing these positioning tasks necessitates robust spatial perception and temporal
+reasoning capabilities. To ensure that VLMs remain unbiased towards driving
+scenes, we incorporate the Ego4D dataset for evaluation in common scenarios.
+These tasks require the description of ongoing events, inquiry of past events, and
+prediction of future events. The scenes in Ego4D consist of prolonged videos, and
+this necessitates a greater understanding over long time spans.
+   The formulation of each task is elaborated as follows:
+
+ – Surrounding Narration: providing an overall description of the surroundings,
+    namely attribute, presence, and movement of traffic objects on a single frame.
+ – Traffic Sign Inquiry: identifying and recalling traffic signs and lane markings
+    observed within 3.5 seconds in the past.
+ – Action & Decision: providing a high-level planning-related instruction to
+    foresee potential interactions and make driving decisions.
+ – Box Detection: inferring the 3D coordinate and category based on the 2D
+    query point on a single frame.
+ – Tracking: retrieving the 3D trajectory and category of the object queried by
+    the 2D pixel position of the current frame for the last 3.5 seconds.
+
+                                Embodied Understanding of Driving Scenarios     5
+
+    Pre-training      Fine-tuning
+                            Where is <c2> in
+                            the 2.5s past  Text
+                            record?      Encoder     Learnable Query   LoRA
+     Open World                                 K,V      Q
+    Data Corpus                                                               Output
+                                K,V             Token Bank             FlanT5  Text
+        ELM                               Image
+                                         Encoder
+                                                Selected
+      Text Encoder                               Token
+        Enc.     Dec.
+     Image Encoder    FlanT5
+    Space-aware                                    Time-aware      Language Model
+    Pre-training                Encoding        Token Selection
+    Fig. 2: Systematic Pipeline of ELM. It consists of Pre-training by open-world data
+    corpus and Fine-tuning on diverse tasks. To initialize the Space-aware Pre-training, we
+    collect extensive image-text pairs from the world, empowering ELM with spatial local-
+    ization while preserving the description ability in driving scenarios. In the fine-tuning
+    process, the inputs to ELM are videos, timestamps, and text prompts. After encoding
+    the inputs into tokens, ELM leverages the proposed Time-aware Token Selection to
+    gather the appropriate tokens as instructed by prompts. Finally, the tokens are sent to
+    the language model to generate output texts.
+
+
+    – Box Prediction: inferring the future 3D location and category of a queried
+    object given its current 2D coordinate and 3.5s past observations.
+    – Egocentric Narration: describing self-behaviors (actions and interactions with
+    the surroundings) based on an egocentric single-frame input.
+    – Moment Recap: indicating an event that occurred at a specific point in time
+    within the last 60 seconds.
+    – Event Query: deducing the content of an specific event through the analytical
+    examination of its antecedent and subsequent events in a 60-second video.
+    – Activity Prediction:  predicting an event that will happen at a designated
+    future moment in a 60-second video.
+
+
+   In contrast to previous datasets and tasks [42, 43, 58, 68, 71, 76, 89], the pro-
+posed benchmark incorporates both spatial and temporal evaluation, necessi-
+tating embodied agents to have a correct understanding of the complex driving
+scenes. We set up this benchmark for assessing embodied understanding in driv-
+ing scenarios and harmonizing diverse driving-related objectives.
+
+License and privacy considerations. All the annotated data (benchmarks
+and open-world data corpus mentioned in Sec. 3.2) comply with the CC BY-
+NC-SA license. Following [2, 39, 90, 97, 99], we safeguard the rights of the data
+owners and prevent privacy leakage by distributing redirection links instead of
+publishing image contents. Personal identification information will not be leaked
+to the public. More details are shown in the Appendix.
+
+
+
+
+
+
+
+
+
+
+    ...
+
+6     Y. Zhou et al.
+
+  Method               Pre-train Data     # Frames  Duration  Geographic  Diversity  Anno
+                                                    (hours)   Countries     Cities
+  LLaVA [53]             COCO [52]          150K       -          -           -      Des
+  VideoChat [49]       Self-Collected       18K        -          -           -      Des
+  Vid-ChatGPT [61]  ActivityNet-200 [7]     100K       -          -           -      Des
+  nuScences-QA [68]     nuScenes [8]        460K      5.5         2           2      Des
+  DriveGPT4 [92]         BDD-X [43]         28K        77         1           4      Des
+  LLM-driver [12]      Self-Collected       160K       -          -           -      Des
+  DriveLM [76]    nuScenes [8], CARLA [21]  188K       95         3           3      Des
+                        nuScenes [8]        7.4M      5.5         2           2    Des, Loc
+  ELM (Ours)             Waymo [78]         450K      6.4         1           6      Des
+                          YouTube           1.1M      1474       ≥40        ≥ 709    Des
+                         Ego4D [28]         300K      1638        9           74     Des
+
+         Table 2: Statistics of pre-training data and comparison of data collection
+       with other VLMs. Our pre-train data surpasses that in general vision (top) and
+autonomous driving (middle) in terms of quantity and diversity. Anno: the type of
+annotations; Des: description; Loc: localization.
+
+3   Methodology
+
+3.1 Overview
+
+       We aim at enhancing agents’ spatial perception with diverse pre-training data
+       and dealing with long time series through adaptive token selection. Fig. 2 il-
+       lustrates the architecture of our framework. ELM begins with Space-aware Pre-
+       training (Sec. 3.2) on image-text pairs. During this phase, ELM focuses on the
+       vocabulary related to spatial understanding and learns a robust visual encoder
+      through extensive training. Throughout the fine-tuning across varied tasks, all
+          encoders of ELM are frozen. In the Encoding process, the text prompt and
+         timestamp are encoded by BERT [17], while each video frame is transformed
+       into fixed-length feature tokens using the EVA model [26]. In Time-aware Token
+      Selection (Sec. 3.3), the video tokens are fed into a token bank along with the
+        text and timestamp tokens, and the token bank adaptively selects the desired
+      tokens based on the text prompt. Lastly, the FlanT5 [69] model, fine-tuned with
+       LoRA [31], generates the output text to tackle various tasks in our benchmark.
+
+3.2 Space-aware Pre-training
+
+        Open world data collection. In pursuit of spatial localization while retain-
+     ing the description capacity for driving scenarios, we collect an open-world data
+       corpus for the space-aware pre-training. As depicted in Tab. 2, the data cor-
+      pus is derived from a variety of sectors. Representative datasets for autonomous
+        driving, such as nuScenes [8] and Waymo [78], constitute our fundamental re-
+       sources. These two datasets comprise a total of 11.9 hours of data, capturing
+     scenes from five different cities: Boston, Singapore, San Francisco, Phoenix, and
+        Mountain View. YouTube, renowned for its extensive data and diverse content,
+     serves as a critical resource for our research. We collect a total of 1,474 hours
+     of publicly available videos from over 709 cities in more than 40 countries using
+
+    Embodied Understanding of Driving Scenarios 7
+
+
+     Location Labeling                                    Description Labeling
+                        Generated Data                     nuScenes              Waymo      Example Image                                  Refined Caption
+      Prompt            Q: What are the 3D spatial                                                                                         The driving scene in the
+                        coordinates of the pixel at                                                                                        image     features  a busy
+      1.        GPT-4   <Pixel Location>                                                                                                   city streetwith…
+      Meta              A: Location:x ,y, z,               Youtube               Ego4D                                                     The traffic light is green…
+     Template                                                                                                                              The     ego-vehicle should
+                                                                                                                                           proceed     with   caution
+                                                                                                                                           and…
+                   2.     3.
+             Sampling   Select   Template                                                                                                 Manual Revision 8.
+                         Quality Check                    World Data   Crawl1.   Raw Data     Data Batch               Caption                      Generated
+                                                                                                                        Batch                        Caption
+                                 4.          Sampling
+                     Point Cloud (x, y, z)   & Filling                     Sampling2.      3.Select  4. Feed Generate5.                   Sampling6.  7.
+                                 Data Batch                                                    Vision-                 Feedback
+                                                                                               Language                The traffic light                      Discard
+     Pixel <u, v>                                         Blacklist    Discard   Quality Check  model          Rerun   isred…                  Quality Check
+Fig. 3: Annotation workflow with human quality check in the loop. For lo-
+cation labeling: we first select diverse templates from the GPT generated candidates.
+Pixel-point pairs as annotated in the nuScenes [8] are then sampled and filled into the
+templates to form our location pre-training data. For description labeling: Node
+4 utilizes LLaMA-Adapter V2 [98] to obtain diverse labels on nuScenes, Waymo [78],
+YouTube, and Ego4D [28] with predefined prompts. Two rounds of quality check are
+conducted in Node 3 and 7 by inspectors to guarantee the image and caption quality.
+
+    web crawlers. The collected data covers a wide range of locations, including ur-
+    ban areas, rural regions, and various weather conditions. For a broader vision,
+    we utilize the Ego4D dataset [28], which provides an in-depth understanding
+    of daily activities worldwide. There are 931 camera wearers contributing a to-
+    tal of 1,638 hours of footage from 74 cities. We aggregate an extensive and
+    diverse dataset for pre-training, which goes far beyond those adopted in other
+    VLMs [12, 49, 53, 61, 68, 92].
+    Auto-labeling with human in the loop. With the objective of enhancing
+    models’ spatial comprehension, we design a localization labeling process based
+    on nuScenes [8] in Fig. 3. To ensure the diversity of questions, we use GPT-4 [63]
+    to generate massive unique templates for text prompts. In response to the GPT’s
+    instability, we execute a manual selection process to assemble a set of 1000 high-
+    quality templates. Regarding the location ground truth labels, we leverage the
+    point clouds and camera parameters to establish the correspondence between
+    2D pixels and 3D point coordinates. In addition, we employ density-based point
+    sampling to achieve uniform coverage in 3D space, followed by a rule-based
+    method to assign the labels to the templates. Collectively, we create a total of
+    7.4M QA pairs about location. The pipeline is detailed in the Appendix.
+                                                                                        For preventing catastrophic forgetting during pre-training [95], we introduced
+    a large number of description labels into the data corpus, thereby enhancing the
+    diversity of the dataset. The right side of Fig. 3 illustrates our description label-
+    ing pipeline, and the labels include descriptive sentences of the overall scenario,
+    transport elements, and driving decisions. Particularly, two rounds of quality
+    check are implemented to maintain a high standard of labeled data. The an-
+    notation pipeline starts by removing noisy, interfering, and blurry images from
+    Node 1 to Node 3. After crawling raw data from the open world, the inspec-
+    tors extract 10% of a batch of images for a quality check to determine if the
+    batch should be retained. The image selection process primarily involves sorting
+
+    8   Y. Zhou et al.
+
+    out the worst N      samples in terms of quality from a quantitative set of video
+    clips based on standards like lighting, resolution, and clarity. These are then
+    returned to the reserve pool, with the remainder forwarded to the next process.
+    If a video source is repeatedly flagged as poor quality, it is placed on a black-
+    list. The qualified data batches are fed into LLaMA-Adapter V2 [27] to generate
+    caption batches, while others are discarded. Following this, the second quality
+    check on the generated caption is performed in Node 6-7. The revised captions
+    will be saved as the final annotations in Node 8. In instances where a data batch
+    fails to meet quality standards, inspectors will furnish feedback to the model for
+    the purpose of refining the generated captions in subsequent iterations. Labeling
+    details, discarded images, and annotation examples are in the Appendix.
+            Following the workflow above, we have amassed over 9 million annotations,
+    indicating a substantial increase in the scale and diversity of the dataset used for
+    pre-training. The comparison of annotation quality and diversity will be further
+    demonstrated in Sec. 4.3 and the Appendix.
+    Tokenizer.        It is argued that VLMs are insensitive to numbers [22]. An RT2-
+    like tokenizer [4] is implemented to enable a general VLM to perform location
+    prediction in the form of text. We divide the 3D space into 1-meter resolution
+    grids and quantify the position of the target point as the index of the grid. Then
+    we rewrite the least frequently used words in FlanT5 to represent the grid index,
+    which is referred to as space-relevant vocabulary. Hence the 3D localization could
+    be deemed as a language modeling task.
+
+    3.3 Time-aware Token Selection
+    To effectively memorize and forecast events in long time-series videos, it is es-
+    sential to encode the scene using a timestamp-sensitive representation and select
+    tokens wisely. Thus, we introduce the Time-aware Token Selection module, which
+    utilizes the input text prompt as guidance to select a fixed number of relevant
+    tokens from the video. These selected tokens are then incorporated into the lan-
+    guage model as visual input. To facilitate interaction among videos, timestamps,
+    and prompts, it is important to align their embeddings within the textual feature
+    space, for which we perform the following design.
+    Video encoding. Initially, we utilize Q-former [48] to align the video features
+    with language model inputs:
+                    qt  = SA(F t) ∈ R     32×d
+                qˆv vt  = Q-Former(qv     vt , ql), ∈ R32×d′ ,                    (1)
+where qvt and qˆv t denote the video tokens before and after Q-former at timestamp
+t, Fvt ∈ RHW ×d represents the video frame feature at timestamp t generated from
+the visual encoder (i.e., EVA [26]), ql ∈ R32×d is a group of learnable embeddings
+used to transform video content into textual information [48], and we use d and
+d′ to denote the dimension of visual and textural embeddings, respectively. SA(·)
+is the Slot Attention module [54] to acquire visual representations while further
+reducing redundancy.
+
+        Embodied Understanding of Driving Scenarios 9
+
+Timestamp encoding. Conventional techniques like sinusoidal [80] or learn-
+able encoding [20] of timestamps mismatch with language models since they’re
+from different domains. In contrast, we propose to transform timestamps into
+the form of text. Subsequently, we leverage the FlanT5 [69] encoder for generat-
+ing embeddings aligned with temporal information contained in the input text
+queries. Our approach skillfully circumvents the challenge of aligning temporal
+encoding with the text embedding space.
+Adaptive selection via token bank. The key to token selection lies in en-
+abling the model to comprehend timestamps and video content, thereby iden-
+tifying the most relevant tokens to the given prompt within the time series.
+In pursuit of this, we introduce the token bank module, which leverages the
+weighted aggregation of tokens to dynamically preserve both query-specific and
+overall contextual information. Specifically, we initiate the process by creating a
+set of learnable queries, represented as qi ∈ Rn×d′ . Employing a cross-attention
+mechanism, these learnable queries effectively comprehend the input prompt,
+with the concatenation of timestamps and visual embeddings serving as keys
+within the cross-attention module. Meanwhile, the learnable queries play the
+role of extracting the most relevant visual features Evis from a long-time series:
+        h i
+        qmid = MHCAhqi, T5Enc(Tp), T5Enc(Tp) , i (2)
+        Evis = MHCA qmid, concat ( ˆqv, T5Enc(Tt)) , qv ,
+
+where Tp and Tt represent the text prompt and timestamp, respectively. qv and
+qˆv correspond to the entire video representation before and after Q-former, while
+qmid serves as an intermediate token that incorporates textual prompt. MHCA(·)
+denotes multi-head cross attention and T5
+        Enc is the FlanT5 encoder [69].
+   The selected visual features Evis will then be processed by Q-former and fed
+into the language model as the visual embedding. As queries and keys in the
+cross attention are aligned within the textual domain, our approach effectively
+identifies and extracts moment- and content-specific visual representations. A
+more detailed illustration of the pipeline is given in the supplementary materials.
+
+
+4 Experiments
+
+The fine-tuning datasets of all ten tasks are built upon nuScenes [8] and Ego4D [28].
+Additional information (annotations, dataset statistics, implementation details,
+training strategies, etc.) is provided in the supplementary materials.
+Evaluation metrics. For localization-related tasks, i.e., Tracking, Box Detec-
+tion, and Box Prediction, we propose metrics specifically designed for the as-
+sessment of VLMs in the context of these tasks. To be considered a correct
+prediction, the Euclidean distance between the predicted and ground truth box
+centers must be within a threshold, and the predicted category should also be
+
+    10     Y. Zhou et al.
+
+       Methods             Tracking   Box Detection Box Prediction Traffic Sign Inquiry Surrounding Narration                       Action & Decision
+                          Pr@1   Pr@2  Pr@1   Pr@2   Pr@1                                    Pr@2   C     R     B       C     R      B     C     R     B
+       BLIP2-opt [48]      0.1   0.1   0.1     0.2   0.2                                     0.5   23.0  26.9  20.5    8.1    19.7  21.2  8.4   11.5  11.1
+       BLIP2-flant5 [48]   3.0   6.0   5.1     10.5  3.6                                     6.3   63.1  39.4  31.4    65.2   64.9  27.9  68.7  71.4  43.1
+       LLaMA-Ada. [27]     6.1   10.5  8.3     14.9  7.5                                     12.5  68.3  66.6  61.6    67.0   77.5  60.1  72.3  76.8 64.7
+       LLaVA [53]          5.5   9.3   28.5    31.2  6.1                                     10.2  51.1  58.5  50.8    64.9   64.6  41.2  64.4  62.4  57.9
+       Otter [46]         10.0   17.2  41.8    46.9  8.9                                     15.8  62.8  41.1  32.4    60.0   64.2  13.3  69.2  73.2  53.0
+       VideoChat [49]      0.4   0.9   0.1     0.3   0.1                                     0.2   25.3  21.9  11.7    21.7   29.2  12.2  29.6  33.2  13.1
+       Vid-ChatGPT [61]    0.1   0.6   0.1     1.0   0.3                                     1.2   49.6  57.1  48.6    61.0   69.6  37.2  53.6  58.5  43.5
+       ELM (Ours)         14.0   23.3  51.6    56.9  15.1                                    24.4  76.5 71.2   63.9   73.2    78.7  29.8  74.4  83.3  41.2
+    (a) nuScenes. ELM outperforms the leading previous methods on the matority of metrics across
+    all six tasks on nuScenes, which validates the generality of our model.
+
+       Methods               Moment Recap                                    Event Query      Ego. Narration Activity Prediction    Methods          Param.
+                            C     R     B      C                                  R B         C     R     B     C      R      B
+       BLIP2-opt [48]       1.2  8.9   6.8    7.8                                28.4  14.7  5.2   19.8  10.7  2.7    18.7   9.6    BLIP2-opt         2.7B
+       BLIP2-flant5 [48]   13.1  31.9  12.5   27.3                               33.0  16.6  16.9  33.5  15.4  11.5   31.2   11.3     BLIP2-flant5    2.7B
+       LLaMA-Ada. [27]     11.2  30.2  12.3   37.5                               47.2  28.1  18.4  34.2  15.3  13.1   31.2   12.8      LLaMA-Ada.      7B
+       LLaVA [53]           9.6  28.3  12.1   39.8                               44.6  29.9  6.5   28.2  11.6  8.4    28.0   13.0   LLaVA              7B
+       Otter [46]          11.4  29.6  10.5   27.1                               38.3  19.1  14.1  31.4  13.9  11.1   29.4   10.3   Otter              7B
+       VideoChat [49]      13.2  32.5  13.8   34.5                               42.2  26.4  20.7  35.0  17.6  12.1   32.4   14.1   VideoChat          7B
+       Vid-ChatGPT [61]    10.0  31.1  13.3   27.9                               36.5  20.9  10.2  21.7  10.4  9.4    30.5   12.6     Vid-ChatGPT      7B
+       ELM (Ours)          22.6  36.7 19.4    38.0                               43.1  27.6  26.5  37.7  16.9  18.1   34.1   17.0      ELM (Ours)     2.7B
+                                               (b) Ego4D. We extend the model to Ego4D dataset and verified the gener-                (c) Parameters.
+                                              ality of our token bank module on four tasks.
+
+    Table 3: Comparison to State-of-the-arts. All methods are fine-tuned on the
+    corresponding tasks. The main metrics (%) are marked in                                                             gray . Bold emphasizes top
+    method; underline marks the runner-up. C: CIDEr; R: ROUGE-L; B: BLEU.
+
+
+accurate. Mathematically, this can be expressed as:
+
+        1 X
+        Pr@k = N N 1∥ˆbi − bigt∥2 < k \(ˆci = cigt), (3)
+        i=1
+
+where N is the number of QA pairs, ˆbi and cˆi denote the predictions for box
+center and object category corresponding to their annotation bigt and cigt, 1 is
+the indicator function, and k is the predefined distance threshold. We set Pr@1
+as the primary metric in the following experiments.
+   Regarding the seven language-related tasks, we employ three established met-
+rics, namely CIDEr [81], ROUGE-L [51], and BLEU [67]. In contrast to the sim-
+plistic word-wise evaluation of BLEU and ROUGE-L, CIDEr assesses sentences
+based on content and semantics, aligning more closely with human judgment [1].
+Hence we employ CIDEr as the primary metric for evaluating the quality and
+correctness of output sentences. For the convenience of comparison, a rescal-
+ing involving log10(CIDEr + 1) is employed to standardize CIDEr values within
+the range of 0 to 1. In addition, we present the aggregate metric for BLEU by
+averaging values across BLEU-1 to BLEU-4.
+
+4.1 Comparison to State-of-the-arts
+We first show the performance comparison of ELM and previous state-of-the-art
+VLMs [3,27,46,48,49,53,61] on our proposed benchmark. All VLMs are initialized
+
+Embodied Understanding of Driving Scenarios 11
+
+
+
+
+𝑡 − 𝑛    𝑡
+
+
+
+Queried object  Queried object
+
+
+
+Q: What is thestatusof the cars that are to      Q: Has the ego vehicle seen anytraffic sign before?                      Q: Provide the 3D location of the2D point <c,   Q: Whatactionstaken by the ego vehicle
+the front ofthe ego car?                         BLIP2-T5: There is no traffic sign in the scene.                         856, 481> in the image.                         can lead to a collision with<c, 817.5, 668.3>
+BLIP2-T5:                                        Ours: The ego vehicle has seen 1 go_straight, and 1 turn_right before.   BLIP2-T5: Location: [2.20, 8.85, -0.03], Car    BLIP2-T5:
+Ours: Many cars are parked and moving.           GT: The ego vehicle has seen 1 go_straight, and 1 turn_right before.     Ours: Location: [3, 12, 0], Car                 Ours:
+GT: Many cars are parked and many are moving.                                                                             GT: Location: [3.38, 13.56, 0.003], Car         GT: Accelerate and go straight.
+𝑡 − 2s                                          𝑡  𝑡                                                                   𝑡 + 3s     𝑡 − 12.1s                          Memory Recap      𝑡
+
+
+
+
+  Queried                                                                                                           Queried
+  object                                                                                                            object
+
+ Q: What are the 3D spatial coordinates of the pixel at<c, 1001.1, 544.6>   Q: Determine the 3D location in the scene of the 2D pixel at<c, 865.3,
+ 2.0 seconds ago?                                                           505.9> 3 seconds later?                                               Q: "Whathappened 12.1 seconds before?
+ BLIP2-T5: Location: [-2.31, 19.62, -1.21], Barrier                         BLIP2-T5: Location: [1.18, 29.96, 1.56], Car                          BLIP2-T5: C stirs the meat in the frying pan
+ Ours: Location: [-1, 15, 0], Pedestrian                                    Ours: Location: [0, 38, 0], Pedestrian                                Ours: C moves the meat from the frypan to the plate
+ GT: [-0.35, 15.32, -0.01], Pedestrian                                      GT: Location: [-0.12, 38.45, 0.05], Pedestrian                        GT: C moves the meat from the frypan to the plate
+
+Fig. 4: Visualization on the benchmark. We provide results for seven tasks through
+images and corresponding QA pairs. The remaining tasks are included in the Appendix.
+
+using the official pre-trained weights and then fine-tuned on our dataset. Detailed
+metrics with respect to all tasks are documented in Tab. 3. On localization-
+related tasks such as Box Detection, our model attains a significant superiority.
+Notably, our method surpasses Otter [46] with a remarkable margin of +9.8%
+in Pr@1 score, illustrating the effectiveness of our proposed space-aware pre-
+training. On time-related tasks, e.g., Traffic Sign Inquiry and Moment Recap,
+we surpass the second-best by +13.4% and +6.8% in CIDEr score, respectively.
+This highlights ELM’s outstanding ability in retrieving timestamp information,
+attributed to the time-aware token selection. We notice that LLaVA [53] ex-
+hibits superior performance compared to ELM in Event Query task that focuses
+on successive event reasoning. ELM, which excels in precise timestamp retrieval,
+may face limitations in handling this specific task due to the inherent constraints
+in the FlanT5 [69] model’s capacity to comprehend lengthy texts. Besides, due
+to the preference of our model for generating concise responses, its performance
+in terms of BLEU is affected [1]. Fig. 4 demonstrates the qualitative compari-
+son between ELM and baseline method (i.e., BLIP2-flant5 [48]) on nuScenes [8]
+and Ego4D [28] dataset. It is observed that ELM’s output is much closer to the
+ground truth, especially in tasks involving 3D localization. Additional visualiza-
+tions are shown in the supplementary materials.
+
+4.2     Ablation Study
+We conduct ablation studies to assess the effectiveness of each component, with
+experiments shown in Tab. 4. Exp.0 serves as a baseline built upon BLIP2-
+flant5 [48] and Exp.7 represents the final design of ELM. Initially, we examine
+the pre-training strategy within our pipeline in Tab. 4 (a). Comparative analysis
+between Exp.0 and Exp.2 reveals that solely performing localization pre-training
+without rewriting the space-relevant vocabulary yields limited improvements.
+Notably, the collaborative application of vocabulary rewriting and localization
+pre-training manifests a substantial advancement across all three localization
+
+    12 Y. Zhou et al.
+
+
+      Vocab       Data   T                          BD    BP   TSI   SN   AD   EN       Encoding Selection  MR    EQ    AP
+     0  -          -     3.0                       5.1    3.6  63.1 65.2 68.7 16.9   0     -         -      13.1  27.3  11.5
+     1 Rewritten   -     2.8                       5.9    3.0   -    -    -    -     4 Sinusoidal    -      12.3  34.8  12.1
+     2  -         Loc    6.5                       31.2   7.7   -    -    -    -     5  Textual     Hard    17.8  37.3  13.3
+     3 Rewritten  Loc    12.2                      46.5   12.6 59.4 63.7 63.8 16.2   6     -       Manual   18.9  39.4  17.6
+                         7 Rewritten Des, Loc 14.0 51.6 15.1 76.5 73.2 71.4 26.5     7  Textual     Soft    22.6  38.0  18.1
+                                      (a) Ablations on pre-training.  (b) Ablations on token selection.
+    Table 4: Ablations on the effectiveness of each component. Baseline (Exp.0)
+    uses the BLIP2-flant5 [48] model. ELM (Exp.7) is marked in                           gray . We only show
+    the main metrics for brevity. T: Tracking, BD: Box Detection, BP: Box Prediction, TSI:
+    Traffic Sign Inquiry; SN: Surrounding Narration; AD: Action & Decision; EN: Egocentric
+    Narration; MR: Moment Recap; EQ: Event Query; AP: Activity Prediction; Loc: Local-
+    ization; Des: Description; C: CIDEr; R: ROUGE-L; B: BLEU.
+
+
+    Method          AGPT SGPT4V Dn-gram Time(s/#)↓   Method                          ADE↓  FDE↓                    Time(s)↓
+    Baseline        54.3  34.4    14.8     1.6       Command Mean        7.98                               11.41       -
+    + Filtering     68.3  49.5    21.2     1.9       UniAD-single [34]   4.16                                9.31   0.56
+    + Verification  84.4  66.9    26.7     4.5       Flamingo [3]        2.78                                5.31   1.47
+    Manual Labeling  100  64.3    23.3     72.4      ELM                 2.28                                4.27   1.61
+
+
+Table 5: Labeling quality and correspond- Table 6: Planning on out-of-
+ing time cost. Baseline: LLaMA-Ada., AGPT: distribution datasets. Command
+accuracy between auto and manually annotated Mean denotes the average value of the
+text evaluated by GPT, SGPT4V: rationality score trajectories corresponding to each in-
+in image-text matching evaluated by GPT4V, struction in the training set. ADE &
+Dn-gram: diversity evaluated by distinct n-gram FDE: average & final distance error
+ratio of phrases. Time refers to the average du- (m) of future trajectory in 3 seconds.
+ration required for a single person to annotate All methods are trained on nuScenes
+a piece of data. Our choice is marked in gray . [8] and evaluated on Waymo [78].
+
+tasks, exemplified by improvements of +9.2%, +41.4%, and +9.6% in Track-
+ing, Box Detection, and Box Prediction, respectively. Nevertheless, a decrement
+in performance on alternative tasks is observed in Exp.3, prompting the adop-
+tion of cooperative pre-training in our final configuration (Exp.7), which brings
+enhanced performance across all tasks. This underscores the significance of in-
+tegrating both localization and description data during the pre-training phase.
+We note that the model’s performance in the localization-related tasks improves
+by +1.8%, +5.1%, and +2.5% after the incorporation of descriptive data. We
+believe this is due to the fact that descriptive data provides information about
+relative positional relationships that benefits the localization tasks.
+   In addition, we explore several implementations of the token selection mod-
+ule, as results listed in Tab. 4 (b). The utilization of a straightforward sinusoidal
+temporal encoding may result in a marginal performance decline, potentially
+stemming from the model’s difficulty in interpreting temporal information in this
+encoding scheme. It is worth noting that hard selection denotes selecting the to-
+kens of three frames with the highest attention scores, while soft selection is the
+weighted summation across all tokens. Manual selection, which involves picking
+
+                               Embodied Understanding of Driving Scenarios     13
+
+     Method                Pr∗@1 Pr∗car@1 Pr∗ped@1 Pr∗bar@1 Pr∗ₜᵣₐ@1   Task     Method       Pr@1 Pr@2 Pr@4
+     DETR3D [86]    43.6   48.9               44.6   39.1   15.6       Tracking  SFT        14.0  23.3  36.9
+     BEVFormer [50] 47.4   52.3               48.8   43.5   14.3              Zero-shot     9.8   14.8  23.0
+     VCD [35]       53.4   50.3               60.0   68.1   20.6       Task     Method       C     R     B
+     Method         Pr@1 Prcar@1 Prped@1 Prbar@1 Prₜᵣₐ@1               Action    SFT        71.4  74.6  43.0
+     Ours           51.6   64.9               50.2   70.4   26.4       & Decision Zero-shot 59.0  65.0  35.3
+
+Table 7: Extended evaluation on 3D detec- Table 8: Zero-shot evaluations
+tion performance. The Hungarian algorithm on new tasks. Our model is also
+[44] is employed to ensure a reasonably fair com- capable of achieving decent per-
+parison between ELM and conventional 3D de- formance on zero-shot scenarios
+tection models. ped: pedestrian; bar: barrier; tra: in comparison to supervised fine-
+    trailer. The main metric is marked in                gray .     tuning (SFT).
+
+    the tokens of the three frames based on the ground truth timestamp, is the the-
+    oretically optimal solution to hard selection. Using textual encoding strategy (as
+    detailed in Sec. 3.3) with hard selection results in a noticeable improvement of
+    +4.7%, +10.0%, and +1.8% on three tasks. Ultimately, we incorporate soft
+    token selection, potentially encompassing information across all tokens, into our
+    model. This adaptation brings improved performance on Moment Recap and
+    Activity Prediction tasks, denoted as +9.5% and +6.6%, respectively, while
+    preserving comparability with manual selection on the Event Query task.
+
+    4.3                    Further Discussions and Analysis
+
+    Evaluation on label quality and diversity. To verify the reliability of the
+    auto-labeling pipeline, we manually annotate thousands of images and conduct
+    a quantitative experiment for auto-labeling in Tab. 5. The baseline is an auto-
+    labeling pipeline using LLaMA-Adater V2 [27]. AGPT is the accuracy between au-
+    tomatically annotated text and human-annotated text evaluated by GPT4 [63],
+    SGPT4V is the rationality score in image-text matching evaluated by GPT4V,
+    and Dn-gram is diversity, evaluated by different n-gram ratios in a phrase. Results
+    show that our auto-labeling quality nearly equals manual annotation and leads
+    in diversity (26.7), signifying the excellence of our data. Additionally, we report
+    the average time required to collect each piece of data using different annotation
+    methods. Manual image labeling entails meticulous inspection and detailed tex-
+    tual description, demanding significant time investment. Conversely, automated
+    annotation pipelines enable annotators to efficiently filter and rectify errors in
+    sampled image batches, substantially decreasing time consumption.
+    Out-of-distribution evaluation. To adequately demonstrate the model’s gen-
+    eralization ability, Tab. 6 shows experiments on planning in unseen data, which
+    includes both temporal and spatial understanding of ego vehicle future trajec-
+    tory. Each frame in nuScenes is associated with one of 3 commands: turn_left,
+    turn_right, or go_straight. The baseline, Command Mean, uses the mean
+    of all trajectories in the training set whose command matches the current test
+
+    14 Y. Zhou et al.
+
+       Q: What is the unusual about the driving scene?  Q: Please describe the driving scene.  Q: How should the ego-vehicle drive at this point?  Q: Are there any potential dangers in the scenario?
+
+
+
+
+     A: The scene shows a busy city street with a     construction   A: The scene is a road with a curvy, winding path,         A: The ego-vehicle shouldfollow the traffic light's   A: The ego-vehicle should continue       driving through the
+     siteon the side of the road. There is a traffic light visible   surrounded by trees and hills. The road is empty, with     instructions andwait for the light to    turn green   intersection, following the traffic light’s instructions. It
+     in the background. The unusual element in this scene is         no other vehicles visible. The sun is setting, casting a   before proceeding.                                    is important to   becautious and   attentive to          the
+     the presence of a construction site, which may cause            warm glow over the scene.                                                                                        pedestrians  to   ensure  safety  for all          involved.
+     traffic disruptions or delays.
+    Fig. 5: Zero-shot on new scenarios. We select images from the internet that are not
+    utilized during the training to assess the model’s proficiency in unexplored scenarios.
+    The results validate our model’s ability to create notably logical interpretations.
+
+
+frame command. Moreover, we compare our method with the current state-of-
+the-art method on nuScenes, UniAD [34]. In addition to the released checkpoint
+that requires multi-view input, we trained a single-frame version (UniAD-Single)
+for a fair comparison with our single-frame VLM. All methods are trained solely
+on the front view of nuScenes and are applied to Waymo without fine-tuning or
+adaptation. Please refer to the supplementary materials for the detailed design
+of using ELM for planning. ELM achieves respectable results in novel scenarios,
+surpassing end-to-end driving (UniAD) and other VLMs (Flamingo).
+
+Comparison to traditional 3D perception task. Addressing concerns per-
+taining to the superiority of embodied understanding over traditional 3D lo-
+calization methods, our model is benchmarked against DETR3D [86], BEV-
+Former [50], and VCD [35], as listed in Tab. 7. Although our QA-based approach
+does not produce confidence scores, we have made efforts to conduct fair compar-
+isons. The Pr∗@1 metric is derived from Eq. (3) after performing a Hungarian
+algorithm [44] to establish a one-to-one matching between the prediction and
+the ground truth. The results show that ELM is comparable to classical models
+in 3D perception. Additional comparisons are in the supplementary materials.
+
+Zero-shot on new tasks. To assess the generalization of ELM across differ-
+ent tasks within the benchmark, we fine-tune it using data associated with Box
+Detection and Moment Recap tasks, with subsequent testing on Tracking. Addi-
+tionally, we fine-tune the model on Surrounding Narration and Activity Predic-
+tion, followed by inference on the Action & Decision task. The results in Tab. 8
+indicate that the model’s zero-shot capability, to handle tasks unseen before, is
+on par with supervised learning. Notably, even evaluated in a zero-shot manner,
+ELM performs comparably to the previous VLM on both tasks (see Tab. 3). We
+attain a zero-shot performance of 9.8% in tracking compared to Otter’s 10.0%.
+
+Verification of open scene understanding. We evaluate ELM on novel sce-
+narios and tasks to validate its generalization. The visualization in Fig. 5 demon-
+strates the superior scene understanding ability of our model on unseen data.
+Impressively, it can pay attention to construction signs on the road, make ratio-
+nal driving decisions, and analyze potential dangers. This showcases the potential
+to surpass traditional perception models in understanding unseen scenarios.
+
+        Embodied Understanding of Driving Scenarios 15
+
+5 Conclusion and Limitation
+
+We apply VLMs to achieve embodied understanding of driving scenarios and
+present a benchmark consisting of a suite of tasks and rubrics. ELM is proposed
+for the pursuit of understanding driving scenes in long-scope space and time,
+exhibiting promising generalization performance.
+Limitations and future work. Currently, ELM only perceives driving scenes
+and interacts with human users. ELM can be further explored to generate driv-
+ing control signals. Additionally, we will implement a prototype system, making
+ELM an embodied agent for closed-loop autonomous driving. Further experi-
+ments are needed to examine the model’s capacity in broader scenarios, as our
+databases are mostly nuScenes [8] and Ego4D [28]. To promote the adoption of
+this model in real-world deployments, more validations need to be conducted to
+verify whether common sense reasoning helps decision-making in novel scenarios.
+
+References
+
+ 1. Aafaq, N., Mian, A., Liu, W., Gilani, S.Z., Shah, M.: Video description: A survey
+    of methods, datasets, and evaluation metrics. ACM Computing Surveys (CSUR)
+    52(6), 1–37 (2019) 10, 11, 31
+ 2. Abu-El-Haija, S., Kothari, N., Lee, J., Natsev, P., Toderici, G., Varadarajan, B.,
+    Vijayanarasimhan, S.: Youtube-8m: A large-scale video classification benchmark.
+    arXiv preprint arXiv:1609.08675 (2016) 5, 36
+ 3. Alayrac, J.B., Donahue, J., Luc, P., Miech, A., Barr, I., Hasson, Y., Lenc, K., Men-
+    sch, A., Millican, K., Reynolds, M., et al.: Flamingo: a visual language model for
+    few-shot learning. Advances in Neural Information Processing Systems 35, 23716–
+    23736 (2022) 2, 10, 12, 23, 31, 33, 34
+ 4. Brohan, A., Brown, N., Carbajal, J., Chebotar, Y., Chen, X., Choromanski, K.,
+    Ding, T., Driess, D., Dubey, A., Finn, C., et al.: RT-2: Vision-language-action
+    models transfer web knowledge to robotic control. arXiv preprint arXiv:2307.15818
+    (2023) 2, 8, 22, 36
+ 5. Brohan, A., Brown, N., Carbajal, J., Chebotar, Y., Dabis, J., Finn, C., Gopalakr-
+    ishnan, K., Hausman, K., Herzog, A., Hsu, J., et al.: Rt-1: Robotics transformer
+    for real-world control at scale. arXiv preprint arXiv:2212.06817 (2022) 22, 36
+ 6. Brown, T.B., Mann, B., Ryder, N., Subbiah, M., Kaplan, J., Dhariwal, P., Nee-
+    lakantan, A., Shyam, P., Sastry, G., Askell, A., et al.: Language models are few-shot
+    learners (2020) 21
+ 7. Caba Heilbron, F., Escorcia, V., Ghanem, B., Carlos Niebles, J.: Activitynet: A
+    large-scale video benchmark for human activity understanding (2015) 6
+ 8. Caesar, H., Bankiti, V., Lang, A.H., Vora, S., Liong, V.E., Xu, Q., Krishnan, A.,
+    Pan, Y., Baldan, G., Beijbom, O.: nuScenes: A multimodal dataset for autonomous
+    driving (2020) 3, 4, 6, 7, 9, 11, 12, 15, 24, 26, 28
+ 9. Casas, S., Sadat, A., Urtasun, R.: Mp3: A unified model to map, perceive, predict
+    and plan. In: Proceedings of the IEEE/CVF Conference on Computer Vision and
+    Pattern Recognition. pp. 14403–14412 (2021) 2
+10. Chen, G., Liu, X., Wang, G., Zhang, K., Torr, P.H., Zhang, X.P., Tang, Y.: Tem-
+    adapter: Adapting image-text pretraining for video question answer (2023) 2
+
+16 Y. Zhou et al.
+
+11. Chen, L., Li, B., Shen, S., Yang, J., Li, C., Keutzer, K., Darrell, T., Liu, Z.:
+    Language models are visual reasoning coordinators. In: ICLR 2023 Workshop on
+    Mathematical and Empirical Understanding of Foundation Models (2023) 21
+12. Chen, L., Sinavski, O., Hünermann, J., Karnsund, A., Willmott, A.J., Birch, D.,
+    Maund, D., Shotton, J.: Driving with llms: Fusing object-level vector modality for
+    explainable autonomous driving. arXiv preprint arXiv:2310.01957 (2023) 2, 6, 7,
+    24, 36
+13. Chu, X., Qiao, L., Lin, X., Xu, S., Yang, Y., Hu, Y., Wei, F., Zhang, X., Zhang,
+    B., Wei, X., et al.: Mobilevlm: A fast, reproducible and strong vision language
+    assistant for mobile devices. arXiv preprint arXiv:2312.16886 (2023) 21
+14. Chung, J.J.Y., Kamar, E., Amershi, S.: Increasing diversity while maintaining ac-
+    curacy: Text data generation with large language models and human interventions.
+    arXiv preprint arXiv:2306.04140 (2023) 37
+15. Dauner, D., Hallgarten, M., Geiger, A., Chitta, K.: Parting with misconceptions
+    about learning-based vehicle motion planning. arXiv preprint arXiv:2306.07962
+    (2023) 2
+16. Deruyttere, T., Grujicic, D., Blaschko, M.B., Moens, M.F.: Talk2Car: Predicting
+    physical trajectories for natural language commands. Ieee Access (2022) 2, 24
+17. Devlin, J., Chang, M.W., Lee, K., Toutanova, K.: Bert: Pre-training of deep bidirec-
+    tional transformers for language understanding. arXiv preprint arXiv:1810.04805
+    (2018) 6
+18. Dewangan, V., Choudhary, T., Chandhok, S., Priyadarshan, S., Jain, A., Singh,
+    A., Srivastava, S., Jatavallabhula, K., Krishna, M.: Talk2BEV: Language-enhanced
+    bird’s-eye view maps for autonomous driving. arXiv preprint arXiv:2310.02251
+    (2023) 2
+19. Ding, X., Han, J., Xu, H., Zhang, W., Li, X.: HiLM-D: Towards high-resolution
+    understanding in multimodal large language models for autonomous driving. arXiv
+    preprint arXiv:2309.05186 (2023) 24
+20. Dosovitskiy, A., Beyer, L., Kolesnikov, A., Weissenborn, D., Zhai, X., Unterthiner,
+    T., Dehghani, M., Minderer, M., Heigold, G., Gelly, S., et al.: An image is
+    worth 16x16 words: Transformers for image recognition at scale. arXiv preprint
+    arXiv:2010.11929 (2020) 9
+21. Dosovitskiy, A., Ros, G., Codevilla, F., Lopez, A., Koltun, V.: CARLA: An open
+    urban driving simulator. In: Proceedings of the 1st Annual Conference on Robot
+    Learning. pp. 1–16 (2017) 6
+22. Driess, D., Xia, F., Sajjadi, M.S.M., Lynch, C., Chowdhery, A., Ichter, B., Wahid,
+    A., Tompson, J., Vuong, Q., Yu, T., et al.: PaLM-E: An embodied multimodal
+    language model (2023) 8, 21, 22
+23. Echterhoff, J., Yan, A., Han, K., Abdelraouf, A., Gupta, R., McAuley, J.: Driving
+    through the concept gridlock: Unraveling explainability bottlenecks. arXiv preprint
+    arXiv:2310.16639 (2023) 24
+24. Elhafsi, A., Sinha, R., Agia, C., Schmerling, E., Nesnas, I., Pavone, M.: Semantic
+    anomaly detection with large language models (2023) 24
+25. Fan, H., Zhu, F., Liu, C., Zhang, L., Zhuang, L., Li, D., Zhu, W., Hu, J., Li, H.,
+    Kong, Q.: Baidu apollo em motion planner. arXiv preprint arXiv:1807.08048 (2018)
+    2
+26. Fang, Y., Wang, W., Xie, B., Sun, Q., Wu, L., Wang, X., Huang, T., Wang, X.,
+    Cao, Y.: Eva: Exploring the limits of masked visual representation learning at scale.
+    In: Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern
+    Recognition. pp. 19358–19369 (2023) 6, 8
+
+    Embodied Understanding of Driving Scenarios 17
+
+27. Gao, P., Han, J., Zhang, R., Lin, Z., Geng, S., Zhou, A., Zhang, W., Lu, P., He, C.,
+    Yue, X., et al.: LLaMA-Adapter v2: Parameter-efficient visual instruction model.
+    arXiv preprint arXiv:2304.15010 (2023) 3, 8, 10, 13, 23, 25, 31, 35, 40
+28. Grauman, K., Westbury, A., Byrne, E., Chavis, Z., Furnari, A., Girdhar, R., Ham-
+    burger, J., Jiang, H., Liu, M., Liu, X., et al.: Ego4d: Around the world in 3,000
+    hours of egocentric video (2022) 2, 3, 4, 6, 7, 9, 11, 15, 21, 22, 26, 28, 29, 35, 36
+29. Gu, J., Kirmani, S., Wohlhart, P., Lu, Y., Arenas, M.G., Rao, K., Yu, W., Fu,
+    C., Gopalakrishnan, K., Xu, Z., et al.: Robotic task generalization via hindsight
+    trajectory sketches. In: First Workshop on Out-of-Distribution Generalization in
+    Robotics at CoRL 2023 (2023) 23, 36
+30. Hao, Y., Song, H., Dong, L., Huang, S., Chi, Z., Wang, W., Ma, S., Wei, F.:
+    Language models are general-purpose interfaces. arXiv preprint arXiv:2206.06336
+    (2022) 22
+31. Hu, E.J., Shen, Y., Wallis, P., Allen-Zhu, Z., Li, Y., Wang, S., Wang, L.,
+    Chen, W.: Lora: Low-rank adaptation of large language models. arXiv preprint
+    arXiv:2106.09685 (2021) 6
+32. Hu, P., Huang, A., Dolan, J., Held, D., Ramanan, D.: Safe local motion planning
+    with self-supervised freespace forecasting. In: Proceedings of the IEEE/CVF Con-
+    ference on Computer Vision and Pattern Recognition. pp. 12732–12741 (2021) 32,
+    33
+33. Hu, S., Chen, L., Wu, P., Li, H., Yan, J., Tao, D.: St-p3: End-to-end vision-based
+    autonomous driving via spatial-temporal feature learning (2022) 2, 21, 32, 33
+34. Hu, Y., Yang, J., Chen, L., Li, K., Sima, C., Zhu, X., Chai, S., Du, S., Lin, T.,
+    Wang, W., et al.: Planning-oriented autonomous driving (2023) 2, 12, 14, 21, 32,
+    35, 42
+35. Huang, L., Li, Z., Sima, C., Wang, W., Wang, J., Qiao, Y., Li, H.: Leverag-
+    ing vision-centric multi-modal expertise for 3d object detection. arXiv preprint
+    arXiv:2310.15670 (2023) 13, 14, 33, 34
+36. Huang, S., Dong, L., Wang, W., Hao, Y., Singhal, S., Ma, S., Lv, T., Cui, L.,
+    Mohammed, O.K., Liu, Q., et al.: Language is not all you need: Aligning perception
+    with language models. arXiv preprint arXiv:2302.14045 (2023) 22
+37. Jin, B., Liu, X., Zheng, Y., Li, P., Zhao, H., Zhang, T., Zheng, Y., Zhou, G., Liu,
+    J.: Adapt: Action-aware driving caption transformer (2023) 24
+38. Karamcheti, S., Nair, S., Chen, A.S., Kollar, T., Finn, C., Sadigh, D., Liang, P.:
+    Language-Driven representation learning for robotics (2023) 22
+39. Kay, W., Carreira, J., Simonyan, K., Zhang, B., Hillier, C., Vijayanarasimhan, S.,
+    Viola, F., Green, T., Back, T., Natsev, P., et al.: The kinetics human action video
+    dataset. arXiv preprint arXiv:1705.06950 (2017) 5, 36
+40. Keysan, A., Look, A., Kosman, E., Gürsun, G., Wagner, J., Yao, Y., Rak-
+    itsch, B.: Can you text what is happening? integrating pre-trained language en-
+    coders into trajectory prediction models for autonomous driving. arXiv preprint
+    arXiv:2309.05282 (2023) 24
+41. Khurana, T., Hu, P., Dave, A., Ziglar, J., Held, D., Ramanan, D.: Differentiable
+    raycasting for self-supervised occupancy forecasting. In: European Conference on
+    Computer Vision. pp. 353–369. Springer (2022) 32, 33
+42. Kim, J., Misu, T., Chen, Y.T., Tawari, A., Canny, J.: Grounding human-to-vehicle
+    advice for self-driving vehicles (2019) 2, 5, 24
+43. Kim, J., Rohrbach, A., Darrell, T., Canny, J., Akata, Z.: Textual explanations for
+    self-driving vehicles (2018) 2, 5, 6, 24
+44. Kuhn, H.W.: The hungarian method for the assignment problem. Naval research
+    logistics quarterly 2(1-2), 83–97 (1955) 13, 14
+
+18 Y. Zhou et al.
+
+45. LeCun, Y.: A path towards autonomous machine intelligence version 0.9. 2, 2022-
+    06-27. Open Review 62 (2022) 22
+46. Li, B., Zhang, Y., Chen, L., Wang, J., Pu, F., Yang, J., Li, C., Liu, Z.: MIMIC-IT:
+    Multi-modal in-context instruction tuning. arXiv preprint arXiv:2306.05425 (2023)
+    2, 3, 10, 11, 23, 31
+47. Li, H., Li, Y., Wang, H., Zeng, J., Cai, P., Lin, D., Yan, J., Xu, F., Xiong, L.,
+    Wang, J., Zhu, F., Yan, K., Xu, C., Wang, T., Mu, B., Ren, S., Peng, Z., Qiao,
+    Y.: Open-sourced data ecosystem in autonomous driving: the present and future
+    (2023). https://doi.org/10.13140/RG.2.2.10945.74088 24
+48. Li, J., Li, D., Savarese, S., Hoi, S.: BLIP-2: Bootstrapping language-image pre-
+    training with frozen image encoders and large language models (2023) 2, 3, 8, 10,
+    11, 12, 21, 23, 26, 31, 32, 33, 34, 35
+49. Li, K., He, Y., Wang, Y., Li, Y., Wang, W., Luo, P., Wang, Y., Wang, L., Qiao,
+    Y.: Videochat: Chat-centric video understanding. arXiv preprint arXiv:2305.06355
+    (2023) 2, 3, 6, 7, 10, 23, 31
+50. Li, Z., Wang, W., Li, H., Xie, E., Sima, C., Lu, T., Qiao, Y., Dai, J.: Bevformer:
+    Learning bird’s-eye-view representation from multi-camera images via spatiotem-
+    poral transformers. In: European conference on computer vision. pp. 1–18. Springer
+    (2022) 13, 14, 33, 34
+51. Lin, C.Y.: Rouge: A package for automatic evaluation of summaries. In: Text sum-
+    marization branches out. pp. 74–81 (2004) 10, 30
+52. Lin, T.Y., Maire, M., Belongie, S., Hays, J., Perona, P., Ramanan, D., Dollár, P.,
+    Zitnick, C.L.: Microsoft coco: Common objects in context (2014) 6
+53. Liu, H., Li, C., Wu, Q., Lee, Y.J.: Visual instruction tuning (2023) 2, 3, 6, 7, 10,
+    11, 23, 31
+54. Locatello, F., Weissenborn, D., Unterthiner, T., Mahendran, A., Heigold, G.,
+    Uszkoreit, J., Dosovitskiy, A., Kipf, T.: Object-centric learning with slot atten-
+    tion. Advances in Neural Information Processing Systems 33, 11525–11538 (2020)
+    8, 31
+55. Loshchilov, I., Hutter, F.: Decoupled weight decay regularization. arXiv preprint
+    arXiv:1711.05101 (2017) 31
+56. Lu, P., Mishra, S., Xia, T., Qiu, L., Chang, K.W., Zhu, S.C., Tafjord, O., Clark, P.,
+    Kalyan, A.: Learn to explain: Multimodal reasoning via thought chains for science
+    question answering (2022) 2
+57. Majumdar, A., Yadav, K., Arnaud, S., Ma, Y.J., Chen, C., Silwal, S., Jain, A.,
+    Berges, V.P., Abbeel, P., Malik, J., et al.: Where are we in the search for an
+    artificial visual cortex for embodied intelligence? arXiv preprint arXiv:2303.18240
+    (2023) 22
+58. Malla, S., Choi, C., Dwivedi, I., Choi, J.H., Li, J.: DRAMA: Joint risk localization
+    and captioning in driving (2023) 2, 5, 24
+59. Mao, J., Qian, Y., Zhao, H., Wang, Y.: GPT-Driver: Learning to drive with gpt.
+    arXiv preprint arXiv:2310.01415 (2023) 24
+60. Mu, Y., Zhang, Q., Hu, M., Wang, W., Ding, M., Jin, J., Wang, B., Dai, J., Qiao,
+    Y., Luo, P.: Embodiedgpt: Vision-language pre-training via embodied chain of
+    thought. arXiv preprint arXiv:2305.15021 (2023) 21, 22
+61. Muhammad Maaz, Hanoona Rasheed, S.K., Khan, F.: Video-chatgpt: Towards de-
+    tailed video understanding via large vision and language models. ArXiv 2306.05424
+    (2023) 2, 3, 6, 7, 10, 23, 31
+62. OpenAI, R.: Dall·e 3 system card (2023) 37
+63. OpenAI, R.: Gpt-4 technical report. arXiv pp. 2303–08774 (2023) 7, 13, 21, 23,
+    24, 27, 28, 30
+
+        Embodied Understanding of Driving Scenarios 19
+
+64. OpenAI, R.: Gpt-4v(ision) system card (2023) 30
+65. Padalkar, A., Pooley, A., Jain, A., Bewley, A., Herzog, A., Irpan, A., Khazatsky,
+    A., Rai, A., Singh, A., Brohan, A., et al.: Open x-embodiment: Robotic learning
+    datasets and rt-x models. arXiv preprint arXiv:2310.08864 (2023) 22
+66. Palo, N.D., Byravan, A., Hasenclever, L., Wulfmeier, M., Heess, N., Riedmiller, M.:
+    Towards a unified agent with foundation models. arXiv preprint arXiv:2307.09668
+    (2023) 22
+67. Papineni, K., Roukos, S., Ward, T., Zhu, W.J.: Bleu: a method for automatic
+    evaluation of machine translation. In: Proceedings of the 40th annual meeting of
+    the Association for Computational Linguistics. pp. 311–318 (2002) 10, 30
+68. Qian, T., Chen, J., Zhuo, L., Jiao, Y., Jiang, Y.G.: NuScenes-QA: A multi-modal
+    visual question answering benchmark for autonomous driving scenario. arXiv
+    preprint arXiv:2305.14836 (2023) 2, 5, 6, 7, 24, 35
+69. Raffel, C., Shazeer, N., Roberts, A., Lee, K., Narang, S., Matena, M., Zhou, Y., Li,
+    W., Liu, P.J.: Exploring the limits of transfer learning with a unified text-to-text
+    transformer (2020) 6, 9, 11, 27, 32, 37
+70. Regulation, G.D.P.: Art. 22 gdpr. automated individual decision-making, including
+    profiling. Intersoft Consulting (2020) 2
+71. Sachdeva, E., Agarwal, N., Chundi, S., Roelofs, S., Li, J., Dariush, B., Choi, C.,
+    Kochenderfer, M.: Rank2Tell: A multimodal driving dataset for joint importance
+    ranking and reasoning. arXiv preprint arXiv:2309.06597 (2023) 2, 5, 24
+72. Sauer, A., Savinov, N., Geiger, A.: Conditional affordance learning for driving in
+    urban environments. In: Conference on Robot Learning. pp. 237–252. PMLR (2018)
+    2
+73. Seff, A., Cera, B., Chen, D., Ng, M., Zhou, A., Nayakanti, N., Refaat, K.S., Al-Rfou,
+    R., Sapp, B.: MotionLM: Multi-agent motion forecasting as language modeling
+    (2023) 24
+74. Sha, H., Mu, Y., Jiang, Y., Chen, L., Xu, C., Luo, P., Li, S.E., Tomizuka, M.,
+    Zhan, W., Ding, M.: LanguageMPC: Large language models as decision makers for
+    autonomous driving. arXiv preprint arXiv:2310.03026 (2023) 24
+75. Shah, D., Sridhar, A., Dashora, N., Stachowicz, K., Black, K., Hirose, N., Levine,
+    S.: Vint: A foundation model for visual navigation. arXiv preprint arXiv:2306.14846
+    (2023) 36
+76. Sima, C., Renz, K., Chitta, K., Chen, L., Zhang, H., Xie, C., Luo, P., Geiger,
+    A., Li, H.: Drivelm: Driving with graph visual question answering. arXiv preprint
+    arXiv:2312.14150 (2023) 5, 6, 21, 24, 28
+77. Song, E., Chai, W., Wang, G., Zhang, Y., Zhou, H., Wu, F., Guo, X., Ye, T., Lu,
+    Y., Hwang, J.N., et al.: Moviechat: From dense token to sparse memory for long
+    video understanding. arXiv preprint arXiv:2307.16449 (2023) 3, 23
+78. Sun, P., Kretzschmar, H., Dotiwalla, X., Chouard, A., Patnaik, V., Tsui, P., Guo,
+    J., Zhou, Y., Chai, Y., Caine, B., et al.: Scalability in perception for autonomous
+    driving: Waymo open dataset. In: Proceedings of the IEEE/CVF conference on
+    computer vision and pattern recognition. pp. 2446–2454 (2020) 3, 6, 7, 12, 26
+79. Touvron, H., Martin, L., Stone, K., Albert, P., Almahairi, A., Babaei, Y., Bash-
+    lykov, N., Batra, S., Bhargava, P., Bhosale, S., et al.: Llama 2: Open foundation
+    and fine-tuned chat models. arXiv preprint arXiv:2307.09288 (2023) 21
+80. Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A.N., Kaiser,
+    Ł., Polosukhin, I.: Attention is all you need. Advances in neural information pro-
+    cessing systems 30 (2017) 9
+
+20 Y. Zhou et al.
+
+81. Vedantam, R., Lawrence Zitnick, C., Parikh, D.: Cider: Consensus-based image
+    description evaluation. In: Proceedings of the IEEE conference on computer vision
+    and pattern recognition. pp. 4566–4575 (2015) 10, 30
+82. Voigt, P., Von dem Bussche, A.: The eu general data protection regulation (gdpr).
+    A Practical Guide, 1st Ed. 10(3152676), 10–5555 (2017) 2
+83. Wang, H., Li, T., Li, Y., Chen, L., Sima, C., Liu, Z., Wang, B., Jia, P., Wang, Y.,
+    Jiang, S., et al.: OpenLane-V2: A topology reasoning benchmark for unified 3d hd
+    mapping (2023) 28
+84. Wang, J., Yang, Z., Hu, X., Li, L., Lin, K., Gan, Z., Liu, Z., Liu, C., Wang, L.: Git:
+    A generative image-to-text transformer for vision and language. arXiv preprint
+    arXiv:2205.14100 (2022) 22
+85. Wang, P., Huang, X., Cheng, X., Zhou, D., Geng, Q., Yang, R.: The apolloscape
+    open dataset for autonomous driving and its application. IEEE transactions on
+    pattern analysis and machine intelligence (2019) 36
+86. Wang, Y., Guizilini, V.C., Zhang, T., Wang, Y., Zhao, H., Solomon, J.: Detr3d: 3d
+    object detection from multi-view images via 3d-to-2d queries. In: Conference on
+    Robot Learning. pp. 180–191. PMLR (2022) 13, 14, 33, 34
+87. Wayve: Lingo-1. https : / / wayve . ai / thinking / lingo - natural - language -
+    autonomous-driving/ (2023) 24
+88. Wu, D., Han, W., Wang, T., Dong, X., Zhang, X., Shen, J.: Referring Multi-Object
+    tracking (2023) 24
+89. Wu, D., Han, W., Wang, T., Liu, Y., Zhang, X., Shen, J.: Language prompt for
+    autonomous driving. arXiv preprint arXiv:2309.04379 (2023) 2, 5, 24
+90. Xu, N., Yang, L., Fan, Y., Yue, D., Liang, Y., Yang, J., Huang, T.: Youtube-vos: A
+    large-scale video object segmentation benchmark. arXiv preprint arXiv:1809.03327
+    (2018) 5, 36
+91. Xu, Y., Yang, X., Gong, L., Lin, H.C., Wu, T.Y., Li, Y., Vasconcelos, N.: Explain-
+    able object-induced action decision for autonomous vehicles (2020) 2, 24
+92. Xu, Z., Zhang, Y., Xie, E., Zhao, Z., Guo, Y., Wong, K.K., Li, Z., Zhao,
+    H.: DriveGPT4: Interpretable end-to-end autonomous driving via large language
+    model. arXiv preprint arXiv:2310.01412 (2023) 6, 7, 24
+93. Yang, Z., Jia, X., Li, H., Yan, J.: A survey of large language models for autonomous
+    driving (2023) 2
+94. Zeng, W., Luo, W., Suo, S., Sadat, A., Yang, B., Casas, S., Urtasun, R.: End-to-end
+    interpretable neural motion planner. In: Proceedings of the IEEE/CVF Conference
+    on Computer Vision and Pattern Recognition. pp. 8660–8669 (2019) 32
+95. Zhai, Y., Tong, S., Li, X., Cai, M., Qu, Q., Lee, Y.J., Ma, Y.: Investigating
+    the catastrophic forgetting in multimodal large language models. arXiv preprint
+    arXiv:2309.10313 (2023) 3, 7
+96. Zhang, P., Zeng, G., Wang, T., Lu, W.: Tinyllama: An open-source small language
+    model. arXiv preprint arXiv:2401.02385 (2024) 21
+97. Zhang, Q., Peng, Z., Zhou, B.: Learning to drive by watching youtube videos:
+    Action-conditioned contrastive policy pretraining. In: European Conference on
+    Computer Vision. pp. 111–128. Springer (2022) 5, 36
+98. Zhang, R., Han, J., Zhou, A., Hu, X., Yan, S., Lu, P., Li, H., Gao, P., Qiao, Y.:
+    LLaMA-Adapter: Efficient fine-tuning of language models with zero-init attention.
+    arXiv preprint arXiv:2303.16199 (2023) 2, 7
+99. Zhu, H., Wu, W., Zhu, W., Jiang, L., Tang, S., Zhang, L., Liu, Z., Loy, C.C.:
+    CelebV-HQ: A large-scale video facial attributes dataset. In: ECCV (2022) 5, 36
+
+        Embodied Understanding of Driving Scenarios 21
+
+Appendix
+
+A Motivating Questions
+
+To better understand our work, we supplement with intuitive questions.
+
+   Q1: Why is the embodied understanding necessary for driving scenarios?
+   Embodied understanding refers to the ability of an autonomous agent to
+observe, comprehend, and interact with its environments incorporating sensory
+input and world knowledge [28]. Embodied understanding tasks serve to facili-
+tate the agent’s proficiency in common sense reasoning. For instance, one such
+scenario involves deciphering the body language of a pedestrian gesturing for
+the ego-vehicle to proceed first. Thus, it can implement more complex and safer
+driving strategies, capable of adapting to dynamic and unexpected scenarios. Be-
+sides, agents can interact with humans more naturally and offer insights about
+the users’ behaviors and expectations, leading to a more intuitive, responsive,
+and user-friendly design [60]. Moreover, it enables agents to learn from each
+human interaction and adapt over time.
+
+   Q2: Why should Vision-Language Models (VLMs) be introduced into the em-
+bodied understanding of driving scenes?
+   One of the critical strengths of VLMs [22,48,63,79] is that it possesses world
+knowledge from global data, which can help autonomous vehicles in common
+sense reasoning [6, 11]. VLMs enable a more thorough interpretation of scenes,
+such as billboards, landmarks, body language, uncommon objects, and more
+(please refer to Fig. 12). For these unusual cases, it is hard for end-to-end mod-
+els [33, 34] to cover them all, even with the introduction of massive additional
+data. Nevertheless, VLMs can effortlessly acquire this knowledge. Moreover,
+VLMs have the inherent capacity to correlate and generate contextually rele-
+vant sentences or instructions based on visual inputs.
+
+   Q3: Will the timeliness of the VLMs ensure it is adequate for driving sce-
+narios?
+   Without optimizations, ELM and other VLMs run about an order of magni-
+tude slower than UniAD [34] (0.62 FPS). However, optimizations for simulated
+closed-loop development make practical VLM use in driving possible [76]. Tech-
+niques like distillation and quantization in LLM inference can help, and another
+approach would be to execute only the final motion stage of an agent at 20
+FPS, while the other VQA stages are executed at a lower frame rate. In addi-
+tion, works like MobileVLM [13] and TinyLlama [96] are addressing the issue of
+deploying VLMs on mobile devices, e.g., vehicles.
+
+   Q4: Why adapt VLMs to driving rather than adding language inputs to
+driving-specific models?
+
+22 Y. Zhou et al.
+
+   We apply VLMs for driving instead of utilizing pre-processed information
+from drive-specific models due to training data issues. A general VLM can benefit
+from massive pre-training data extracted from the internet and fine-tuning on
+small driving datasets for adaptation [45]. It learns from diverse data sources
+and potentially generalizes new tasks (please refer to Tab. 8 in the main paper).
+Conversely, drive-specific models can only be pre-trained on limited datasets,
+and incorporating non-driving language input into these datasets is non-trivial.
+Combining the advantages of VLMs and driving-specific models is worth further
+study.
+
+   Q5: Why does the benchmark of embodied understanding for autonomous
+driving incorporate data from the general computer vision domains, e.g., Ego4D
+[28]?
+   Ego4D contains diverse egocentric videos gathered worldwide, with driving
+scenarios as a subset. It offers a more varied and realistic breadth of scenarios,
+covering a more comprehensive range of situations not included in the original
+training data. The dataset enhances the system’s adaptability and improves its
+ability to handle unpredictable real-world scenes. Furthermore, behaviors occur
+over a long duration in Ego4D (such as cooking a dish for several minutes),
+while those in the driving dataset are pretty brief (such as overtaking a car
+within a few seconds). The introduction of the Ego4D dataset facilitates a more
+reasonable evaluation of the temporal capabilities of VLMs in embodied scene
+understanding.
+
+B Related Work
+
+The related work is provided below due to the page limit in the main paper.
+
+B.1 Embodied Understanding
+
+Embodied understanding aims to allow intelligent agents to follow human in-
+structions, interact with open environments, and incorporate common sense into
+reasoning [28, 57, 65]. Recently, we have witnessed the success of embodied un-
+derstanding, especially in robotics [30,36,66,84]. RT-1 [5] realizes an end-to-end
+pipeline from human instructions to robot control signals in an embodiment set-
+ting. PaLM-E [22] encodes images into visual tokens and integrates them with
+prompts to generate answers or robotics control instructions. It focuses on imple-
+menting task decomposition from high-order instruction to low-order execution.
+RT-2 [4] goes further by realizing a closed loop from the input high-order com-
+mands and images to the output robot control signals. Even though they can
+achieve a recurrent output of control signals, they can not query past events re-
+quired for driving scenarios. EmbodiedGPT [60] extracts embodied-task-specific
+features from planning queries, enabling robots to perceive their environment
+and make reasoned decisions. Voltron [38] builds a new evaluation suite covering
+
+        Embodied Understanding of Driving Scenarios 23
+
+five different robot learning problems, serving as a unified platform for com-
+prehensively evaluating visual representations of embodied understanding for
+robotics. RT-Trajectory [29] uses roughly drawn sketches to provide interactive
+guidance, aiding the model in accomplishing complex control tasks. Despite the
+success of these works in embodied understanding, the models mostly confined
+to indoor scenes have difficulty being directly applied to driving scenarios. Dif-
+ferently, our work offers augmented large-scale spatial localization capabilities
+and long-horizon temporal modeling capabilities, extending it to outdoor driving
+scenarios.
+
+
+
+    B.2 Large Vision-Language Models
+
+
+Visual language models typically serve as the core of embodied scene under-
+standing. BLIP2 [48] offers a universal and efficient pre-training strategy, guid-
+ing visual language pre-training from ready-made image encoders and frozen
+language models. Flamingo [3] builds a model that can quickly adapt to new
+tasks with only a few annotated examples, bridging the gap between power-
+ful pre-trained visual and language models. LLaMA-Adapter V2 [27] unlocks
+more learnable parameters of the language model. It employs an early fusion
+strategy by only inputting visual tokens into early LLM layers, thus facilitating
+better visual knowledge integration. LLaVA [53] first tries to generate multi-
+modal instruction data using GPT-4 [63]. LLaVA shows impressive multi-model
+chatting capabilities, sometimes exhibiting GPT-4 behavior on unseen images
+or instructions. The models mentioned above achieve good image-based scene
+understanding tasks but need to support the inquiry of video content.
+   Otter [46] proposes a dataset of 2.2 million instruction-response pairs from
+images and videos. Each pair is accompanied by multi-modal information, form-
+ing a dialogue context to enhance VLM’s perception, reasoning, and planning
+capabilities. VideoChat [49] expands the learnable parameters of the model to
+adapt to the understanding of video content and proposes a tutorial dataset con-
+taining thousands of videos with detailed descriptions and dialogues. By merging
+the video-adaptive visual encoder and language model, Video-ChatGPT [61] can
+understand and generate human-like video dialogues. However, these methods
+of extracting a few frame samples from an entire video cannot fully comprehend
+the content of a long video. MovieChat [77] develops a memory mechanism and
+enables the summarization of an entire movie. Nevertheless, it does not support
+querying events that happened at a past moment. Moreover, the above methods
+can only provide a rough inquiry of relative position and cannot obtain accurate
+3D locations.
+   In contrast, our work differentiates from the prior VLMs by designing a space-
+aware pre-training strategy and time-aware token selection module to address
+the driving scenarios-specific issues.
+
+24 Y. Zhou et al.
+
+B.3 Vision-Language Models for Autonomous Driving
+
+To introduce embodied understanding into driving scenarios, a series of datasets
+[16, 47, 88, 89, 91] have been proposed. For the use of explaining driving be-
+haviors, some works [23, 40, 42, 43, 58, 68, 71, 76] provide annotations for scene
+descriptions, traffic element analysis, high-level instructions, and danger warn-
+ings. HiLM-D [19] first uses natural language to simultaneously recognize and
+explain risk objects, understand the intentions of the ego-vehicle, and provide
+motion suggestions. One work [12] introduces a quality assessment metric for
+driving behavior and demonstrates the proficiency of the VLM driver in inter-
+preting driving scenarios, answering questions, and making decisions. Adapt [37]
+provides user-friendly natural language narratives for each vehicle control and
+action decision step. DriveGPT4 [92] achieves an interpretable end-to-end au-
+tonomous driving system using a language model, which can explain vehicle
+actions and provide corresponding reasoning. Lingo-1 [87] integrates vision, lan-
+guage, and action to enhance the industry’s interpreting, explaining, and training
+foundational driving models. Nevertheless, these works are similar in that they
+describe the entire scene.
+   Additionally, some approaches leverage language models to enhance tradi-
+tional autonomous driving tasks. An attempt [24] introduces a monitoring frame-
+work for semantic anomaly detection in vision-based policies to achieve open-
+vocabulary object detection. However, it can not achieve the spatial localization
+of concern in driving. MotionLM [73] redefines multi-agent motion prediction as
+a language modeling task. However, it only predicts the orientation of the ob-
+jects over continuous time. LanguageMPC [74] develops an algorithm to convert
+VLM decisions into actionable driving instructions. GPT-Driver [59] leverages
+large language models’ inherent powerful reasoning capabilities and generaliza-
+tion potential to achieve trajectory prediction. Essentially, they use the language
+model as the decision-maker, leveraging the positioning information given by the
+detection model to predict trajectories. The models themselves do not have spa-
+tial localization capabilities. Furthermore, none of the above methods can query
+past events over a long time series.
+   Previous endeavors are constrained to providing descriptions of driving scenes.
+Instead, our study analyzes the requirements of driving scenarios, articulates the
+four essential capabilities, and establishes an evaluation benchmark.
+
+C ELM - Implementation Details
+
+C.1 Space-aware Pre-training
+
+Auto-labeling with human in the loop. To enhance the spatial understand-
+ing capability of the model, we design a localization labeling pipeline based on
+nuScenes [8]. As depicted in Fig. 3 of the main paper, the annotation process
+involves the manual quality check and is divided into four steps. In Node 1, GPT-
+4 [63] generates many unique text prompt templates for diversity. We provide
+
+        Embodied Understanding of Driving Scenarios 25
+
+an instance of prompts to generate templates as follows, where u and v are pixel
+coordinates.
+
+   Prompt = "Question: Generate 20 diverse templates into a list that con-
+   vey similar meanings to the following Python statement:
+   "Determine the spatial coordinates in 3D corresponding to the 2D pixel
+   at < c, {u}, {v} >.",
+   "Find the 3D spatial coordinates corresponding to the 2D pixel at <
+   c, {u}, {v} >.",
+   "Provide the 3D scene position of the 2D point < c, {u}, {v} >.",
+   "Compute the 3D scene position of the 2D pixel at < c, {u}, {v} >.", etc.
+   Answer: "
+
+   In Node 2-3, a manual approach is employed to sample and select one thou-
+sand high-quality templates. For the ground truth labels of localization, we estab-
+lish the correspondence between 3D pixels and 3D points using point clouds and
+camera parameters. For the nuScenes dataset, we collected point cloud-image
+pairs at a sampling rate of 2Hz. During the sampling process in Node 4, we vali-
+date several sampling strategies: 1) random sampling; 2) sampling based on the
+pixel distance on the image; 3) selecting only foreground points; 4) sampling the
+farthest points based on spatial distance. During the algorithm iteration pro-
+cess, the fourth strategy is the most effective. We set the sampling threshold to
+1.5 meters and ultimately select about 200 points from each frame to construct
+inquiries about spatial locations. In the end, we combine the templates with the
+positional labels to obtain a total of 7.4 million QA pairs related to localization.
+   Besides, cross-dataset description labels are provided to ensure the high gen-
+eralization of the model in driving scenarios. The pipeline is shown in Fig. 3 from
+the main paper. Firstly, the annotation process needs to filter out poor-quality
+images, as the noise introduced by these images can affect the VLM’s accuracy.
+Taking YouTube data as an example, videos are segmented into continuous im-
+age frames at a rate of one frame every five seconds. We sample videos with
+resolutions no less than 720p (e.g., 1280×720 for 16:9 videos) and discard the
+first 90 seconds and the last 30 seconds for most videos to remove the channel
+introduction at the beginning and the subscription reminder at the end. A con-
+tinuous set of 100 frames is compiled and 10 frames are randomly selected from
+these to be sent to the annotator. The annotator will simultaneously browse
+and compare 100 images from 10 different sets, choosing the worst 1 to 3 sets
+of images based on indicators such as scene richness, lighting, blurriness, and
+viewpoint. All images from this poorer set are labeled for return and sent back
+into the data pool, while the remaining nine sets of images pass the screening.
+When a video source is marked for return five times, it is added to a blacklist
+and annotators no longer receive image data from it.
+   For the filtered images, we give three types of prompts to LLaMA-Adapter
+V2 [27] to generate labels related to scene captions, traffic elements, and driving
+
+    26  Y. Zhou et al.
+
+           Timestamp      Text Tokens  Learnable Queries
+                                               𝑁×𝑑′
+       Flan T5
+                                               Q
+           𝑇×d′      𝐿×d′  K,V        Cross Attention
+       Image Feature                           Selecte Feature
+         time                                  Q
+                              +     K   Cross Attention
+           𝑇×32×𝑑′        concat
+           V
+           𝑇×32×𝑑                                  𝑁×𝑑
+
+    Fig. 6: Detailed design of the proposed token bank. This module receives inputs
+    of image features, timestamps, and text tokens. To incorporate the image domain into
+    the text space, we employ the Q-former [48]. The process enables the model to perform
+    cross-attention with the text tokens, allowing the model to select the most pertinent
+    tokens from the videos for input to the subsequent language model.
+
+    behaviors. Specifically, the example prompts for nuScenes [8], Waymo [78], and
+    YouTube are as follows.
+
+       Prompt_A = "Question: Describe the scenario, especially the unusual
+       ones, to propose suggestions. Answer: "
+       Prompt_B = "Question: Describe the traffic elements in detail, especially
+       focus on traffic signals, cars, pedestrians and anything vital to driving.
+       Answer: "
+       Prompt_C = "Question: Which lane is the ego-vehicle driving in and how
+       should we drive at the moment. Answer: "
+
+       As for Ego4D [28], its prompt only involves scene description.
+
+       Prompt = "Question: Describe the scene, including the objects and the
+       actions. Answer: "
+
+       Similar to the previous round, for a group of continuous QAs, every 10 are
+    grouped together, with 1 randomly selected and given to the annotator. The
+    annotator follows certain guidelines, checking elements like overall environment,
+    road components, traffic lights, lane lines, motion status, and behavior decisions,
+    and chooses the worst 1 to 3 QAs from 10 groups based on these criteria. The
+    images from this set are returned to the VLM for re-annotation with feedback
+    from the annotator, such as "the annotation of a red traffic light is wrong". The
+    annotator will quickly browse images that have passed the review and correct
+    obvious minor errors.
+
+    C.2 Time-aware Token Selection
+
+    Fig. 6 illustrates the pipeline of our token selection process, and the entire module
+    is referred to as the token bank. The input to this module comes from image
+    features qv, timestamps Tt, text prompts Tp, and learnable queries qi. The image
+
+
+
+
+
+
+
+
+
+
+Q-Former
+
+ T5.proj
+
+        Embodied Understanding of Driving Scenarios 27
+
+feature is projected into textual domain features qˆv ∈ RT ×32×d′ using Q-former
+with (1). The timestamps and input prompts are encoded using FlanT5 [69]
+to obtain the corresponding tokens. As referred to as (2), this module involves
+two cross-attention mechanisms. The learnable queries interact with the text
+prompts in the first cross-attention to map the variable-length text prompts
+to a fixed length of N tokens. The intermediate tokens qmid are considered to
+contain the features of the prompts. In the second cross-attention, qmid serves
+as the query, the concatenation of qˆv and T5Enc(Tt) serves as the key, and qv
+serves as the value. The model selects N tokens representing the corresponding
+timestamp and image content based on the input prompt requirements during
+this process.
+   The process, as mentioned earlier, is referred to as soft selection. In addition,
+we also explore two other alternatives: hard selection and manual selection. Hard
+selection refers to the process of selecting the N closest frames and their tokens
+based on the feature similarity:
+        h i
+        Q = MHCA qi, T5Enc(Tp), T5Enc(Tp) ,
+        K = concat ( ˆqv, T5Enc(Tt)) ,
+        S = avg_pool( Q√·dK′ ) ∈ RT , (4)
+
+        Evis = qv[argTopN(S)] ∈ RN ×32×d.
+
+Hard selection is more deterministic than soft selection as it does not involve
+probabilistic or weighted selection. It also comes with a higher risk of perfor-
+mance degradation when the selection is incorrect. As the name suggests, man-
+ual selection involves human experts selecting the frames that best represent the
+desired timestamps. In theory, it represents an upper bound for hard selection.
+Experiment results in Sec. 4.2 show that soft selection tends to achieve the best
+performance.
+
+
+C.3 Planning
+
+Through the newly formulated tasks of embodied understanding, we have achieved
+a comprehensive understanding of the driving scenes. Further on, autonomous
+driving ultimately requires guidance on how to drive. Therefore, we further ex-
+tend the model to accomplish the downstream task of planning. For this task,
+the inputs are a sequence of 3 images taken at 0.5-second intervals, direction
+instructions (turn_left, turn_right, and keep_forward), and current velocity
+s, while the output consists of 6 trajectory points at 0.5-second intervals. The
+design of the tokenizer is equivalent to that in Sec. 3.2.
+   To ensure the diversity of questions for the planning task, we also use GPT-
+4 [63] to generate as diverse a set of question templates as possible. The example
+prompt is provided below.
+
+28  Y. Zhou et al.
+
+   Prompt = "Question: Generate 20 diverse templates into a list that con-
+   vey similar meanings to the following Python statement:
+   "The ego car is moving {direction} at a speed of {s}. Predict six trajectory
+   points in the future.",
+   "Determine the trajectory of the ego car, moving {direction}, with a speed
+   of {s} for the next 6 points.",
+   "Predict the future trajectory of the ego car, traveling {direction} at a
+   speed of {s}, for the next 6 points.",
+   "Calculate the trajectory points for the ego car, which is moving {direc-
+   tion} at a speed of {s}, for the next six instances.", etc.
+   Answer: "
+
+D          ELM - Benchmark
+
+D.1   Fine-tuning Datasets
+Our fine-tuning datasets correspond to all tasks and are built upon many popular
+     datasets, including nuScenes [8] and Ego4D [28]. The data sources and label
+formats for each task are as follows:
+   – Surrounding Narration: It is based on DriveLM [76], which is annotated with
+     QAs regarding the object categories, presence, and occlusion in the current
+   scene in the nuScenes dataset.
+   – Traffic Sign Inquiry: The task is built upon Openlane-V2 [83], which is an-
+    notated with road signs and traffic lights corresponding to each lane in the
+   nuScenes dataset. Similar to the generation in Sec. 3.2, we use the templates
+     generated by GPT-4 [63] combined with traffic sign labels to form QA pairs.
+
+
+   Template Examples:
+   "Did the ego vehicle encounter any traffic sign earlier?",
+   "Has the driver observed any traffic sign previously?",
+   "Did the car detect any traffic sign before?", etc.
+
+     – Action & Decision: QAs related to objects’ motion and the ego vehicle’s
+   planning instructions are derived from DriveLM.
+  – Box Detection: Based on the methodology described in Sec. 3.2, we generate
+   QAs regarding the object positions and categories from the nuScenes labels.
+
+
+   Template Examples:
+   "What are the 3D coordinates for the 2D pixel at < c, {u}, {v} >.", etc.
+
+– Tracking: Leveraging the tracking labels in nuScenes, we incorporate the
+   past timestamps t into the Box Detection to formulate this task.
+
+         Embodied Understanding of Driving Scenarios                         29
+
+    Template Examples:
+    "Calculate the 3D position of the 2D pixel at < c, {u}, {v} > {t} seconds
+    ago.", etc.
+
+ – Box Prediction: Like the previous statement, we use future timestamps t this
+     time.
+
+    Template Examples:
+    "Determine the coordinates in 3D space to the 2D pixel at < c, {u}, {v} >
+    {t} seconds later.", etc.
+
+    – Egocentric Narration:    We use the timestamps provided by Ego4D [28] for
+        each narration to extract the corresponding image from the video. These
+     images and narrations serve as the data for the task.
+
+    Template Examples:
+    "Give a caption for this image.",
+    "Describe the scene.", etc.
+
+           – Moment Recap: Timestamps are chosen from a 60-second video, and we
+         ensure they are at least 20 seconds apart from the current moment. The
+     corresponding images and narrations of these timestamps t are subsequently
+     utilized as the data.
+
+    Template Examples:
+    "What took place {t} seconds in history?",
+    "Can you recount the historical event that took place {t} seconds back?",
+    etc.
+
+   – Event Query: Three consecutive frames are selected from a 60-second video.
+     The narrations of the first and third frames are utilized as the question,
+     while the narration of the middle frame is employed as the answer.
+
+  Template Examples:
+  "Tell me about the events that took place between {Event_A} and {
+  Event_B}.",
+  "Can you describe what occurred between {Event_A} and {
+  Event_B}?", etc.
+
+– Activity Prediction: The narration related to a future timestamp is extracted
+     as the data.
+
+    Template Examples:
+    "What event will occur in the next {t} seconds in the future?", etc.
+
+30 Y. Zhou et al.
+
+D.2 Metrics
+Language Metrics.
+   BLEU (Bilingual Evaluation Understudy) [67] measures the similarity be-
+tween a generated text and the reference texts. It compares n-grams (a continu-
+ous group of n words) in the generated text to those in the reference texts, with
+higher precision indicating a better match. The BLEU score exhibits insensitivity
+to semantic nuances and variations in word order.
+   ROUGE_L (Recall-Oriented Understudy for Gisting Evaluation) [51] cal-
+culates scores with the longest common subsequence of the model outputs and
+the reference answers. Like the BLEU metric, ROUGE_L is used to assess the
+level of matching between generated results and standard references, with the
+critical difference being that ROUGE_L is based on recall. It provides higher
+scores for matching longer sequences, thus awarding higher scores to summaries
+that contain more shared content with the source text.
+   CIDEr (Consensus-based Image Description Evaluation) [81] combines ele-
+ments from BLEU and vector space models. It quantifies the similarity between
+human-written and machine-generated descriptions using n-grams, where the
+n-grams are weighted according to their frequency of occurrence in the human-
+written descriptions. Therefore, it captures precision and recall and evaluates
+the consensus among multiple human references.
+   AGPT and SGPT4V refer to utilizing the powerful language and logical
+reasoning capabilities of GPT4 [63] or GPT4V [64] to evaluate text pairs or
+image-text pairs. Traditional metrics primarily evaluate performance at the word
+level and may not capture subtle semantic differences. The powerful reasoning
+capabilities of ChatGPT can be used to assess the quality of predictions and yield
+more rational scores. ChatGPT is prompted to assign numeric scores between
+0 and 100, with higher scores indicating higher predictive accuracy. Details for
+the evaluation prompt are as follows.
+
+   Prompt = "Rate my answer based on the ground truth answer from 0 to
+   100, with higher scores indicating that the answer is closer to the ground
+   truth, and you should be accurate to single digits like 62, 78, 41, etc. This
+   is the correct answer: {GT}. This is my answer: {Pred}."
+
+
+   Prompt = "Please score from 0 to 100 based on whether the given image
+   and text correctly match. The higher the score, the more accurate and
+   comprehensive the text description of the image is. You should give single
+   digits like 62, 78, 41, etc. This is the image: {Img}. This is my answer:
+   {Pred}."
+
+   Dn-gram is used to straightforwardly measure the text diversity of the corpus.
+Specifically, each sentence in the corpus needs to be tokenized into individual
+words. The ratio of the number of unique tokens to the number of all tokens,
+considering repetitions, serves as this metric.
+
+        Embodied Understanding of Driving Scenarios 31
+
+   Discussion. CIDEr is considered superior to BLEU and ROUGE_L [1]. As
+for the BLEU metric, a concise reply might lower the score since shortening
+the reply reduces the chance of a match for BLEU. As CIDEr focuses on se-
+mantic consistency, it is less likely to be influenced by the length of the reply
+sequence. In addition, BLEU and ROUGE_L may overlook some important in-
+formation in the text, such as semantic meanings and critical contextual content.
+Alternatively, CIDEr assigns greater weight to n-grams frequently appearing in
+human-written descriptions, thus accurately capturing critical information in
+the text. If an n-gram frequently appears in multiple descriptions, it is likely
+crucial for describing the image. Additionally, CIDEr introduces TF-IDF (Term
+Frequency-Inverse Document Frequency) to measure the significance of n-grams,
+thus accurately capturing essential information in descriptions. The GPT-related
+metrics are costly and have a slow evaluation speed, making them unsuitable for
+large-scale evaluation. Therefore, we use CIDEr as the primary metric.
+Localization Metrics.
+   For localization tasks, the language mentioned above evaluation metrics are
+no longer applicable. The reason lies in the semantic proximity of numbers,
+making it challenging to reflect physical distance discrepancies via language
+evaluation metrics. For instance, 0.12 and 12 might look similar, but there is
+a significant difference in their numeric values. The question-and-answer man-
+ner produces no confidence scores, so the traditional 3D detection evaluation
+metric mAP cannot be utilized directly. So in (3), we introduced a new eval-
+uation metric, Pr@k, to assess localization tasks, taking into account both the
+accuracy of classification and the disparity between predicted coordinates and
+ground truths.
+
+E Experiments
+
+E.1 Protocols
+
+ELM is first pre-trained on the open-world data corpus and then fine-tuned
+on diverse tasks. During the fine-tuning stage, our model and all the evaluated
+VLMs [3, 27, 46, 48, 49, 53, 61] are trained in three separate groups: one group for
+tasks on Ego4D, another group for tasks related to localization, and a third group
+for other tasks. Although we employed group training in our implementation,
+the language models can potentially train all tasks simultaneously. In addition,
+all models are trained until saturation (6 epochs). For single-frame models like
+LLaMA-Adapter V2 [27] and LLaVA [53], we employ frame concatenation to
+create their corresponding multi-frame versions.
+   As for the training settings, we follow most of the basic settings as in BLIP2-
+flant5 [48], with a batch size of 8, a learning rate of 1e-5, and AdamW [55]
+optimizer with a weight decay of 1×10−2. The warm-up learning rate is 1×10−8,
+with warm-up steps of 1000. The input images are resized to 364 × 364, and the
+maximum length of prompt tokens is 320. The number of tokens for each frame
+in Slot Attention [54] is 32, while the number of tokens for Q-Former [48] is also
+
+    32 Y. Zhou et al.
+
+Tracking
+  14.0
+           Box        Activity
+        Detection    51.6  18.1 Prediction
+
+   Box                          Egocentric
+Prediction 15.1        26.5     Narration
+
+
+             Traffic Sign                           Event
+               Inauiry 76.5                    39.8 Query
+
+                    Surrounding               Moment
+                      Narration    73.2  22.6 Recap
+         74.4
+         Action & Decision
+
+                  BLIP2 flan t5  Previous SOTA  ELM (Ours)
+
+    Fig. 7: Qualitative comparisons among BLIP2-flant5 [48], Previous SOTA,
+    and ELM. The metrics for BLIP2-flant5 and ELM are reported, with the previous
+    SOTA as the baseline for each task. It is important to note that the scale of each axis
+    in the radar chart has been adjusted based on the performance of BLIP2-flant5 and
+    ours. The length of the axis is linearly bound to the value.
+
+     Method        L2 (m) ↓        Collision (%)↓
+                  1s    2s      3s    Avg    1s       2s    3s   Avg
+     NMP [94]     -     -      2.31    -     -        -    1.92   -
+     SA-NMP [94]  -     -      2.05    -     -        -    1.59   -
+     FF [32]     0.55  1.20    2.54   1.43  0.06     0.17  1.07  0.43
+     EO [41]     0.67  1.36    2.78   1.60  0.04     0.09  0.88  0.33
+     ST-P3 [33]  1.33  2.11    2.90   2.11  0.23     0.62  1.27  0.71
+     UniAD [34]  0.48  0.96    1.65   1.03  0.05     0.17  0.71  0.35
+     UniAD† [34]  -     -       -     1.80   -        -     -    2.62
+     ELM         0.34  1.23    2.57   1.38  0.12     0.50  2.36  0.99
+
+    Table 9: A comparison of ELM to state-of-the-art end-to-end planning ap-
+    proaches. Our model achieved comparable results to FF [32], EO [41], ST-P3 [33],
+    and UniAD [34], etc. ELM yields a significant lead on the L2 metric at 1 second. † :
+    The version of UniAD that only uses the camera_front images. Avg: average.
+
+
+32. The token bank is initialized with 128 learnable queries. Experiments are
+conducted with 16 NVIDIA Tesla A100 GPUs.
+
+E.2 More Comparisons to State-of-the-arts
+
+Comparison to previous approaches. Fig. 7 presents a more intuitive com-
+parison of ELM to other VLMs through a radar chart. The previous SOTA refers
+to the results of the best method compared in each task. We highlight the main
+metrics corresponding to the outermost circle of the chart. The maximum and
+minimum values of the coordinate axis are adjusted while keeping the proportion
+of the axis constant. As the chart shows, our model significantly surpasses the
+baseline in all aspects and notably leads the state-of-the-art in nine tasks. Our
+model performs slightly less well on the Event Query, as the Flant5 [69] that
+ELM is based on has limitations when processing long sequence input text.
+
+    Embodied Understanding of Driving Scenarios 33
+
+
+
+
+
+    1.0    Car@1.0   BEVFormer   1.0    Trailer@1.0   BEVFormer
+                     DETR3D                           DETR3D
+                     VCD                              VCD
+    0.8              ELM         0.8                  ELM
+
+
+
+    0.6                          0.6
+
+
+
+    0.4                          0.4
+
+
+
+    0.2                          0.2
+
+
+
+    0.0                          0.0
+
+        0.0 0.2 0.4 0.6 0.8 1.0     0.0 0.2 0.4 0.6 0.8 1.0
+        Recall                       Recall
+
+
+    1.0    Pedestrian@1.0   BEVFormer   1.0    Barrier@1.0   BEVFormer
+                            DETR3D                           DETR3D
+                            VCD                              VCD
+    0.8                     ELM         0.8                  ELM
+
+
+
+    0.6                                 0.6
+
+
+
+    0.4                                 0.4
+
+
+
+    0.2                                 0.2
+
+
+
+    0.0                                 0.0
+
+        0.0 0.2 0.4 0.6 0.8 1.0            0.0 0.2 0.4 0.6 0.8 1.0
+        Recall                              Recall
+
+
+
+Fig. 8: Comparison to 3D detection models. We provide the precision-recall
+curves of BEVFormer [50], DETR3D [86], and VCD [35] under different categories.
+Since ELM does not have a recall metric, we use a dashed line to represent the preci-
+sion of ELM, pointing out where ELM surpasses the accuracy of traditional models at
+specific recall values.
+
+
+Quantitative results on planning. Tab. 9 describes a comparison of the
+ELM with end-to-end driving models on planning. The results indicate that our
+model can achieve comparable performance with end-to-end autonomous driving
+approaches, especially on the L2 metrics. ELM outperforms models like FF [32],
+EO [41], STP-3 [33], etc. in terms of accuracy in trajectory prediction. Our model
+has the most minor L2 error at 1 second, demonstrating its excellent localization
+capabilities after space-aware pre-training.
+
+
+E.3 More Ablations
+
+Ablation on space-aware pre-training. To further validate the role of our
+pre-training dataset in enhancing the localization capability of other VLMs, we
+supplement experiments on BLIP2-opt [48] and Flamingo [3] in Tab. 10. Both
+models are pre-trained using our localization data and then fine-tuned on the
+Box Detection task. We report the models’ Pr@1 and Pr@2 metrics for this
+task. To provide a more intuitive comparison of the pre-training benefits of
+localization, we also report the non-category-specific Pr@1 and Pr@2 metrics.
+The experimental results show that introducing space-aware pre-training can
+help Flamingo achieve significant improvement in localization-related tasks with
++8.8% and +11.2% on Pr@1 metrics.
+
+
+
+
+
+
+
+
+
+
+Precision    Precision
+
+
+
+
+
+
+
+
+
+
+Precision    Precision
+
+    34     Y. Zhou et al.
+
+                   Method      Pre-training BD w Category                BD w/o Category
+                                                            Pr@1  Pr@2   Pr@1  Pr@2
+                   BLIP2-opt [48]  w/o                      0.1   0.2    5.4   8.1
+                                    w                       19.4  39.5   29.3  60.9
+                   Flamingo [3]    w/o                      19.3  31.6   31.5  51.0
+                                    w                       28.1  38.1   42.7  60.1
+
+                        Table 10: Ablation on space-aware pre-training. We pre-train BLIP2-opt [48]
+                   and Flamingo [3] on the localization data and then fine-tune them on the Box Detection
+                      task, respectively. The Pr@1 and Pr@2 metrics on both with category and without
+    category evaluations are reported. BD: Box Detection.
+
+     Method  Token Selection  Moment Recap        Event Query                  Activity Prediction
+                       CIDEr    ROUGE_L BLEU CIDEr  ROUGE_L              BLEU CIDEr  ROUGE_L BLEU
+     Flamingo [3]  w/o  11.0      30.1  12.4  15.5    32.5               14.3  9.0     29.1  11.1
+                    w   18.2      33.9  16.7  40.8    45.9               34.8  14.8    32.3  15.5
+
+                       Table 11: Ablation on time-aware token selection. Flamingo [3] is used to val-
+                     idate the enhancement effect of our proposed time-aware token selection on Moment
+    Recap, Event Query, and Activity Prediction tasks.
+
+
+Ablation on time-aware token selection. Our proposed token selection mod-
+ule has the potential to help other VLMs enhance their performance in tasks re-
+lated to long-time series. Given that the textual encoding of timestamps requires
+the language model’s encoder, we report the results of Flamingo [3] in Tab. 11
+only. It can be observed that the model’s performance on Event Query increases
+by +25.3%, indicating that our frame can be applied to other encoder-decoder
+structured VLMs and enhance their memorization and forecasting abilities.
+Comparison to 3D detection approaches. In Sec. 4.1, we compare ELM
+with traditional 3D detection models under the Pr@1 metric. For a further com-
+parison, Fig. 8 shows the variance in precision at different levels of recall for
+BEVFormer [50], DETR3D [86], and VCD [35]. Given that ELM does not have
+a recall metric, we use a dashed line to represent the precision of ELM under
+this category. The chart shows that ELM surpasses all 3D detection models for
+the Car category when recall is more significant than 0.7. For the Pedestrian and
+Barrier category, ELM is the best when recall is more significant than 0.6. These
+results demonstrate that our model can achieve comparable results to traditional
+detection models.
+
+F Qualitative Results
+
+F.1 Open World Data Corpus
+
+Annotation with human quality check. Ensuring the quality of pre-training
+data is essential. For this reason, we use manual quality checks to ensure that the
+processes of image data collection and label generation are high quality. Fig. 9
+shows the examples of images discarded due to poor quality through our manual
+selection process, which occurs in node 2-3 in Sec. 3.2. Fig. 10 shows the manual
+
+        Embodied Understanding of Driving Scenarios 35
+
+revision of labels generated by LLaMA-Adapter V2 [27], and this process takes
+place in node 7-8 in Sec. 3.2.
+Demonstration of data diversity. The diversity of data is a prerequisite to
+ensure that the model has a good generalization ability. In Fig. 11, we display
+the richness of the pre-training images from over seven hundred cities, covering
+various lighting, environment, weather, road conditions, etc. Fig. 12 shows the
+diverse description labels we generated, guaranteeing the model’s reliability in
+describing new scenarios.
+
+F.2 Embodied Scene Understanding
+We offer more visualizations of ten tasks in Fig. 13 to prove ELM’s superior-
+ity on the benchmark further. This figure indicates that ELM has significantly
+improved the reasonableness and precision of responses compared to the BLIP2-
+flant5 [48] baseline.
+
+F.3 Planning
+In Fig. 14, we visualize ELM’s planning results with images and instruction
+inputs. In the first row of comparisons, ELM avoids driving towards the road-
+side and into opposing traffic lanes during turns. It can be seen that ELM has
+superior abilities to comply with traffic rules compared to UniAD [34]. In the
+third group of comparisons, when ELM receives a turn_right instruction, it
+considers the intersection scenario and opts for slow driving. Experiments from
+the fourth to the sixth groups demonstrate that ELM maintains its current lane
+while following instructions. These comparison experiments illustrate that ELM
+integrates common sense and shows the potential to outperform UniAD in com-
+plex scenarios.
+
+F.4 Multi-round Dialogues
+As an example of ELM’s application in a practical scenario, we provide in Fig. 15
+the process of ELM having multiple rounds of dialogue with the user, gradually
+understanding the scenario, and ultimately making a decision. This round of
+dialogue begins with identifying traffic elements in the scene, including vehicles,
+pedestrians, and traffic signs, followed by inquiries about the movement of the ob-
+jects and extrapolates reasonable higher-order driving instructions. Ultimately,
+the model can provide a planning result, i.e., future trajectory points.
+
+G Licensing and Privacy Considerations
+
+All the data is under the CC BY-NC-SA 4.0 license2. Other datasets (including
+nuScenes [68] and Ego4D [28]) inherit their own distribution licenses.
+ 2 https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en
+
+36 Y. Zhou et al.
+
+   We place a high value on license and privacy protection, following the prece-
+dent from YouTube-8M [2], YouTube-VOS [90], AOC [97], CelebV-HQ [99], and
+Kinetics [39], etc. For videos from YouTube, permission to the video content is
+received through a Creative Commons license. Besides, we skip channel-related
+content at the beginning and end of the videos during data processing to ensure
+we do not infringe upon the rights of logos, channel owner information, or other
+copyrighted materials. We do not provide video content; users are redirected to
+original YouTube videos via a link. The platform safeguards personal info with
+encryption, access limits, and identity checks to prevent unauthorized video ac-
+cess. We will credit the source, provide a link to the license, and state that no
+modifications have been made to the video itself but only the labeled text, and
+that the data will not be used for commercial purposes. All the data we obtain
+complies with regulations and YouTube’s Privacy Policy.
+   In addition, we comply with any limitations required by applicable law and
+any requests submitted by users. For instance, users may have the right to view,
+correct, and delete personal information we possess about them, such as delet-
+ing text labels, unlinking videos, and de-identifying data. For further protecting
+personally identifiable information, we use off-the-shelf tools to add mosaics to
+faces and license plates in the videos during the data post-processing similar
+to some datasets [28, 85]. This measure can effectively prevent the model from
+memorizing identifiable information during the training process. Based on exist-
+ing standards [28], we take all possible measures to ensure data privacy.
+
+H Discussions
+
+Limitations. Our ELM focuses on understanding driving scenes and interact-
+ing with human users, leaving much room for future exploration and expansion
+in other areas. A significant limitation is that the current model does not gen-
+erate physical control signals as referred to [12]. Our model cannot implement
+the behaviors it generates, unlike robotic models [4, 5, 29, 75] that can directly
+manipulate their environment. Direct interaction provides a valuable channel for
+the model to optimize its behaviors based on environmental responses. Thus, the
+absence of this component might limit the model’s potential to learn and adapt
+effectively. Therefore, introducing the ability for the model to interact with its
+environment directly could be an essential step in future work, potentially lead-
+ing to significant improvements in the model’s performance and adaptability.
+   While the prospect of implementing a prototype system to transform our
+ELM into an embodied agent for closed-loop autonomous driving sounds promis-
+ing, it is worth reiterating that this plan is quite forward-looking. Integrating
+the system into an autonomous driving framework entails overcoming technical
+challenges related to hardware compatibility and real-time responsiveness. Ad-
+ditionally, the potential for unforeseen practical obstacles or the emergence of
+unpredictable patterns during driving should be considered. While ELM, in its
+current form, can theorize and understand different driving scenarios, its perfor-
+mance in a more dynamic, real-world environment still needs to be tested.
+
+        Embodied Understanding of Driving Scenarios 37
+
+   The effectiveness of common sense reasoning aiding decision-making in novel
+scenarios still needs more adequate validation. While it is theorized that common
+sense reasoning can provide valuable insights during unpredictable or unusual
+situations, we have yet to build an efficient metric to measure the impact and
+benefit accurately. These are all important considerations that constitute limi-
+tations in our current model and provide directions for our future work.
+Risks in automated labeling. Apart from human-annotated labels, ELM also
+uses extensive automated labeling and templated data to provide ground truth
+labels, which may raise concerns about substantial risk in using automated labels
+to train new automated systems. Encouragingly, the success of DALLE-3 [62]
+showcases the widely introducing auto labeling can boost model performance,
+given manual labeling diversity is constrained. It asserts that training with a
+mix of real and automatically annotated data can effectively reduce data bias
+caused by limited manual annotating (such as personal grammar habits and
+idiosyncrasies), given the creativity and text diversity of large language models.
+Besides, a recent study [14] verifies that human filtering and verification are
+effective approaches to improving the quality of automated labeling data. Results
+in Tab. 5 of main paper indicate ELM achieves theoretically optimal quality
+assurance via human-AI cooperation, aligning with their conclusion. Future work
+will examine logit suppression, temperature sampling, etc, to reduce automated
+system risks.
+Issues of statistical shortcuts. It is known that deep learning models can
+resort to statistical shortcuts in such tasks, potentially guessing answers based on
+the majority of training samples rather than truly understanding the context in
+the provided video. This may raise concerns about do today’s VLMs understand
+and reason about the visual world as well as LLMs understand text-based worlds.
+Thankfully, the Egocentric Narration task involves changing images and fixed
+text as input. Thus, its result (26.5) in Tab. 3 of the main paper already affirms
+ELM’s visual comprehension. Further experiments verify ELM does not guess
+answers from training samples, as replacing images with fixed ones causes the
+results to drop by more than half.
+Failure cases. Fig. 16 shows several cases where our model fails. The upper part
+of the figure presents cases where ELM performs poorly in the Event Query task.
+Particularly, the model’s discriminative capacity declines when similar behaviors
+appear in the scene (as in the first and fourth images), thereby failing to locate
+the specific event referred to in the query. Despite the different image content
+represented in the third and sixth images, the capacity of FlanT5 [69] limits
+ELM’s recognition of the difference between them. The lower part of the figure
+shows two cases where ELM’s planning does not align with the ground truth.
+The image on the left indicates that ELM tends to opt for a more conservative
+planning strategy, proactively starting to evade when vehicles and pedestrians
+appear on the road to ensure driving safety. The image on the right shows that
+ELM possesses a latent ability to understand common sense, going beyond obey-
+ing directives. Upon recognizing the red light, the model chooses not to execute
+the command to turn right, opt to stop and wait instead.
+
+    38 Y. Zhou et al.
+
+
+
+
+
+
+
+
+
+
+    Fig. 9: Low-quality images to be disposed of. The figure shows several types of
+    images that need to be filtered out. res: resolution.
+
+
+
+
+
+
+
+
+
+
+    Raw:The scene isabusycitystreet    with    a redtrafficlight,a               Raw:    The driving scene in the image features a car driving under a   Raw:The driving scene in the image features a road with a bridge over       Raw:    The driving scene in the image features a white ambulance
+    McDonald's restaurant, and a crosswalk. The traffic elements include         bridge, with a truck carrying a load of wood in the background. The     a body of water. The traffic lights are not visible in the image. The car   driving down a city street, with several cars and pedestrians present.
+    traffic lights, cars, and pedestrians. The ego-vehicle is traveling in the   car is traveling in the left lane, and it appears to be moving in the   should maintain the same speed, be aware of the bridge's height and         ]The cars are driving in different lanes, with some closer to the
+    leftlane, and the traffic light is red…                                      same direction as the truck.                                            any potential hazards, such as pedestrians or animals.                      ambulance and others further away.
+    Refined:The scene is a busy city street with a red traffic light, a          Refined:The driving scene in the image features a car driving under a   Refined: The driving scene in the image features a road with a bridge       Refined:The driving scene in the image features a white ambulance
+    McDonald's restaurant, and a crosswalk. The traffic elements include         bridge, with a truck carrying a load of wood in the background. The     over a body of wate..The traffic lights are not visible in the image. The   driving down a city street, with several cars present. The cars are
+    traffic lights, cars, and pedestrians. The ego-vehicle is traveling in the   car is traveling in themiddle                                           car should slow a bit down, be aware of the bridge's height and any
+    right lane, and the traffic light is red…                                                                 lane, and it appears to be moving in the   potential hazards, such as pedestrians or animals.                          driving in different lanes, with some closer to the ambulance and
+                                                                                 same direction as the truck.                                                                                                                        others further away.
+
+
+
+
+
+
+
+
+
+
+    Raw:The driving scene in the image features a busy street with several           Raw:The image shows a desert highway with a long stretch of road, a         Raw:The driving    scene intheimage   featuresayellowtaxi              cab   Raw:     The driving scene in the image features a tunnel with a blue light
+    cars and pedestrains including a black car in the middle of the street.          mountain in the background, and a car driving down the road. The            traveling down a busy city street. The traffic lights are present in the     on the ceiling, which indicates that the tunnel is in use. The tunnel is
+    There are also pedestrians walking on the sidewalk, and a traffic light is       driving scene is relatively calm and peaceful, with one traffic light       scene. The taxi cab driver should be cautious and attentive to the           well-lit, which makes it easier for drivers to navigate the roadway.The
+    visible in the background. The traffic light is green, indicating that the       visible.                                                                    pedestrians, and other vehicles on the road to ensure a safe and             ego-vehicle is traveling in the right lane, and it is moving in the
+    ego- vehicle should stop…                                                        Refined: The image shows a desert highway with a long stretch of            smooth journey.                                                              direction of the tunnel
+    Refined: The driving scene in the image features a busy street with              road, a mountain in the background, and a car driving down the road.        Refined:         The driving scene in the image features a yellow taxi cab   Refined:       The driving scene in the image features a tunnel with a blue
+    several cars and pedestrains including a black car in the left of the            The driving scene is relatively calm and peaceful, with no traffic lights   traveling down a busy city street. The traffic lights are present in the     light on the ceiling, which indicates that the tunnel is in use. The tunnel
+    street. There are also pedestrians walking on the sidewalk, and a traffic        or other vehicles visible.                                                  scene. The taxi cab driver should decelerate gradually without breaking      iswell-lit, whichmakes iteasier    for driversto navigate               the
+    light is visible in the background. The traffic light is red, indicating that                                                                                to ensure a safe and smooth journey.                                         roadway.The ego-vehicle is traveling in the middle lane, and it is
+    the ego- vehicle should stop...                                                                                                                                                                                                           moving in the direction of the tunnel.
+
+
+    Fig. 10: Examples of human quality check and manual revision for descrip-
+    tion annotation.
+
+
+
+
+
+
+
+
+
+
+Landscape Images Blurry Images Low-res Images Dark Images  Dull Images
+
+    Embodied Understanding of Driving Scenarios 39
+
+
+
+
+
+
+
+
+
+
+Fig. 11: Showcase on the Diversity of Open-world Data for Pre-training. The
+images we used for pre-training come from over 700 cities and 3000 hours of data. The
+vast amount and diversity of data ensure the model’s generalizability.
+
+    40 Y. Zhou et al.
+
+
+
+
+
+
+
+
+
+
+    The scene shows a busy street at night with         a large   The scene shows          a woman wearing a safety vest and   The scene is a street with      a lane closed off by a        The scene is a street            with a car driving down the
+    restaurant called "Fisherman's Grille" on the        end of   holding a stop sign, standing on a street       center.She   traffic barrier. There are several cars present, and a        middle lane, surrounded by other cars and         buses. The
+    the road. There are several cars parked on the street.        is likely  directing traffic or ensuring thesafety      of   traffic light is visible in the background. The unusual       unusual element is          the presence of a large cloud of
+    The unusual element in this scene is the presence of a        pedestrians. The traffic elements in the scene include       aspect of this scene is the traffic barrier, which is         smoke or fog,             which is obscuring the view of the
+    large,      illuminated sign that reads "Stop" on the right   several    car  s, and a pedestrian. The car is located on   blocking one of the lanes, may cause a traffic jam.           vehicles and       the   surroundings.The traffic   elements
+    side of the road.      This sign could be a traffic control   the left   side of the image, and the pedestrian is in the   The ego-vehicle is traveling in theright lane, and the        include multiple cars, and a bus traveling in various
+    measure or a warning for drivers to be cautious. The          middle of the scene.        The ego-vehicle should stop at   traffic light is located on the right side of the road. The   lanes.      The traffic lights    indicating the proper flow
+                                                                                                                               traffic light is currentlygreen                               of traffic are red.      The ego-vehicle is traveling in the
+    ego-vehicle is traveling in the right lane, and it should     the           stop sign. The driver should be cautious and                                  .The ego-vehicle should
+    follow the trafficsign's instructions and stop       before   attentive to the pedestrian, ensuring that they do not       drive along the right lane,given that the left lane is        middle lane, and it is important to drive carefully and
+    the crossroad.                                                collide with either one.                                     closed off by traffic cones.                                  maintain   a       safe  distance from other vehicles,    as
+                                                                                                                                                                                             visibility is limited due to the fog.
+
+
+
+
+
+
+
+
+
+
+    The driving scene in the image features a busy street           The  image showsa busy city      street  with   a man    The driving scene in the image featuresa busy street       The driving scene in the image is at night, with a car
+    with a    large  billboard     advertising            Samsung   pushing a shopping cart down the middle of the           with multiple cars, motocycles, and a bird flying          traveling down              a street with a row of shops and
+    electronics. There  are  multiple  cars  present.         The   road.There are several cars and in the scene. Traffic    overhead. The  traffic  lightsare green. The    ego-       restaurants.   The car is traveling in the left lane, and it
+    traffic lights are red. The ego-vehicle is traveling in the     lights arered. Drivers should   stop now and be aware    vehicle is traveling in the middle lane. The bird flying   is moving in the direction of the traffic lights. The
+    right         lane, and it is moving in the same direction as   of the shopping cart and other pedestrians, maintain a   overhead  may  be     a reminderto  be cautious  and       driver should be              aware of pedestrians and other
+    the other vehicles on the street          . The driver should   safe distance. They    should also be mindful of  the    attentive to the surroundings, as it could potentially     vehicles in the area. It is essential to maintain a safe
+    maintain  a safe  distance   from  othervehicles,         and   traffic lights to minimize the risk of accidents.        distract drivers or cause accidents. Drivers should be     speed and distance from other vehicles to ensure a
+    becautious around pedestrians                                                                                            prepared  to react to   sudden   changes  in traffic       smooth and safe journey.
+                                                                                                                             conditions or unexpected events.
+
+
+
+
+
+
+
+
+
+
+    The driving scene in the image features a busy street         The driving scene in the image features a car driving     The driving scene in the image features    a street with   The driving scene in the image features a busy city
+    with multiple traffic lights and cars. The ego-vehicle is     down   a   wet     street with  a traffic light in  the   a  humps   sign,  indicating  that  there     are  speed   street.             The Tesla electric car is traveling down the
+    traveling in   the  middle   lane,and  it   is  currently     background. There are a few cars are visible in the       bumps on the road.       The ego-vehicle is traveling in   street, likely in the middle lane         , while other cars are
+    approaching a traffic light. The traffic lights are green.    background. The car is traveling in the left lane.The     the left lane. The ego-vehicle should drive carefully,     also  present  on  the         road.  The   traffic   lights are
+    The   driver   should also   be  prepared   to  yield  to     wet road conditions may require slower speeds and                                                                    green
+                                                                                                                            obeying the speed limitand paying attention to       any         .The driver should            maintain a safe distance and
+    pedestrians    and   other   vehicles when     necessary.     extra caution to avoid skidding or hydroplaning. It is    traffic light or  pedestrian. The   presence   of  speed   speed   to  avoid  accidents.         Additionally,   the driver
+    Additionally,         the driver should be mindful of the     essential to be aware of the surroundings and adjust      bumps on the road indicates that the driver should         should  be  prepared           for   sudden changes   in traffic
+    presence of the large balloon in the background         ,     driving    behavior accordingly to ensure   a safe  and   slow down when approaching these areas to avoid any        conditions, such as traffic jams, road closures, or other
+    which could be a potential hazard if it were to fall or       smooth journey.                                           potential damage to the vehicle or accidents.              unexpected events.
+    become entangled in the vehicle's path.
+
+
+
+
+
+
+
+
+
+
+    The driving scene in the image features       a car driving   The driving scene in the image features   a tunnel with     The drivingscene   inthe image        features a    horse-   The driving scene in the image features a street with
+    down   a narrow     road    with a mountain  in         the   cars traveling in both directions.    There are several     drawn carriage traveling down a city street       , with a   multiple pedestrians.      A mosque is visible in        the
+    background.      There are several cars and a bus traveling   cars visible in the tunnel, including  a red car in the     traffic light visible in the background. The ego-vehicle     background.            The ego-vehicle appears to be driving
+    in the oppsite direction s                                    right                                                                                                                    towards the right side of the street. The driver should
+                                 . The car is traveling towards          of the tunnel and a white car in the background.     is traveling in the   middle lane, and it is moving in the
+    theright  side of    the road.  The driver should        be   As a driver, you should be cautious and attentive while     same direction as the traffic light.                                                                               it may
+                                                                                                                                                                     Drivers should stop   be aware of the mosque in the background, as
+                                                 .                                                                                                                                         bea place   of worship         where people  might        be
+    cautious andslow down to obey the speed limits                navigating the tunnel. It appears that there is a traffic   because of the red traffic light and be cautious and
+                                                                  jam, and the driver needs to slow down or stop.             attentive to the horse-drawn carriage.                       walking or gathering.      The driver should drive at a safe
+                                                                                                                                                                                           speed, and be prepared to stop when necessary.
+
+
+
+
+
+
+
+
+
+
+    The scene shows a car driving down a snowy street, with        The scene shows       a car driving down a highway, with   The driving scene in the image features a busy street          The drivingscene   in    the image  features      a yellow
+    a traffic light visible in the background. The car is in the   the driver looking through the rearview mirror to          with           multiple cars, pedestrians, and a motorcycle.   construction truck parked on the side of the road        ,
+    middle lane, and there are other cars visible in the scene.    check the traffic behind them.         The car is in the   The ego-vehicle is traveling in the right lane, and it is      with a traffic light nearby. A pedestrian is also present,
+    The traffic lights are red. The ego-vehicle should drive       middle lane, and there are two cars visible in the         moving    in the oppisite  direction   as    the       other   walking on the road.        The driver should be cautious,
+    cautiously, paying attention to the traffic light and other    mirror. The car is driving on a highway, and there are     vehicles.The motorcycle is traveling in the left lane,         ensuring that they do not enter the construction
+                                                                                                                              and the pedestrians are walking on the sidewalk. It is         area until it is safe to do so
+    vehicles.Given that it's snowing now, the driver needs         no pedestrians visible. The ego-vehicle is traveling in                                                                                                        . The presence of the
+    to slow down and maintain a safe distance.                     the middle lane, and the driver should continue driving    essential for drivers  to  follow traffic    rules       and   construction truck and pedestrian on the sidewalk also
+                                                                   at their current speed.                                    regulations, including obeying traffic lights, maintaining     highlights the importance of        being    vigilant  and
+                                                                                                                              a safe distance from other vehicles, and being cautious        attentive to the surroundings while driving.
+                                                                                                                              around pedestrians.
+
+
+
+    Fig. 12: The visualization of description annotation. These labels are generated
+    through LLaMA-Adapter V2 [27], followed by human quality check and revision.
+
+
+
+
+
+
+
+
+
+
+ Ego4D        YouTube                                                                                                                             Waymo
+
+
+
+
+
+
+
+
+
+
+NuScenes
+
+Embodied Understanding of Driving Scenarios 41
+
+
+
+
+
+
+
+
+
+
+𝑡 − 𝑛    𝑡
+
+
+
+
+
+Queried Object
+
+
+Q: What is the object to the front of the     Q: Has the ego vehicle seen any traffic sign before?          Q: Provide the 3D location of the 2D point<c,        Q: What actions could the ego vehicle take
+ego car?                                      BLIP2-T5: Yes. The ego vehicle has seen 1 turn_left before.   1196.0, 469.6> in the image                          based on<c,944.2,522.5>?
+BLIP2-T5: Three cars are parked.              Ours: Yes. The ego vehicle has seen 1 no_u_turn before.       BLIP2-T5: Location: [5.4, 17.2, 1.3], traffic_cone   BLIP2-T5: The action  is   to decelerate
+Ours: Two cars are parked and one is moving   GT: Yes. The ego vehicle has seen 1 no_u_turn before.         Ours: Location: [7, 24, 1], traffic_cone             gradually without braking,.
+GT: Two cars are parked and one is moving.                                                                  GT: Location: [6.87, 24.46, 0.53], traffic_cone      Ours: The action is to keep going at the
+                                                                                                                                                                 same speed.
+                                                                                                                                                                 GT: The action is to keep going at the same
+                                                                                                                                                                 speed.
+                                              𝑡 − 𝑛        𝑡
+
+
+
+
+
+                                                                                                            Queried Object
+
+
+Q: What is the object to the front of the   Q: Has the ego vehicle seen any traffic sign before?           Q: Find the 3D position in the scene of the    Q: What is the future state of
+ego car?                                                                                                   2D pixel at <c, 737.3, 472.7>.                 <c3,826.7,521.7>?
+                                            BLIP2-T5: Yes. The ego vehicle has seen 1 turn_right before.   BLIP2-T5: Location: [-0.2, 25.2, 1.3], truck   BLIP2-T5: Still.
+BLIP2-T5: One bicycle is parked.            Ours: Yes. The ego vehicle has seen 1 turn_left before.                                                       Ours: Moving forward.
+Ours: One bicycle is without a rider.       GT: Yes. The ego vehicle has seen 1 turn_left before.          Ours: Location: [-2, 32, 1], bus               GT: Moving forward.
+GT: One bicycle is without a rider.                                                                        GT: Location: [-2.16, 34.06, 0.77], bus
+𝑡 − 1.5s                                     𝑡  𝑡                                                        𝑡 + 2s 𝑡 − 0.8s                                    Memory Recap      𝑡
+
+
+
+
+                   Queried
+Queried Object     object
+
+
+Q: What are the 3D world-space coordinates of the pixel at <c, 848.4,   Q: Calculate the 3D world location of the pixel with 2D coordinates<c,
+                                                                        718.8, 504.7>.2.0 seconds later.
+500.3>?1.5 seconds ago.                                                 BLIP2-T5: Location: [-5.12, 36.4, 1.2], Car                                 Q: "Whathappened 0.8 seconds before?
+BLIP2-T5: Location: [2.1, 59.6, 1.21], Car                                                                                                          BLIP2-T5: C picks the sieve with her right hand
+Ours: Location: [1, 40, 1], Car                                         Ours: Location: [-7, 33, 1], Trailer
+GT: Location: [-0.62, 41.83, 1.09], Car                                 GT: [-7.18, 33.34, 1.18], Trailer                                           Ours: C opens the tap with her right hand
+                                                                                                                                                    GT: C opens the tap with her right hand
+𝑡 − 1.5s                                     𝑡                        𝑡                                                                𝑡 + 1s   𝑡 − 37.8s        𝑡
+
+
+
+
+
+
+Queried Object                                                          Queried
+                                                                         object
+Q: Find the 3D world position of the 2D point<c, 626.9, 558.3>in the   Q: Calculate the 3D world location of the pixel with 2D coordinates<c,
+image. 1.5 seconds ago.                                                734.5，673.2>. 1.0 seconds later.                                      Q: "Whathappened 37.8 seconds before?
+BLIP2-T5: Location: [-0.87, 9.2, -0.3], Car                            BLIP2-T5: Location: [-0.2, 4.15, -1.3], Car                           BLIP2-T5: C pens the fridge
+Ours: Location: [-1, 11, 0], Car                                       Ours: Location: [0, 8, 0], Car                                        Ours: C puts the water in the fridge
+GT: Location: [-1.03, 11.17, -0.52], Car                               GT: [-0.05, 8.00, -0.75], Car                                         GT: C puts the water in the fridge
+‘C opens the water bottle'      Event Query                            ‘C closes the water bottle'      Egocentric Narration                 𝑡           Event Forecasting      𝑡 + 0.7s
+
+
+
+
+
+
+
+
+
+                                                                                      Give a caption.           Q: What will happen in the next0.7 seconds in the future?
+Q What happened between ‘C opens the water bottle' and ‘C closes water bottle'?       Q:BLIP2-T5:
+BLIP2-T5:                                                                             Ours: C cuts black wire   BLIP2-T5:
+Ours: C drinks water                                                                                            Ours: C puts the slices of cabbage in the sieve
+GT: C drinks water                                                                    GT: C cuts black wire     GT: Cputs the slices of cabbage in the sieve with her left hand
+‘C picks up the drill'                        ‘C puts the power drill on the wood’                              𝑡                                               𝑡 + 1.2s
+
+
+
+
+
+
+Q: What happened between 'C picks up the drill' and 'C puts the power drill on the wood'?   Q: Give a caption.                         Q: What will happen in the next1.2 seconds in the future?
+BLIP2-T5:                                                                                   BLIP2-T5:                                  BLIP2-T5:
+                                                                                            Ours: C pours the potatoes in the plate    Ours: C cuts the onion with the knife
+Ours: C drills the wood                                                                     GT: C pours the potatoes into the sieve.   GT: C cuts the onion with the knife
+GT: C drills the wood
+
+
+Fig. 13: Visualization on embodied understanding benchmark.
+
+    42 Y. Zhou et al.
+
+
+
+
+
+
+
+
+
+
+    TURN LEFT    TURN LEFT
+
+
+
+
+
+    TURN LEFT    TURN LEFT
+
+
+
+
+
+
+    TURN RIGHT    TURN RIGHT
+
+
+
+
+
+    TURN RIGHT    TURN RIGHT
+
+
+
+
+
+
+    TURN LEFT     TURN LEFT
+
+
+
+
+
+    TURN LEFT     TURN LEFT
+
+    Fig. 14: Visualization on planning. We compared the trajectory prediction results
+    of UniAD [34] and ELM in some relatively complex scenarios. The results show that
+    ELM has the potential to follow traffic rules and maintain the current lane.
+
+
+
+
+
+
+
+
+
+
+Ours  UniAD  Ours  UniAD  Ours  UniAD
+
+    Embodied Understanding of Driving Scenarios 43
+
+
+
+
+
+
+
+
+
+                           Q:What is the location and category of <c1, 880.0, 457.5> ?
+                           A: Location: [1, 17, 0], category: Truck.
+
+                           Q: What is the object at <c3, 1160.0, 417.3>?
+                           A: Green Trafic Light.
+    <c1, 880.0, 457.5>     Q: What is the moving status of object <c1, 880.0, 457.5>?
+    <c3, 1160.0, 417.3>    A: Going ahead.
+
+                           Q: In this scenario, what are safe actions to take for the ego vehicle?
+                           A: Keep going at the same speed, slightly offset to the right.
+
+                           Q: Given keep_forward instruction, what is the future trajectory of ego-car?
+                           A :[[0, 4], [0, 8], [1, 11], [2, 15], [2, 19], [3, 22]]
+
+
+    Q: What is the movement of object <c1,185.0,609.2> ?
+    A: Still.
+
+    Q: What is the probability of colliding with <c1,185.0,609.2> after the ego
+    vehicle turns left at a constant speed?        A: Low.
+
+    Q: What actions can lead to a collision with <c3, 850.1, 645.2> ?      <c1, 185.0, 609.2>
+    A: Accelerate and go straight.
+
+    Q: Given this scenario, what safe steps should the ego vehicle take?        <c3, 850.1, 645.2>
+    A: Turn left, decelerate gradually without braking.
+
+    Q: In what trajectory will the ego-car move in the future?
+    A: [0, 3], [-1, 6], [-2, 8], [-3, 11], [-4, 14], [-5, 16]
+
+
+Fig. 15: Visualization on multi-round dialogues. We provide application cases of
+ELM in real scenarios, where, through multiple rounds of dialogue, it goes from de-
+scribing driving scenarios to generating high-level control instructions and trajectories
+at the end.
+
+
+
+
+
+                                                                   C holds the handl e
+    C holds the                            C turns on the          of the frying pan to
+    handle of a frying pan
+        .      C moves the cover of a pot  cooker with her right   the cooker with her left hand C operates the cooker C puts the cooking oil in the pan
+                                           hand.
+
+
+
+
+
+
+
+    Q: What happened between ‘C holds the handle of a frying pan’     GT: C moves the cover of a pot
+    and ‘C turns on the cooker with her right hand'?                  Ours: C operates the cooker
+
+
+
+
+
+
+
+
+
+
+    TURN RIGHT                                                                       TURN RIGHT
+
+
+
+
+
+
+
+
+
+
+    TURN RIGHT                                                                       TURN RIGHT
+
+    Fig. 16: Failure cases demonstration on Event Query and Planning tasks.
+
+
+
+
+
+
+
+
+
+
+GT  Ours
+

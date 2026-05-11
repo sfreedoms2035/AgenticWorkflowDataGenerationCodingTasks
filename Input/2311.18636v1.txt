@@ -1,0 +1,585 @@
+arXiv:2311.18636v1 [cs.RO] 27 Aug 2023
+
+
+
+
+
+
+
+
+
+
+                                                                    End-to-end Autonomous Driving using Deep Learning: A Systematic
+                                                                                                 Review
+
+                                                                                             Apoorv Singh1
+
+  Abstract— End-to-end autonomous driving is a fully differen- retinas and a single intensity feedback unit. The two input
+tiable machine learning system that takes raw sensor input data channels are camera-based video inputs and LiDAR-based
+and other metadata as prior information and directly outputs range information. The activation level of each unit in this
+the ego vehicle’s control signals or planned trajectories. This
+paper attempts to systematically review all recent Machine retina is proportional to the intensity in the blue color band
+Learning-based techniques to perform this end-to-end task, (out of the 3 RGB channels) because it provides the highest
+including, but not limited to, object detection, semantic scene contrast between the road and non-road. The second retina
+understanding, object tracking, trajectory predictions, trajec- consists of 8 ∗ 32, which represents the LiDAR point cloud.
+tory planning, vehicle control, social behavior, and communica- The road intensity feedback unit indicates whether the road
+tions. This paper focuses on recent fully differentiable end-to-
+end reinforcement learning and deep learning-based techniques. is lighter or darker than the non-road in the previous image.
+Our paper also builds taxonomies of the significant approaches Each of the 1217 inputs is fully connected to the 29 units
+by sub-grouping them and showcasing their research trends. in the hidden layer, which are subsequently connected to the
+Finally, this survey highlights the open challenges and points 45
+    out possible future directions to enlighten further research on    output control signals as shown in Fig. 1.
+    the topic.
+
+        I. INTRODUCTION
+                Unlike modular autonomous driving stacks, end-to-end
+    autonomous driving benefits from joint feature optimization
+    with minimal  human-designed heuristics.    These        modular
+    stacks, viz., perception, prediction, tracking,        planning,
+    controls, et al., are designed to optimize that particular fine-
+    grained task, which may or may not lead to optimizing the
+    primary goal of end-to-end autonomous driving. End-to-end
+    independent driving system research has recently flourished
+    because   large-scale datasets are available with        minimal
+    data-annotation cost. To train an ML-based model, all we
+    need is a calibrated sensor suite on the car that monitors the
+    control movement of the vehicle by the human driver. This
+    system can theoretically be enabled on any L2/L3 level car
+    already in production.
+
+    A. History                                                         Fig. 1.      Imitation learning-based end-to-end model architecture from
+            Self-driving cars may seem like a very recent technolog-   ALVINN [23] that takes in perception sensor and outputs control signals.
+    ical phenomenon, but researchers and engineers have built                               In 2016, Nvidia came up with another novel and more
+vehicles that can drive themselves for over three decades. complex version of their end-to-end network [4]. Their
+Research on computer-controlled vehicles began at Carnegie approach scaled imitation learning to AlexNet-style deep
+Mellon in 1984, and the production of the first vehicle, learning. It demonstrated lane-following across diverse road
+Navlab 1, was formed in 1986. ALVINN, which stands for appearances, sun, rain, and snow. However, this approach
+Autonomous Land Vehicle In a Neural Network. This version was only for steering control and not speed control. Later, in
+of the autonomous car was an end-to-end system where you 2018, a company called Wayve came up with a primarily
+feed the model a camera image frame (in this case, a series Reinforcement learning-based approach [18], [14]. They
+of frames from a trip from Mountain View to Half Moon showed they could learn a model with just 10 episodes of
+Bay, a route it’s never seen before) and laser point cloud. The video logs to perform lane-following tasks. Soon, this field
+model outputs a value it believes would steer the car correctly of work went into a fast-track mode, and in 2019, Intel came
+on its way. The input layer is divided into three units: two up with an approach to develop a condition-learned policy on
+  1Apoorv Singh is from Robotics Institute, Carnegie Mellon University navigation commands [10], [2] to navigate Manhattan-style
+    (CMU). apoorv93singh@gmail.com                                     intersections. Their system was evaluated on simulators and
+
+an RC car. Later, in 2019, a paper from ETH Zurich [15] State X , of magnitude ∼ 108, to the output state Y , which
+developed a system that can operate on Manhattan turns and has a combination of ∼ 101 states. Where input data, X ,
+more generalized autonomy on an open loop system. Uber may include different combinations of multiple perception
+ATG has also developed a system [36] that used LiDAR and sensors, viz., cameras/ RADARs and LiDARs, it may also
+HD maps and input and outputs motion plan, which was include metadata like HD maps, vehicle state, sensor calibra-
+evaluated on an open loop system. Here, modular autonomy tion information, GPS, IMU data, etc. However, the output
+tasks were learned as an auxiliary tasks to guide the end-to- state, Y , combines control signals like brake/ accelerate/
+    end learning.                                            steering and other cues like indicators/ headlights.
+        Carla [11] has a simplified version of this where an agent
+        interacts with the environment over discrete time steps. At
+        each time step, the agent gets an observation Ot and must
+        produce an action At. The observation, Ot is a tuple of
+        sensory inputs, and the action, At, is a three-dimensional
+        vector representing the steering, throttle, and brake.
+        1) Input Sensor Modalities: Primary perception sensor
+        modalities are Cameras, LiDARs, and RADARs. Generally,
+        an autonomous vehicle uses different combinations and
+        quantities of these sensors, depending on their SAE
+        Autonomy level, to perceive its environment. Generally, up
+Fig. 2. Comparison of Modular Autonomous driving tasks vs single-model to level 3 SAE level cars rely more on the Camera-RADAR
+    of end-to-end autonomous driving task.                   system because of their value for money in semantic and
+    B. Contributions                                         depth information captured. However, the L3+ SAE level
+                                                             of autonomous cars depends more on the LiDAR-Camera
+     This paper has three key contributions:                 system since they are building absolutely safe autonomous
+  • We provide comprehensive background knowledge cars with very high recall to be driven without human
+     for understanding end-to-end autonomous driving ap- drivers. LiDAR’s much denser and semantically more
+     proaches. We started by summarizing the first technique informative point cloud data, compared to the RADAR,
+     ever applied in autonomous driving tasks. Moreover, comes at a higher upfront cost of the sensor, which can
+     we summarized the competing alternate approaches of only be budgeted for the L3+ systems. In addition to
+     the modular autonomous driving problem solutions. We these sensors, autonomous cars use metadata that performs
+     also cover evaluations and benchmarks used for end-to- transformation from one sensor to another. These calibrated
+      end autonomous driving tasks.                          transformations  can get all the  sensor  information in              a
+  • Next, we extensively covered end-to-end approaches single unified ego plane to perform the perception task.
+     by categorizing them in four sections of Imitation In addition to the series of perception sensors, L3+
+     Learning, Reinforcement Learning, End to end Au- autonomous cars heavily rely on HD Maps, which hold
+     tonomous driving with the auxiliary task, and Teacher centimeter-level accuracy of the roads they drive on. In
+     Student Paradigm. Moreover, before diving into detail, addition to the road boundaries, these maps may include
+     we covered a paragraph on theoretical knowledge for other semantic information like crosswalks, lane markings,
+      the readers with mathematical modeling.                intersections, traffic-light positions, etc. However, due to the
+  • We discussed key challenges for all the methodolo- geographic scales of L2-L3 cars, generating HD maps can
+     gies and approaches covered to enlighten readers with get too expensive. They mostly compute such local maps
+     prospective future research ideas. In addition, we dis- online using perception sensors. GPS and IMU sensors
+     cussed a few of the open-ended research problems that are used to geo-localize autonomous cars so that they can
+     we foresee would be immediate next steps in end-to-end locate themselves within the predefined map and proceed
+      autonomous driving research.                           with their further downstream tasks of trajectory prediction
+A few surveys have addressed open end-to-end autonomous and trajectory planning.
+driving [9], [31], [12], [40], but none cover significant recent Recently, more diverse technology of sensors are being
+advances in the fields. Moreover, they did not explore many utilized for autonomous cars, for example, fish-eye cameras,
+of the research directions we propose in this paper. Some of which can detect close-range objects very well; velocity-
+the prior research papers only covered specific topics within LiDARs: These are LiDAR-like sensors that give dense
+the end-to-end system, but we emphasized covering all the point-cloud as any other LiDAR with the added benefit of
+major technologies that are active right now while ignoring/ velocity attribute per point, just like RADAR, using Doppler
+partially covering dated techniques to keep readers interested. effect. Certain indoor autonomous robots also have stereo
+    C. Problem Formulations                                  cameras, which can generate short-range dense point clouds.
+      In straightforward words, with end-to-end autonomous                    2) Output Sensor Modalities: Output modality is fairly
+driving, we are trying to learn a function that maps Input   simple; it outputs control signals like steering angle, ac-
+
+     celeration/ braking information, and meta signals like turn      their environment. This is crucial to make predictions
+  lights, headlights, etc. These annotations can be easily taken      in the downstream task, for which past states are critical.
+      from any human-driven car, thus making it an ideal problem      This stack is essential for occluded road objects as
+    formulation for Imitation learning. However, explainability/      we can still maintain our expectation of the object
+   interpretability is one of the major drawbacks to propagating      even though it is not visible in the perception stack.
+raw sensor data information all the way to this fairly small di-      [3] This stack involves data association and kinematics
+     mensionality of control signals. When a problem arises with      prediction of the perception outputs.
+         autonomous car behavior with such an end-to-end machine   •  Behavior Planning: It refers to the ability of self-driving
+    learning system, it is extremely hard to figure out targeted      vehicles to forecast the future actions and movements of
+        improvements on the software, leaving us just feeding in      various road users, such as pedestrians, cyclists, other
+           and learning from more and more data. To increase the      cars, and even animals. [39] Large-scale models can
+    system’s interpretability, some authors have added auxiliary      be generated for this module by good detection and
+      losses to supervised complete end-to-end systems, which we      tracking modules in the offline system that can generate
+      will cover in the later section. Another approach that few      trajectory prediction data for free. Autonomous systems
+   of the authors have taken is to disentangle the control stack      account for uncertainty in behavior prediction. They
+     from this end-to-end system and, instead, output the future      consider  potential variations in predicted        behaviors,
+      waypoints, defined as future locations of the ego vehicle.      accounting for factors like sensor noise, unpredictable
+       Then, control operates on these waypoints as a downstream      human actions, and changes in traffic conditions.
+task to execute the action.                                        •  Path Planning: It refers to the ability of self-driving
+II. MODULAR APPROACH FOR AUTONOMOUS DRIVING                           vehicles to determine a safe and optimal path for a self-
+           A traditional, modular autonomous driving software is      driving vehicle to navigate from its current location to
+           a complex system comprising various sub-modules, each      a desired destination while avoiding obstacles, adhering
+       responsible for a specific aspect of the driving process.      to traffic rules, and considering the dynamics of the
+          These sub-modules work together to enable a vehicle to      environment. Based on the current vehicle position, the
+    navigate, perceive the environment, and make decisions with-      desired destination, and the map and sensor information,
+     out human intervention. Some of the critical sub-modules of      the path planning algorithm generates a preliminary path
+autonomous driving software include:                                  that connects the vehicle to the goal while avoiding
+                                                                      obstacles. The cost function considers distance, comfort,
+ •             Mapping and HD-Mapping: It refers to creating and      safety, energy efficiency, and collision risk factors. The
+          maintaining detailed, high-definition maps of the road      algorithm searches for a path that minimizes this cost.
+         and surrounding environment. Unlike traditional naviga-      The most common approach for planning in modular
+             tion maps used by human drivers, autonomous driving      pipelines involves using sophisticated rule-based de-
+             maps are much more detailed and include information      signs, often ineffective in addressing the many situations
+         crucial for the specific needs of self-driving systems.      that occur while driving.
+            They include information about lane boundaries, road   •  Decision Making: It refers to the ability of self-driving
+   curvature, traffic signs, traffic signals, lane-change rules,      vehicles to select appropriate actions and behaviors to
+               and road gradients. [20] HD maps are created with      navigate through various traffic scenarios while priori-
+   centimeter-level accuracy   to ensure the          autonomous      tizing safety, efficiency, and adherence to traffic rules. It
+         vehicle can position itself accurately within its envi-      works closely with path planning and involves risk as-
+   ronment in the localization stack downstream.                      sessment, scenario analysis, behavior prediction, traffic
+ •        Perception: It refers to the ability of a self-driving      rules and regulations, ethical and moral considerations,
+         vehicle to understand and interpret its surrounding en-      etc.
+        vironment. It includes tasks like sensor fusion, vehicle   •  Control: It refers to the mechanisms and algorithms that
+         and pedestrian detection, pixel-level segmentation, and      translate high-level decisions and planned trajectories
+      traffic-light/ other road-sign detection. Primarily, it is      into specific actions taken by the vehicle’s actuators to
+   based    on multiple quantities and  a combination         of      maneuver the vehicle physically. These controls ensure
+   camera, LiDAR, and RADAR-based sensors [30].                       that the  vehicle follows the  intended path,        acceler-
+ •  Localization: It refers to the ability of a self-driving ve-      ates, decelerates, and handles various driving scenar-
+      hicle to accurately determine its position and orientation      ios while maintaining stability, safety, and comfort.
+         (pose) within its environment. [19] Critical components      Controls bridge the gap between decision-making and
+          used are the Global Positioning System (GPS), Inertial      the physical behavior of the vehicle. It includes sub-
+              Measurement Unit (IMU), and perception sensors via      components such as actuators, vehicle dynamics, speed
+              map matching, which involves comparing sensor data      control, stability and handling, smooth transitions, hu-
+          with the HD map to refine the vehicle’s position esti-      man comfort, etc.
+   mate.                                                           •  Simulation and Testing: It is essential to assess self-
+ •     Object Tracking: It refers to the ability of self-driving      driving systems’ performance, safety, and functionality
+             vehicles to monitor the past movement of objects in      before being deployed on real roads.
+
+           These systems and their dependency graph can be seen
+             in the sequential order in the Legacy ML System as
+shown in Fig. 2
+III. BENCHMARKING/ EVALUATIONS
+     As unanimously accepted in software practice, to first de-
+   velop the testing requirement before working on the software
+ itself, let us look at the evaluation requirement for the end-
+   to-end systems before diving further into the major methods.
+      Evaluations can be divided into two types: 1. Closed-loop
+    evaluations and 2. Open-loop evaluations. Former is defined
+    in an online simulator; however, former is computed offline
+    on human driving datasets. End-to-end systems can be easily
+         evaluated on an online simulator like CARLA [11]; many
+       modular perception techniques rely on the more expensive    Fig. 3. Snapshot from online closed-loop simulator CARLA [11].
+offline datasets.
+A. Closed-loop evaluations                                          distance traveled towards the goal, overlap with the opposite
+        To conduct end-to-end tasks is a relatively complicated      lane, negatively weighted collision damage, and overlap with
+    and dangerous experiment on autonomous cars, at least until   the sidewalk.
+      we have a reliable and safe software stack for autonomous     The tasks are set up as goal-directed navigation: an agent is
+    cars, but to such safe software, we need to train a machine      initialized somewhere in town and has to reach a destination
+  learning model with the correct evaluations. Thanks to online    point. In these experiments, the agent can ignore speed limits
+  closed-loop simulators [6], [11], [13], [4], we can test such        and traffic lights. The below experiments are conducted in
+       techniques online while autonomous cars become safer and          multiple towns, but the towns are mutually exclusive for
+     are widely available for real-world testing. However, even      training and validation datasets. They organize the tasks in
+     though researchers and industries have tried their best to   order of increasing difficulty as follows:
+   emulate real-world scenarios as closely as possible in these    •      Straight: Destination is straight ahead of the starting
+       simulators for constructing towns and driving maneuvers,           point, and there are no dynamic objects in the environ-
+  they still can’t be generalized enough for real-world scenes.      ment.
+      CARLA [11] is one of the most widely used free simulators    •     One turn: Destination is one turn away from the starting
+      in research environments with diverse traffic and weather      point; no dynamic objects.
+      conditions, as shown in 3. It supports autonomous driving    •     Navigation: No restriction on the location of the desti-
+       systems’ development, training, and detailed performance           nation point relative to the starting point, no dynamic
+      analysis. They support modular system design (perception/      objects.
+   planning and controls) and end-to-end systems like Imitation    •        Navigation with dynamic obstacles: Same as the previ-
+ learning/ reinforcement learning. For Imitation learning, this            ous task, but with dynamic objects (cars and pedestri-
+dataset includes       D = Oi, Ci, Ai, consisting of tuples, an      ans).
+    observation, a human-commands, and an action, respectively.            The other most commonly used simulator for closed-loop
+         The commands are auxiliary signals the driver provides   simulation is nuPlan [6], which defines its metric as:
+during data collection to indicate their action, just like turn    •         Traffic rule violation measures compliance with com-
+       signals. In this dataset, four commands are used: follow            mon traffic rules. They compute the rate of collisions
+   the lane (default), drive straight at the next intersection,         with other agents, the rate of off-road trajectories, the
+ turn left at the next intersection, and turn right at the next           time gap to lead agents, the time to collision, and the
+intersection.  The observations are sensory inputs         from           relative velocity while passing agents as a function of
+     multiple sensors. This simulator also injects noise during      the passing distance.
+      data collection to increase the robustness of the learned    •        Human driving similarity is used to quantify maneuver
+     policies. The dataset trains a deep network to predict the           satisfaction compared to humans, e.g., longitudinal ve-
+expert’s action  Ai given an observation       Oi and a control       locity error, longitudinal stop position error, and lateral
+command Ci.                                                          position error. In addition, the resulting jerk/acceleration
+                                                                     is compared to the human-level jerk/acceleration.
+         For reinforcement learning-based problems, the vehicle    •      Vehicle dynamics quantify rider comfort and feasibility
+         has to reach a goal guided by high-level commands from        of a trajectory. Rider comfort is measured by jerk, accel-
+    the topological planner. The episode is terminated when the      eration, steering rate, and vehicle oscillation. Feasibility
+     vehicle reaches the goal when the vehicle collides with an              is measured by violation of predefined limits of the
+    obstacle, or when a time budget is exhausted. The reward is      same criteria.
+    a weighted sum of five terms: positively weighted speed and    •            Agreement between decisions made by a planner and
+
+                 human for crosswalks and unprotected turns (right of   from the input observations to the actions demonstrated by
+     way).                                                              the expert. This is often done using supervised learning
+  • Goal achievement measures the route progress towards techniques, where the agent’s model is trained to minimize
+     a goal waypoint on the map using L2 distance.                      the discrepancy between its predicted actions and the actions
+    The latest trend in generative machine learning has enlight-        in the expert’s dataset. Similarly, during evaluations, the
+    ened more realistic simulator generation [38], [34] based on        trained agent’s performance is evaluated on new, unseen data
+    diffusion models; however, they are yet to be mature enough         to determine how well it can imitate the expert’s behavior.
+    to be literature-wide problems. Some researchers have also          This evaluation can involve comparing the agent’s actions to
+    developed GAN-based and NERF-based renderings [1].                  those of the expert or assessing the agent’s success in accom-
+    B. Open-loop evaluations                                            plishing the task. Imitation learning can be further divided
+        into Behavior clone and Inverse reinforcement learning, but
+  Open-loop evaluations have historically been used by first, let’s look at its problem formulation.
+    modular autonomy tasks independently for waypoint predic-           1) Problem Formulations:        In imitation learning, given a
+tion, point-cloud and image segmentation, object detection, dataset D containing a set of trajectories, each trajectory is
+etc. Open-loop evaluations refer to testing the systems’ per- a sequence of state-action pairs. This action A is taken by
+formance based on the previously recorded driving instance, the expert at the state S under the guidance of the expert’s
+which includes the sensor inputs, goal locations, and future learned policy πE. [40], [22]The optimization-based strategy
+trajectories in the form of waypoints. This is not a complete of imitation learning is to learn a policy π∗ : S → A that
+end-to-end system where the evaluations are performed at emulates the expert’s policy πE by satisfying:
+    the end of the perception, prediction, and planning task.               π∗ = argmin
+    Given the sensor inputs and goal locations, the L2 distance             πD(πE, π)                                              (1)
+    is calculated between predicted waypoints compared to the           Where D represents the similarity between current and expert
+    trajectory followed by the real human driver [37]. To simplify      policies.
+    this problem a bit, researchers from Baidu have decoupled           2) Behavior Clone:          One of the earliest research dated
+    perception and tracking, and they operate on tracker outputs        back to the ALVINN [23] uses a fully connected neural
+    to find the planned trajectory using an MLP network, as             network for behavior clone to perform lane following tasks.
+    shown in Fig. [37]                                                  Nowadays, this fully connected layer is replaced with deep
+                                                                        neural networks, but the underlying learning policy remains
+                                                                        the same with behavior cloning [4], [5]. Behavior clone
+                                                                        formulates the problem as a supervised learning process to
+                                                                        match the learned policy πθ to the expert policy πE:
+                                                                            minθE||πθ − πE||2                        (2)
+        This is formulated as an L2 loss minimization. As the name
+        suggests, behavior clone-based methods can never explore
+Fig. 4. Open-Loop evaluation [37] demonstration, where inputs are ego more scenarios not covered in the supervised dataset; they
+vehicle state, which includes motion trajectories, instantaneous velocities, try to clone the behavior. This leads us to Covariance
+acceleration, heading angle, etc. Everything that is being outputted from the Shift since it generalizes poorly to the new states due to
+perception-tracking stack. The output showed planner output in the form of compounding errors in the action. Covariance shift [29] is
+    waypoints.                                                          defined as a specific type of dataset shift often encountered
+         IV. METHODS                                                    in machine learning. It is when the distribution of input
+    A. Imitation Learning                                               data shifts between the training environment and the live
+                                                                        environment. This issue has been mitigated with subsequent
+             In imitation learning, an agent learns to perform a task   papers targeting data augmentation and regularization to
+    by imitating the behavior demonstrated by a human expert            add some noise in the action and learning process [8].
+    or a pre-existing model. Instead of explicitly designing a
+    reward function or defining the optimal policy, the agent           3) Inverse Reinforcement Learning (IRL):        In inverse Re-
+    learns by observing and mimicking the actions taken by the          inforcement Learning (IRL), an agent aims to learn the
+    expert. Imitation learning has several advantages, including        underlying reward function of an environment from ob-
+    the ability to leverage human expertise to solve complex            served demonstrations or expert behavior. Unlike standard
+    tasks and the potential to provide safer and more interpretable     reinforcement learning, where an agent learns a policy to
+    behavior compared to reinforcement learning, where agents           maximize a reward function, IRL focuses on recovering the
+    learn through trial and error. However, imitation learning          reward function by observing how an expert behaves in
+    also has limitations, such as being sensitive to errors in the      a particular environment. It’s particularly useful when the
+    expert’s demonstrations and not always being able to explore        reward function of an environment is difficult to specify
+    new strategies beyond what the expert has demonstrated.             manually but can be inferred from observing human or
+    During Training, The agent’s objective is to learn a mapping        expert behavior. However, IRL comes with challenges, such
+
+        as the non-uniqueness of reward functions that explain the                                                                     ally expensive, especially when dealing with large state
+           same behavior and the sensitivity of the learned reward                                                                    spaces or complex reward functions.
+    function to the quality and quantity of expert demonstrations.                                                                 •          Lack of Exploration: IRL focuses on learning from
+        This is a supervised learning approach where the collected                                                                        expert demonstrations and does not inherently provide
+      dataset contains trajectories or demonstrations of an expert                                                                        mechanisms for exploring novel strategies beyond what
+       navigating the environment. Each trajectory consists of the                                                                      the expert has demonstrated. This can limit the agent’s
+    expert’s state-action pairs while accomplishing a task. During                                                                    ability to discover more effective or creative solutions.
+       the training/inference process, features are extracted from                                                                 •         Transfer to New Environments: Learned reward func-
+     the state space to represent important characteristics of the                                                                    tions are often specific to the environment in which they
+      environment. These features are used to represent the states                                                                     were inferred. Transferring a learned reward function to
+       in a more meaningful way and to generalize across different                                                                          a new, unseen environment can be challenging due to
+      states. IRL aims to find a reward function that explains the                                                                     differences in dynamics, state space, and other factors.
+      observed expert behavior. This is typically formulated as an
+         optimization problem, where the recovered reward function   B. Reinforcement Learning
+        should assign higher values to the states and actions that                                                                 In reinforcement  learning,   an agent   learns how       to
+are consistent with the expert’s behavior and lower values to make decisions and act in an environment to maximize a
+those that are not. Once the reward function is recovered, an cumulative reward signal. In the context of autonomous
+optimal policy for the agent can be derived using standard agents, RL provides a way for these agents to learn how
+reinforcement learning techniques such as Q-learning or to perform tasks and make decisions without explicit
+policy gradient methods. The agent maximizes the expected programming by learning from trial and error. The
+reward according to the recovered reward function. In IRL, autonomous agent is the learner in the RL framework. It
+the reward function is learned by maximizing the posterior interacts with an environment and takes action to achieve
+    probability of observing expert trajectories:                                                                                    certain goals. The environment is the external system with
+                                                                                                                                   which the agent interacts. It provides feedback to the agent
+         maxθEπE [Gt|rθ] − E[Gt|rθ]                            (3)                                                                   through rewards based on the agent’s actions. At each time
+            However, Inverse Reinforcement Learning (IRL) and Imi-   step, the environment is in a certain state, which representsa
+          tation Learning comes with its own set of challenges and                                                                 snapshot of  the environment’s   current  condition.     The
+    limitations:                                                                                                                 agent selects an action based on its current state. The action
+        influences the environment, causing it to transition to a new
+  • Ambiguity in Expert Behavior: IRL assumes that the ob- state and rewarding the agent. The environment provides
+     served expert behavior is optimal or near-optimal with a numerical reward signal to the agent after each action,
+     respect to some underlying reward function. However, indicating the immediate benefit or cost of the action. The
+     real-world expert behavior can be noisy, suboptimal, agent’s policy is a strategy that maps states to actions. The
+     or influenced by factors not captured by the reward agent’s goal is to learn an optimal policy that maximizes
+     function, leading to ambiguity in the inferred reward the cumulative reward over time. The value function
+     function.                                                                                                                       estimates the expected cumulative reward that an agent can
+  • Non-Uniqueness of Solutions: Multiple reward func- achieve from a given state while following a particular
+     tions can explain the same set of observed expert policy. It helps the agent make informed decisions about
+     behavior. This non-uniqueness can make determining which actions to take. The agent uses an RL algorithm
+     which reward function is the ”correct” one challenging, to learn the optimal policy or value function through
+     leading to uncertainty in the learned reward function trial and error. The learning process involves exploring
+     and subsequent policy.                                          the                                                              environment,  receiving rewards,  and  adjusting      the
+  • Limited Expert Demonstrations: IRL heavily relies on policy to improve performance. The agent faces a trade-off
+     the quality and quantity of expert demonstrations. If between exploring new actions to discover potentially better
+     the dataset is small, biased, or does not cover a wide strategies (exploration) and exploiting known actions to
+     range of scenarios, the learned reward function may maximize immediate rewards (exploitation). However, RL
+     not accurately represent the true underlying reward for autonomous agents also comes with challenges, such as
+     structure.                                                                                                                     efficient exploration, long-term rewards, and safe learning
+  • Curse of Dimensionality: As the state space becomes in real-world environments.
+     larger and more complex, the ability to accurately One of the main challenges in reinforcement learning
+     recover a reward function from limited expert data is managing the trade-off between exploration and
+     becomes increasingly difficult due to the curse of exploitation. To maximize the rewards, an agent must
+     dimensionality. High-dimensional state spaces require exploit its knowledge by selecting actions that are known
+     large amounts of data to capture the intricacies of the to result in high rewards. On the other hand, it has to take
+     reward function.                                                                                                                  the risk of trying new actions, which may lead to higher
+  • Computational Complexity: Many IRL algorithms in- rewards than the current best-valued actions for each system
+     volve optimization problems that can be computation- state. In other words, the learning agent has to exploit
+
+what it already knows to obtain rewards, but it also has to subsequently deduces its actions from these values. Policy-
+explore the unknown to make better action selections in the based RL, in contrast, directly aims to learn the optimal
+future. RL uses strategies based on ϵ-greedy and softmax to decision-making policy that maximizes cumulative rewards
+manage and tune this trade-off. Generally, the agent should by mapping states to actions. Value-based methods necessi-
+explore more at the beginning of the training process when tate exploration mechanisms to discover actions and states,
+little is known about the problem environment. For RL while policy-based methods inherently include exploration
+agents, Markov Decision Processes (MDPs) are used to through stochastic policies. The stability and convergence
+formalize sequential decision-making problems. An MDP of both approaches differ, with value-based methods facing
+consists of a set of S states, a set of A actions, a transition challenges, especially when involving neural networks, and
+function T , and a reward function R, giving a tuple of policy-based methods generally offering smoother updates.
+< S, A, T, R >. RL-Based approaches can be divided into Policy-based methods directly search and optimize a param-
+    Value-based, policy-based, and actor-critic:                     eterized policy πθ to maximize the expected return:
+    1) Value Based RL: Value-based Reinforcement Learning             maxθJ(θ) = maxθvπθ ()S = maxθEπθ [Gt|St = S]           (5)
+algorithms focus on estimating the value of different states where θ denotes the policy parameters. One problem of
+or state-action pairs in an environment. The value in this policy-based methods is poor gradient updates may result
+context represents how desirable or beneficial a particular in newly updated policies that deviate wildly from previous
+state or action is for an agent with respect to achieving policies, which may decrease the policy performance.
+its long-term goals. The primary goal of value-based RL is Trust region policy optimization (TRPO) [26] prevents the
+to learn an optimal value function that guides the agent’s updated policies from deviating too much from previous
+decision-making process. The state-value function, denoted policies, thus reducing the chance of a bad update. TRPO
+as Vs, estimates the expected cumulative reward an agent optimizes a surrogate objective function where the basic
+can obtain from a given state s while following a certain idea is to limit each policy gradient update as measured
+policy. It quantifies how good it is for the agent to be by the Kullback-Leibler (KL) divergence between the
+in a particular state. The action-value function, denoted as current and the new proposed policy. This method results
+Q(s, a), estimates an agent’s expected cumulative reward in monotonic improvements in policy performance. On the
+from being in state s, taking action a, and following a other hand, Proximal Policy Optimizations (PPO) [27] clips
+certain policy. It quantifies the goodness of taking a specific surrogate objective function by having a too-large policy
+action from a specific state. The Bellman equation describes change. Inspiration is taken from gradient clipping here.
+the relationship between a state’s value and its neighboring However, it achieves a similar advantage in not deviating
+states’ values. It is a fundamental equation used in value- too much from the past time step.
+based RL algorithms to update the value estimates based
+    on expected future rewards. The optimal value function            3) Actor-Critic RL:     . The Actor-Critic method is a hy-
+    represents the maximum achievable value for each state,          brid reinforcement learning approach combining policy- and
+    assuming the agent follows the best possible policy. The         value-based elements. It aims to address the limitations of
+    goal of value-based RL is to approximate this optimal value      each approach by leveraging their strengths. In the Actor-
+    function. A common value-based RL algorithm is Q-learning        Critic framework, an agent simultaneously learns a policy
+    [16], an off-policy algorithm that iteratively updates action-   (actor) and an estimate of the value function (critic). In
+    value estimates based on the Bellman equation. It aims to        this approach, the actor (policy) selects actions based on
+    find the optimal Q-function.                                     the current state. It learns a policy that maps states to
+                                                                     actions to maximize the expected cumulative reward. The
+         qπ(St, at) ← qπ(St, at) + α(Y − qπ(St, at))  (4)            policy can be stochastic, allowing for exploration. Common
+        representations for the actor include neural networks. The
+where Y is the temporal difference target and α is the critic (value Function) estimates the value of states or state-
+learning rate. Deep Q-learning (DQN) is an extension of action pairs. It provides feedback to the actor by evaluating
+Q-learning that uses neural networks to approximate the how good the current policy is. The value function helps
+Q-function. It is effective for handling high-dimensional guide the actor’s learning process by providing a baseline for
+state spaces. [21] from DeepMind uses this approach to comparing different policies. The actor-critic method com-
+learn to play Atari. The double-q-learning algorithm [33] bines the benefits of policy-based methods (smooth learning
+addresses the issue of overestimation of action values that and direct policy optimization) with value-based methods
+can occur in standard Q-learning. The prioritized experience (efficient exploration and handling of continuous action
+replay [25] is an enhancement to DQN that prioritizes the spaces). An important concept in the actor-critic method is
+replay of experiences based on their importance for learning. the advantage function, which represents how much better
+        or worse an action is compared to the average action in
+  2) Policy Based RL: Value-based RL revolves around ap- a given state. The advantage function guides the actor’s
+proximating the value of different states or state-action pairs, policy updates. Deterministic Policy Gradient Algorithms
+indicating how good they are for an agent’s goals. The agent (DPG) [28] is an off-policy actor-critic algorithm that derives
+
+    deterministic policies. Unlike stochastic policies, DPG only        planning modules are trained in the two stages. Another more
+    integrates over the state space and requires fewer samples in       discrete approach is covered in the paper by Uber ATG [36],
+    problems with large action spaces.                                  where they learn end-to-end interpretable motion planner
+    C. Teacher Student Paradigm                                         using a backbone that takes LiDAR data and maps as inputs.
+                                                                        First, they output bounding boxes of other actors for future
+             State-of-the-art methods for end-to-end autonomous driv-   timesteps (perception) and a cost volume for planning with
+    ing follow the teacher-student paradigm. The Teacher model,         T filters. Next, for each trajectory proposal from the sampler,
+    such as CARLA [11], uses privileged information (ground-            its cost is indexed from different filters of the cost volume
+    truth states of surrounding agents and map elements) to learn       and summed together. The trajectory with the minimal cost
+    the driving strategy. The student model only has access to          will be our final planning as shown in Fig. 6. They use a
+    raw sensor data and conducts behavior cloning on the data           multi-task training with supervision from detection, motion
+    collected by the teacher model.                                     forecasting, and human-driven trajectories for the ego car.
+              In [7], authors break up the complex task of perception   Note there is no supervision for the cost volume. Thus,
+    and planning into two parts. In the first stage, they train an      they adopt max-margin loss to push the network to learn to
+    agent with access to privileged information. This privileged        discriminate between good and bad trajectories. The overall
+    agent cheats by observing the environment’s ground-truth            loss function is then:
+    layout and all traffic participants’ positions. This agent learns
+    a robust policy by cheating. It does not need to learn to                          L = Lperception + βLplanning                  (6)
+    see because it gets direct access to the environment’s state.       This multi-task loss directs the network to extract useful
+    In the second stage, the privileged agent acts as a teacher         features, making the network output interpretable results.
+    who train a purely vision-based sensorimotor agent. The             This is crucial for self-driving as it helps understand failure
+    resulting sensorimotor agent does not have access to any            cases and improve the system. Here, perception loss is based
+    privileged information and does not cheat. The privileged           on a classification loss, regression loss, and IoU (intersection
+    agent is a “white box” and can provide high-capacity on-            over Union) loss for bounding boxes as shown in Fig. 6. For
+    policy supervision. This architecture can be seen in Fig. 5.        Planning loss, they use the max-margin loss where we use the
+                                                                        ground-truth trajectory as a positive example and randomly
+                                                                        sampled  trajectories as negative examples. The        intuition
+                                                                        behind this is to encourage the ground-truth trajectory to
+                                                                        have minimal costs and others to have higher costs. [14] is
+                                                                        another method that uses a segmentation mask, monocular
+                                                                        depth, and optical flow as an intermediate prediction for an
+                                                                        end-to-end task of predicting control output using imitation
+                                                                        learning.
+
+
+    Fig. 5. Demonstration of Teacher Student Paradigm from [7]
+
+  [17] points out the gap under the current Teacher-Student
+paradigm, that the student model still needs to learn a
+planning head from scratch, which could be challenging
+due to the redundant and noisy nature of raw sensor inputs
+and the causal confusion issue of behavior cloning. Their
+approach explores the possibility of directly adopting the
+strong teacher model to conduct planning while letting the
+student model focus more on the perception part.
+Though much effort has been devoted to designing a more
+robust expert and transmitting knowledge from teachers to Fig. 6. [36] End-to-end autonomous driving system with auxiliary training
+students at various levels, the teacher-student paradigm still with perception losses
+    suffers from inefficient distillation.                              V. OPEN CHALLENGES AND FUTURE TRENDS
+    D. End to end Autonomous driving with the auxiliary task                    Considering challenges in the methods discussed and tak-
+  Generally, it is commonly believed that learning control ing inspiration from the multi-disciplinary field of machine
+output/ waypoints for trajectory planning might be too learning, we came across potential research directions for
+complex to be mapped from the billions of parameters future researchers:
+    from the sensor data. This has led researchers to develop           •         Collaborative end-to-end task: There has been research
+    auxiliary tasks to supervise the learning end-to-end task                      on collaborative perception, where perception is per-
+    as we have seen previously in [17] where perception and                      formed from the autonomous cars in the vicinity jointly
+
+              to deal with the occlusions and extend the detection                               REFERENCES
+               range. A similar concept is yet to be seen for end-   [1]  Alexander Amini, Igor Gilitschenski, Jacob Phillips, Julia Moseyko,
+               to-end autonomous driving tasks. With more and more        Rohan Banerjee, Sertac Karaman, and Daniela Rus. Learning robust
+             autonomous car companies deploying a fleet of cars in        control policies for end-to-end autonomous driving from data-driven
+        a city, this collaborative end-to-end task can be the next        simulation.     IEEE Robotics and Automation Letters, 5(2):1143–1150,
+        paradigm for SOTA methods in the field.                      [2]  2020.
+                                                                          Alexander Amini, Guy Rosman, Sertac Karaman, and Daniela Rus.
+    •        Generate Scenes based on Text Requirements using Dif-        Variational end-to-end navigation and localization.  In 2019 Interna-
+              fusion Models: Autonomous vehicles have been trained        tional Conference on Robotics and Automation (ICRA), pages 8958–
+          to work very well on generic scenarios; one of the major   [3]  8964. IEEE, 2019.
+                                                                          Alex Bewley, ZongYuan Ge, Lionel Ott, Fabio Ramos, and Ben
+           challenges still unaddressed is the long-tail problems,        Upcroft. Simple online and realtime tracking.   CoRR, abs/1602.00763,
+               which we can’t model in the simulators extensively.   [4]  2016.
+                                                                          Mariusz Bojarski, Davide Del Testa, Daniel Dworakowski, Bernhard
+               Recently, there have been great results with image-        Firner,  Beat Flepp, Prasoon Goyal, Lawrence     D Jackel,     Mathew
+               generation models using the stable-diffusion method        Monfort, Urs Muller, Jiakai Zhang, et al.     End to end learning for
+          [24]; it would be great to see future researchers lever-   [5]  self-driving cars.  arXiv preprint arXiv:1604.07316, 2016.
+                                                                          Mariusz Bojarski, Philip Yeres, Anna Choromanska, Krzysztof Choro-
+            age this technology to build more realistic simulation        manski, Bernhard Firner, Lawrence Jackel, and Urs Muller. Explaining
+              scenarios. The end-to-end task of autonomous driving        how a deep neural network trained with end-to-end learning steers a
+              can be trained in an end-to-end task where diffusion   [6]  car. arXiv preprint arXiv:1704.07911, 2017.
+                                                                          Holger Caesar, Juraj Kabzan, Kok Seang Tan, Whye Kit Fong, Eric
+               models automatically generate similar scenes of the        Wolff, Alex Lang, Luke Fletcher, Oscar Beijbom, and Sammy Omari.
+          failure cases of autonomous vehicles. Then, we can train        nuplan: A closed-loop ml-based planning benchmark for autonomous
+                                                                          Dian Chen, Brady Zhou, Vladlen Koltun, and Philipp Kr¨ahenb¨uhl.
+           on those cherry-picked simulated scenes until our model   [7]  vehicles.  arXiv preprint arXiv:2106.11810, 2021.
+        predicts as expected on the real-world metrics.                   Learning by cheating. In Conference on Robot Learning, pages 66–
+                                                                          75. PMLR, 2020.
+     •  Foundation Models: Recently, foundation          models in   [8]  Jianyu Chen, Bodi Yuan, and Masayoshi Tomizuka.        Deep imitation
+                computer vision [35] and languages [32] have shown        learning for autonomous driving in generic urban scenarios with
+           state-of-the-art performance after being trained on the        enhanced safety.    In      2019 IEEE/RSJ International Conference on
+              diverse, large-scale dataset and can be adapted to a   [9]  Intelligent Robots and Systems (IROS), pages 2884–2890. IEEE, 2019.
+                                                                          Li Chen, Penghao Wu, Kashyap Chitta, Bernhard Jaeger, Andreas
+              wide range of tasks (driving scenarios). Researchers        Geiger, and Hongyang Li. End-to-end autonomous driving: Challenges
+      can leverage these models for generalizing capability [10] and frontiers. arXiv preprint arXiv:2306.16927, 2023.
+        Felipe Codevilla, Matthias M¨uller, Antonio L´opez, Vladlen Koltun,
+         for end-to-end tasks from the simulators to the real-life        and Alexey Dosovitskiy. End-to-end driving via conditional imitation
+        data.                                                             learning.  In      2018 IEEE international conference on robotics and
+                                                                    [11]  automation (ICRA), pages 4693–4700. IEEE, 2018.
+            VI. CONCLUSION                                                Alexey Dosovitskiy, German Ros, Felipe Codevilla, Antonio Lopez,
+        and Vladlen Koltun. Carla: An open urban driving simulator. In
+   In conclusion, this review paper has comprehensively [12] Conference on robot learning, pages 1–16. PMLR, 2017.
+      explored the rapidly evolving field of end-to-end autonomous        Badr Ben Elallid, Nabil Benamar, Abdelhakim Senhaji Hafid, Tajjeed-
+                                                                          dine Rachidi, and Nabil Mrani. A comprehensive survey on the appli-
+          driving. The journey from traditional modular approaches        cation of deep and reinforcement learning approaches in autonomous
+       to the paradigm-shifting concept of end-to-end learning has        driving.   J. King Saud Univ. Comput. Inf. Sci., 34(9):7366–7390, oct
+           been illuminated, showcasing the shift from handcrafted  [13]  2022.
+                                                                          Eric Espi´e, Christophe Guionneau, Bernhard Wymann, Christos Dim-
+    features and intricate pipelines to data-driven solutions that        itrakakis, R´emi Coulom, and Andrew Sumner. Torcs, the open racing
+allow vehicles to learn directly from raw sensor inputs. [14] car simulator. 2005.
+        Jeffrey Hawke, Richard Shen, Corina Gurau, Siddharth Sharma,
+           The discussion spanned the advantages and challenges of        Daniele Reda, Nikolay Nikolov, Przemysław Mazur, Sean Mickleth-
+      this approach, highlighting its potential to simplify system        waite, Nicolas Griffiths, Amar Shah, et al.        Urban driving with
+        design, capture complex interactions, and adapt to diverse        conditional imitation learning. In 2020 IEEE International Conference
+        on Robotics and Automation (ICRA), pages 251–257. IEEE, 2020.
+driving scenarios. As this field continues to mature, the paper [15] Simon Hecker, Dengxin Dai, and Luc Van Gool. End-to-end learning
+         discussed the importance of safety assurances, regulatory        of driving models with surround-view cameras and route planners. In
+        frameworks, and the need for collaboration among academia,        Proceedings of the european conference on computer vision (eccv),
+        pages 435–453, 2018.
+industry, and policymakers. Open challenges were identified, [16] Beakcheol Jang, Myeonghwi Kim, Gaspard Harerimana, and
+    such as safety in extreme scenarios, transfer learning, inter-        Jong Wook Kim.       Q-learning algorithms: A comprehensive classifi-
+        cation and applications. IEEE Access, 7:133653–133667, 2019.
+pretability, human interaction, and efficient exploration, invit- [17] Xiaosong Jia, Yulu Gao, Li Chen, Junchi Yan, Patrick Langechuan
+   ing researchers and practitioners to collectively contribute to        Liu, and Hongyang Li.     Driveadapter: Breaking the coupling barrier
+    shaping the future of autonomous driving.                             of perception and planning in end-to-end autonomous driving.    arXiv
+        preprint arXiv:2308.00398, 2023.
+   In essence, this review paper has showcased how end-to- [18] Alex Kendall, Jeffrey Hawke, David Janz, Przemyslaw Mazur, Daniele
+          end autonomous driving is more than just a technological        Reda, John-Mark Allen, Vinh-Dieu Lam, Alex Bewley, and Amar
+          leap; it is a paradigm shift that embodies the fusion of        Shah. Learning to drive in a day. In 2019 International Conference
+        on Robotics and Automation (ICRA), pages 8248–8254. IEEE, 2019.
+machine learning, robotics, and transportation engineering. [19] Johann Laconte, Abderrahim Kasmi, Romuald Aufr`ere, Maxime
+           The road ahead is paved with exciting opportunities and        Vaidis, and Roland Chapuis.      A survey of localization methods for
+        autonomous vehicles in highway scenarios. Sensors, 22(1), 2022.
+complex challenges, demanding an interdisciplinary effort to [20] Lu Mi, Hang Zhao, Charlie Nash, Xiaohan Jin, Jiyang Gao, Chen Sun,
+    realize the vision of safe, efficient, and reliable autonomous        Cordelia Schmid, Nir Shavit, Yuning Chai, and Dragomir Anguelov.
+    vehicles that seamlessly navigate our modern roadways.                Hdmapgen: A hierarchical graph generative model of high definition
+                                                                          maps. CoRR, abs/2106.14880, 2021.
+
+[21] Volodymyr Mnih, Koray Kavukcuoglu, David Silver, Alex Graves, [31] Ardi Tampuu, Tambet Matiisen, Maksym Semikin, Dmytro Fishman,
+          Ioannis Antonoglou, Daan Wierstra, and Martin Riedmiller.          Play-         and Naveed Muhammad.         A survey of end-to-end driving: Architec-
+          ing   atari    with  deep reinforcement learning.     arXiv     preprint         tures and training methods.       IEEE Transactions on Neural Networks
+    [22]  arXiv:1312.5602, 2013.                                                           and Learning Systems, 33(4):1364–1384, 2020.
+     Takayuki Osa, Joni Pajarinen, Gerhard Neumann, J Andrew Bagnell, [32] Hugo Touvron, Thibaut Lavril, Gautier Izacard, Xavier Martinet,
+          Pieter Abbeel, Jan Peters, et al.          An algorithmic perspective on         Marie-Anne Lachaux, Timoth´ee Lacroix, Baptiste Rozi`ere, Naman
+          imitation learning.       Foundations and Trends® in Robotics, 7(1-2):1–         Goyal, Eric Hambro, Faisal Azhar, et al. Llama: Open and efficient
+    [23]  179, 2018.                                                                       foundation language models. arXiv preprint arXiv:2302.13971, 2023.
+          Dean Pomerleau.           Alvinn: An autonomous land vehicle in a neural   [33]  Hado Van Hasselt, Arthur Guez, and David Silver.       Deep reinforce-
+          network. In D.S. Touretzky, editor, Proceedings of (NeurIPS) Neural              ment learning with double q-learning.       In Proceedings of the AAAI
+          Information Processing Systems, pages 305 – 313. Morgan Kaufmann,                conference on artificial intelligence, volume 30, 2016.
+    [24]  December 1989.                                                             [34]  Minrui Xu, Dusit Niyato, Junlong Chen, Hongliang Zhang, Jiawen
+          Robin Rombach, Andreas Blattmann, Dominik Lorenz, Patrick Esser,                 Kang, Zehui Xiong, Shiwen Mao, and Zhu Han.             Generative ai-
+          and   Bj¨orn   Ommer.    High-resolution image synthesis with     latent         empowered simulation for autonomous driving in vehicular mixed
+          diffusion models.           In Proceedings of the IEEE/CVF conference on         reality metaverses. arXiv preprint arXiv:2302.08418, 2023.
+    [25]  computer vision and pattern recognition, pages 10684–10695, 2022.          [35]  Lu Yuan, Dongdong Chen, Yi-Ling Chen, Noel Codella, Xiyang Dai,
+          Tom   Schaul,  John   Quan, Ioannis Antonoglou,   and   David    Silver.         Jianfeng Gao, Houdong Hu, Xuedong Huang, Boxin Li, Chunyuan Li,
+    [26]  Prioritized experience replay.    arXiv preprint arXiv:1511.05952, 2015.         et al. Florence: A new foundation model for computer vision.     arXiv
+          John Schulman, Sergey Levine, Pieter Abbeel, Michael Jordan, and                 preprint arXiv:2111.11432, 2021.
+          Philipp Moritz.      Trust region policy optimization.  In International   [36]  Wenyuan Zeng, Wenjie Luo, Simon Suo, Abbas Sadat, Bin Yang,
+    [27]  conference on machine learning, pages 1889–1897. PMLR, 2015.                     Sergio Casas, and Raquel Urtasun.      End-to-end interpretable neural
+          John Schulman, Filip Wolski, Prafulla Dhariwal, Alec Radford, and                motion planner.     In       Proceedings of the IEEE/CVF Conference on
+          Oleg Klimov. Proximal policy optimization algorithms. arXiv preprint             Computer Vision and Pattern Recognition, pages 8660–8669, 2019.
+    [28]  arXiv:1707.06347, 2017.                                                    [37]  Jiang-Tian Zhai, Ze Feng, Jinhao Du, Yongqiang Mao, Jiang-Jiang
+          David Silver, Guy Lever, Nicolas Heess, Thomas Degris, Daan Wier-                Liu, Zichang Tan, Yifu Zhang, Xiaoqing Ye, and Jingdong Wang.
+          stra, and Martin Riedmiller. Deterministic policy gradient algorithms.           Rethinking the open-loop evaluation of end-to-end autonomous driving
+          In          International conference on machine learning, pages 387–395.         in nuscenes. arXiv preprint arXiv:2305.10430, 2023.
+    [29]  Pmlr, 2014.                                                                [38]  Ziyuan Zhong, Davis Rempe, Danfei Xu, Yuxiao Chen, Sushant Veer,
+          Masashi Sugiyama, Matthias Krauledat, and Klaus-Robert M¨uller.                  Tong Che, Baishakhi Ray, and Marco Pavone. Guided conditional dif-
+          Covariate shift adaptation by importance weighted cross validation.              fusion for controllable traffic simulation. In 2023 IEEE International
+    [30]  Journal of Machine Learning Research, 8(35):985–1005, 2007.                      Conference on Robotics and Automation (ICRA), pages 3560–3566.
+          Pei Sun, Henrik Kretzschmar, Xerxes Dotiwalla, Aurelien Chouard,                 IEEE, 2023.
+     Vijaysai Patnaik, Paul Tsui, James Guo, Yin Zhou, Yuning Chai, [39] Ningnan Zhou, Wayne Xin Zhao, Xiao Zhang, Ji-Rong Wen, and
+          Benjamin Caine, Vijay Vasudevan, Wei Han, Jiquan Ngiam, Hang                     Shan Wang.          A general multi-context embedding model for mining
+          Zhao, Aleksei Timofeev, Scott Ettinger, Maxim Krivokon, Amy Gao,                 human trajectory data.         IEEE Transactions on Knowledge and Data
+          Aditya Joshi, Yu Zhang, Jonathon Shlens, Zhifeng Chen, and Dragomir              Engineering, 28(8):1945–1958, 2016.
+     Anguelov. Scalability in perception for autonomous driving: Waymo [40] Zeyu Zhu and Huijing Zhao. A survey of deep rl and il for
+          open dataset.  CoRR, abs/1912.04838, 2019.                                       autonomous driving policy learning. IEEE Transactions on Intelligent
+
+Transportation Systems, 23(9):14043–14065, 2021.
+

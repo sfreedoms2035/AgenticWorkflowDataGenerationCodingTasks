@@ -1,0 +1,1300 @@
+arXiv:2308.05731v3 [cs.RO] 11 Sep 2024
+
+
+
+
+
+
+
+
+
+
+(c) IEEE 2024.
+Personal use of this material is permitted. Permission must be obtained for all other uses, in any current or future media, including reprinting/republishing
+this material for advertising or promotional purposes, creating new collective works, for resale or redistribution to servers or lists, or reuse of any copyrighted
+component of this work in other works.
+
+The Integration of Prediction and Planning in Deep
+   Learning Automated Driving Systems: A Review
+
+        Steffen Hagedorn∗1,2 Marcel Hallgarten∗1,3 Martin Stoll1 Alexandru Paul Condurache1,2
+        1Robert Bosch GmbH 2University of L¨ubeck 3University of T¨ubingen
+        ∗These authors contributed equally to this work Email: {first-name}.{last-name}@de.bosch.com
+
+
+
+
+               Abstract—Automated driving has the potential to revolution-
+    ize  personal, public,  and  freight mobility. Beside       accurately                prediction B
+    perceiving the environment,  automated vehicles    must plan         a                (unlikely)
+    safe, comfortable, and efficient motion trajectory. To promote
+    safety and progress, many works rely on modules that predict
+    the future motion of surrounding traffic. Modular automated
+    driving systems commonly handle prediction and planning as                        pred. A
+    sequential, separate tasks. While this accounts for the influence                 (likely)  Ego Vehicle
+    of surrounding traffic on the ego vehicle, it fails to anticipate
+    the reactions of traffic participants to the ego vehicle’s behavior.      Fig. 1: How should the ego vehicle behave? Various behav-
+    Recent methods increasingly integrate prediction and planning in          iors are possible for the ego vehicle. Here, we depict two in
+    a joint or interdependent step to model bidirectional interactions.       red and orange. Their consequences depend on the behavior of
+    To   date, a   comprehensive overview of different         integration
+    principles is lacking. We systematically review state-of-the-art          the observed surrounding vehicle, which is depicted by blue
+    deep learning-based planning systems, and focus on how they               arrows (prediction A or prediction B). At the same time, the
+    integrate prediction. Different facets of the integration ranging         surrounding vehicle might react to the ego vehicle’s action,
+    from system architecture to high-level behavioral aspects are             i.e. the surrounding vehicle’s behavior also depends on the
+    considered and related to each other. Moreover, we discuss the            ego vehicle’s decision. Different methods exist to forecast the
+    implications, strengths, and limitations of different integration
+    principles. By pointing out research gaps, describing relevant            behavior of the surrounding vehicle, and various ways exist to
+    future challenges, and highlighting trends in the research field,         leverage this to decide on a safe and goal-directed plan for the
+    we identify promising directions for future research.                     ego-vehicle. In this survey, we systematically categorize and
+               Note: A beginner-friendly introduction to prediction, plan-    review methods that integrate prediction and planning for self-
+    ning, and their integration in automated driving systems can              driving vehicles. We highlight their capabilities and limitations
+    be found in an earlier version of our work at https://arxiv.org/          and discuss prospects for future research.
+    abs/2308.05731v2. The following version is intended for more              A. Scope
+    experienced researchers in the field.
+                                                                                        In this work, we review methods to integrate prediction
+                  Index Terms—Automated Driving, Motion Prediction, Motion    and planning into an automated driving system. Prediction
+    Planning, Deep Learning                                                   is the task of anticipating intents and future trajectories of
+                                                                              observed traffic agents [8], and planning is about finding the
+             I. INTRODUCTION                                                  best possible trajectory w.r.t. previously defined criteria for
+    A UTOMATED Driving (AD) remains a challenging en-                         a controlled vehicle [9]. Deep Learning (DL)-based methods
+                                                                              follow a data-centric approach to tackle these problems [10]
+             deavour. It is usually split into the subtasks of perception,    and have led to significant improvements in many fields [11].
+    prediction, planning, and control [1]–[3]. Perception processes           Works in prediction and planning increasingly employ DL-
+    sensor inputs to create a model of the environment. Prediction            based approaches as well [12]–[15] and represent an alter-
+    and planning build upon this model and make future mo-                    native to traditional, rule-based methods [16]–[18] and con-
+    tion forecasts for surrounding traffic agents and a plan for              strained optimization [19]. In this work, we focus on DL-based
+    the controlled ego vehicle. Traditional, modular systems (cf.             methods.
+    Fig. 2) address prediction and planning as separate tasks. The                  An overview of different architectures of automated driving
+predicted behavior of surrounding traffic agents is leveraged systems is shown in Fig. 2. It can take three forms ranging
+to plan a suitable behavior for the ego vehicle. However, from modular systems over end-to-end (E2E) differentiable
+this sequential ordering is inherently reactive and cannot modular systems to monolithic E2E systems. Modular and
+represent bidirectional interaction between the ego vehicle modular E2E systems consist of clearly defined components
+and other traffic agents [4]. In fact, prediction and planning for different tasks [20]–[24]. Traditionally, they are arranged
+are no sequential problems and should be tightly coupled sequentially. We will discuss these systems in Sec. III. In con-
+in automated driving systems [5]–[7]. Fig. 1 highlights the trast, monolithic E2E methods employ a single neural network
+    interdependence of both tasks.                                            for perception, prediction, and planning so that depending on
+
+                                                                                                                                    2
+
+the architecture, no boundaries between the modules can be refers to the past states of all SVs. Analogously, the future
+drawn [9], [25], [26]. As the order of the subtasks cannot be states of vehicle i within a prediction horizon of tpred are
+      determined, we name this integration of prediction and plan-        Yi = {yt+1, yt+2, . . . , yt+t   }.                     (3)
+      ning “undirected” (c.f. Sec. IV). In this work, we emphasize                        pred
+      the shortcomings of sequential and undirected approaches and  and the future states of all SVs are YSV. In the following, state
+       highlight works that integrate prediction and planning in a   sequences are also referred to as trajectories. Additional scene
+     more sophisticated way to enable bidirectional interaction of   information, such as a semantic map or traffic signs and traffic
+   self-driving vehicles and surrounding traffic (c.f. Sec. V). In    light states are represented by I .
+          the following, we refer to the component of an automated    Following [8], we state trajectory    prediction as the task of
+      driving system that integrates prediction and planning as an    estimating a probability distribution
+    Integrated Prediction and Planning System (IPPS).                                  Ppred = P (Y|X, I)                         (4)
+    B. Contribution and Outline                                          that maps state histories of m observed vehicles in X to the
+  By discussing automated driving systems with a focus on future trajectories of n predicted vehicles in Y. The distribu-
+the integration of prediction and planning, we take a novel tion Ppred accounts for inherent uncertainties in the forecasting
+perspective. IPPSs can be classified into three categories as task and is often modeled by a discrete set of samples with
+depicted in Fig. 2. Accordingly, this survey is structured corresponding probabilities [39]–[42]. Some methods omit
+into three main chapters: sequential (Sec. III), undirected scene information I and infer trajectories based on a state
+(Sec. IV), and bidirectional IPPSs (Sec. V). While surveys history alone [43]–[45]. Commonly X includes all vehicles in
+on classical methods [14], [27]–[29], stand-alone DL-based the scene, i.e. XEV and XSV. Depending on the vehicles in
+prediction [15], [30]–[32] or planning [33], and E2E AD [34] Y, different variants of prediction can be formulated: single-
+already exist, we observe that recent methods thoughtfully agent prediction models the future trajectory for each SV
+design the interplay of prediction and planning [35]–[38]. individually [46]. However, estimating a joint prediction YSV
+To substantiate this observation with broad evidence and a from a set of n single-agent predictions YSV is not trivial since
+theoretical foundation, we summarize our contributions as the number of possible combinations grows exponentially with
+    follows:                                                             the number of agents n. Not all combinations are meaningful,
+  • We propose a categorization for the integration of pre- and finding realistic ones with heuristics and joint optimization
+     diction and planning based on the dependencies between is cumbersome [47]. To avoid this, joint prediction directly
+     both tasks (cf. Sec. III, IV and V). We investigate how estimates a joint distribution for multiple SVs [48].
+       these categories relate to system architectures, behavioral    In   planning, the task is to find a single suitable trajectory
+     aspects, and safety.                                                     for the EV that can be passed on to a downstream motion
+  • In particular, we provide a comprehensive overview of controller. Hence, we define planning to be a function f that
+     design choices in prediction and planning modules of maps the observational inputs XSV, and XEV as well as the
+     modular (E2E) architectures (cf. Sec. III-A and III-B) context information I to a future trajectory YEV, i.e.
+          and discuss their impact on interaction and system-level                    Y
+     behavior.                                                                        EV = f (XEV, XSV, I).                       (5)
+  • We reveal gaps in state-of-the-art research and point In many cases, the f also uses the prediction YSV, i.e.
+     out promising directions of future research based on the
+     identified categorization (Sec. VI).                                 YEV = f (XEV, XSV, I, YSV).                             (6)
+                                                                       The definitions show that planning can be considered a special
+         II. TASK DEFINITIONS                                           case of single-agent prediction where the output distribution
+                                                                      models only a   single trajectory.   However, in contrast    to
+         In the following, we start by introducing the terminology         prediction, the planning trajectory must be conditioned on
+       and notation for the task definitions used in this work. We        a navigation goal. Moreover, it has to be stable in closed-
+          adopt a similar terminology to that proposed by [30] and    loop, i.e. it must be kinematically feasible and result in safe
+  partition the actors in a traffic scenario into the self-driving            and efficient driving behavior when fed to a downstream
+          ego vehicle (EV) and the surrounding vehicles (SVs). The    controller [49].
+       EV is equipped with sensors that provide information on the
+    environment. The state history of vehicle      i over the time                    III. SEQUENTIAL IPPS
+    interval t − tobs, . . . , t is                                       To date, the sequential integration of prediction and plan-
+                   Xi = {xt−tobs, . . . , xt−1, xt}.           (1)          ning is the prevalent and most widely adopted integration
+        Each state x comprises 2D or 3D positional information and        principle. Sequential IPPSs execute prediction and planning
+    further optional information like heading angle, speed, static           as separate tasks. Prior knowledge is used to design the
+     attributes, or goal information in the case of the EV. Hence,        interplay of the modules. Depending on the interfaces, such
+    XEV denotes the EV’s past states. Similarly,                         systems can still be end-to-end differentiable. Accordingly,
+                                                                           sequential integration can be found in modular and modular
+         XSV = {X1, X2, . . . , Xm}                            (2)     E2E systems (c.f. Fig. 2). To investigate different sequential
+
+    3
+
+
+                      Automated Driving Systems                                         Combinations                 Integrated Prediction and
+                      (System Architecture)                                                                               Planning System
+
+                                   Modular                                                                           Prediction   Planning
+     Sensors                                                                       S    Sequential IPPS (Sec. III)   Human Leader
+      Map            Perception    Module AIPPS Module B                Control    B                                 Planning     Prediction
+                                                                                                                     Robot Leader
+
+                                 Monolithic E2E                                                                          ?
+     Sensors                                                                                                         Implicit
+                                 Neural Network                         Control    U    Undirected IPPS (Sec. IV)    Prediction
+      Map                              IPPS                                                                           Planning
+                                  Modular E2E                                                                        Joint
+                                                                                   S
+     Sensors         Perception    Module A     Module B                Control                                      Prediction
+      Map                              IPPS                                        B    Bidirectional IPPS (Sec. V)
+                                                                                                                      Planning
+                     : E2E Differentiability      : Interpretability                                                 Co-Leader
+
+                   Fig. 2: Overview of automated driving systems. There are three system architectures shown on the left. Modular systems consist
+                 of individual modules, whose interfaces provide interpretability but restrict information flow and end-to-end differentiability.
+                        In contrast, monolithic E2E systems are end-to-end differentiable but not interpretable. Modular E2E systems combine both
+               properties: they are end-to-end differentiable and interpretable. All three system architectures comprise an integrated prediction
+                    and planning system (IPPS), depicted in green. Our work focuses on this very part and identifies three paradigms to integrate
+                     prediction and planning, as shown on the right. Sequential IPPSs condition one task on the other. Undirected IPPSs allow for
+                   more complex interactions but provide low interpretability. Bidirectional IPPSs explicitly ensure that both tasks are mutually
+                     conditioned on each other. Our review analyzes these integration paradigms and highlights their compatibility with different
+    system architectures.
+
+    system designs in more depth, we start by taking a closer look                     Sparse representations use vectors to describe all objects
+    at the individual components of prediction and planning and                        in a scene. The per-object vectors are then either encoded
+    discuss their impact on interaction and system-level behavior.                into a latent representation jointly, e.g., with a Transformer,
+                                                                                     or individually and then aggregated, e.g., with Graph Neural
+                                                                                        Networks (GNN) [74]. Objects are represented by polygons,
+    A. Prediction                                                                or point sets [6], [39], [40], [42], [62], [75]–[82]. The map is
+  1) Input Representations: In the context of IPPSs for commonly described by a set of lanes represented by polylines
+automated vehicles, agent states X and map I are the most and an adjacency matrix. Objects and map elements are then
+important information to represent. Two major representations encoded into fixed-size latent features, for instance, via Multi-
+    exist in DL-based approaches: Rasterized and sparse.                                Layer Perceptrons (MLP) [83] or Recurrent Neural Networks
+  Rasterized representations use dense, fixed-resolution grid (RNN) [84]. To encode sequential signals like state histories
+structures that often have multiple channels [50]–[55]. Each X, 1D CNNs [85], RNNs like LSTMs [86] and GRUs [87],
+channel encodes different information on agent states. They and Transformers [88] are applied [42], [77], [89]. Some works
+are commonly used in combination with rasterized high- like Trajectron++ [41] and MFP [90] combine rasterized HD
+definition maps (HD maps) [56], [57] and represented in a maps with sparse object representations.
+    bird’s eye view (BEV) [58], [59]. The BEV allows to fuse                        Throughout the past years, a clear trend towards sparse input
+multiple EV sensor inputs and different sensing modalities representations can be observed in prediction modules [91]–
+into a shared and interpretable representation [8]. It further [98]. In the context of integrating prediction and planning,
+establishes a common coordinate system for all vehicles, facil- an advantage of sparse representations is that they are object-
+itating to model interactions within the scene [60]. Dense grids based. Interactions between the EV and SVs can therefore be
+are well-suited for processing with powerful Convolutional modeled in a targeted manner. This improves the explainability
+Neural Network (CNN) [61] architectures [10], [56], [62]– of a system and provides a clear understanding of how
+[72]. However, embedding all observations in a grid structure surrounding vehicles influence the ego-plan.
+    leads to information loss due to quantization errors [73].                         2) Interaction Modelling:  Provided with an accurate scene
+    Moreover, the locally restricted receptive field and the limited               representation, interaction modeling between perceived objects
+    resolution of CNNs can hamper interaction modeling.                            is a decisive factor for the successful integration of predic-
+
+        4
+
+tion and planning [4], [99]. Modeling interactions between [129] is computationally efficient as it can be shared across
+vehicles helps to understand how the actions of a vehicle both modules. However, the frame is not viewpoint-invariant,
+affect the behavior of other traffic participants [98]. This i.e., the predictions and the plan change if the origin of the
+model is subject to various influences, including traffic rules, coordinate system is moved within the scene. This leads to low
+physics, and common sense reasoning. Interaction modeling sample efficiency and impairs generalization [130]. Therefore,
+also includes interactions between map elements and vehicles. the origin is commonly fixed to the center of the EV. While
+For example, modeling the relation of vehicles to static map this normalization with respect to the EV is a natural choice
+elements like lane markings, traffic signs, etc. is important to when planning for the EV, it does not lead to viewpoint-
+understand feasible corridors in which trajectories could be invariant predictions for SVs [131]. In addition, it complicates
+localized. Some models employ rule-based heuristics to guide the modeling of interactions among SVs. For instance, this
+interaction modeling, e.g., ScePT [52] only models interac- coordinate frame makes it easy to infer which vehicles are
+tion among nearby vehicles. Similarly, heterogeneous graph close to the EV or in front of it (small magnitude of x
+attention network (HGAT) [100] and graph-based interaction- position). However, finding SVs that are close to each other
+aware trajectory prediction (GRIP) [101] use heuristics to is a second-order relation that is harder to learn. This is why
+identify which pairs of nodes in the scene graph are to be other models [75], [103], [132], [133] process a scene from
+connected with edges. Other methods rely entirely on neural the viewpoint of each agent. Thus, the processing is viewpoint-
+components to learn these relations. Altogether, an interaction invariant and makes it easier to represent interactions between
+model should yield an understanding of how the scene can all agents. On the downside, these models cannot use a shared
+potentially evolve in the future. representation for prediction and planning, and computational
+  Recapitulating recent methods exposes that diverse archi- complexity scales linearly with the number of agents [6].
+tectures are used to realize interaction modeling. RNNs are Moreover, per-agent coordinate frames are unsuitable for joint
+only used in early prediction models like DESIRE [8] or prediction, as each agent is processed individually.
+Trajectron++ [41] and combined with an aggregation operator An alternative way to achieve viewpoint invariance is the
+like spatial pooling or attention. Alternatively, CNN meth- pairwise relative coordinate system introduced in GoRela [94],
+ods apply 2D convolutions to implicitly capture interaction which describes the relation between agents instead of using
+within the kernel size [102]–[104]. Compared to sequence a fixed coordinate frame. This allows the computation of the
+processing-based approaches, higher importance is assigned relation between static objects offline and greatly reduces
+to spatial interaction. However, no explicit interactions be- computation. Pioneering Equivariant Planning (PEP) [131]
+tween designated objects are modeled. This shortcoming is further reduces computation by using center-relative instead
+addressed by GNNs and Graph-Attention, which explicitly of pairwise relative coordinates, i.e. shifting the coordinate
+model interactions between individual agents. They either frame into the mean position of all processed agents before
+combine multiple agents’ features [105] and process them each transformation. This makes it easier to represent and
+with graph convolution operators [74], [101], [106], [107] or model interactions. It also eases the integration of prediction
+perform graph attention [108]–[112] to aggregate information. and planning, as both can use a shared scene representation.
+Recently, Transformers [88] are widely adopted for interaction Thus, they can be combined in a single compute-efficient step.
+modeling due to their global receptive field and attention The downside of the Cartesian frames mentioned above is
+mechanism [6], [77], [91]–[93], [95], [97], [113]–[124]. All that the models are vulnerable to distributional shifts and often
+SVs can be predicted simultaneously [77], and the impact of produce inadmissible offroad trajectories [134], [135]. Some
+vehicles on each others’ behaviors across different timesteps works counter this with loss functions that penalize offroad
+can be modeled by masking [114]. Attention is applicable driving [136]–[139], driving direction compliance [140] or
+along the spatial and temporal dimension jointly [114], or being distant from the centerline [141].
+individually [125]. The latter break down into sequential [126], An alternative approach is to use Frenet representations that
+[127] and interleaved [6], [92] attention. Experiments with decompose positions into progress along and lateral offset
+Wayformer [92] and SceneTransformer [6] show that joint from a lane [89], [142]–[144]. While this improves map com-
+and interleaved processing outperform sequential approaches. pliance (i.e., reduces offroad), it impairs interaction modeling
+As joint processing causes a higher computational burden, due to the non-euclidean coordinate frame. Moreover, this
+the interleaved paradigm balances best between performance coordinate frame cannot be shared across multiple agents.
+and computational demand. This property of Transformers 4) Output Representations: As suggested in Fig. 2, the
+can provide explainability to the integration of prediction and interfaces between modules are crucial for the overall system
+planning. Attention can be utilized flexibly to achieve locality performance. To optimize an automated driving system for the
+restrictions, causality, and an explicit interaction design. For final planning task, differentiable interfaces are required [37],
+example, a sequential IPPS could first model interactions [145]. To provide interpretability, the interfaces should com-
+between SVs and then include the EV for planning. prise a human-readable representation [62]. When predicting
+  3) Coordinate Frame: Irrespective of the scene representa- trajectories in modular E2E systems, the output must fulfill
+tion itself, the coordinate frame is a fundamental design choice these two criteria. Additional difficulty arises from the inher-
+that affects interaction modeling and thus the integration of ent uncertainty of future prediction [146], [147]. Since the
+prediction and planning. Applying a global coordinate system intentions of SVs are unknown, multiple future modalities
+with a fixed viewpoint for the whole scene [6], [47], [128], must be considered to make a safe plan [5]. Therefore, the
+
+                                                                                                                                    5
+
+multimodality of Ppred is commonly expressed as an explicit of high-level commands to be defined in advance. A third
+    density function or estimated with a discrete trajectory set.      option to incorporate goal information is by optimizing a cost
+  Explicit density functions model the probability density term, which comprises progress and route compliance [63],
+function of Ppred [62], [67], [70], [71]. Continuous distribu- [67], [70]. Balancing multiple targets in a cost term provides
+tions like bi-variate Gaussian distributions [148], Gaussian flexibility and interpretability but can lead to undesirable
+Mixture Models [35], [93], [96], [149], or discrete rasterized tradeoffs with safety. Lastly, route attention applies spatial
+heatmaps [89], [150] are used in many prediction modules. attention to on-route parts of the map. This is achieved by
+Alternatively, object-agnostic representations like occupancy Transformer cross-attention [182] or by removing the off-route
+maps [151], [152], or flow fields [71], [153], [154] can be portion of the map after initial feature aggregation [38], [131],
+used. Object-agnostic representations handle multimodality [183]–[185].
+    implicitly [62] and were shown to be more robust against per-          Since sequential IPPSs consist of discernible modules, the
+    turbations [63]. Further, density functions are interpretable for         interfaces between them have to comply with diverse re-
+    humans. However, since no discrete trajectories are decoded,          quirements. On one hand they should be interpretable to un-
+    it is difficult to compare such representations with expert logs   derstand failures and facilitate development. Rasterized [56],
+    for performance evaluation.                                          [68], [171], [186] and sparse [23], [184], [187]–[189] scene
+  In an alternative approach to explicit density functions, representations (cf. Sec. III-A1) are teherefore common in-
+discrete trajectory sets are either created by sampling from termediate representations, which are input to the planning
+an intermediate distribution or directly output by the model. module. Similar to the input representation used by prediction
+To sample a diverse trajectory set from an intermediate modules, a clear trend can be observed from rasters to sparse
+distribution, generative models such as Generative Adversar- inputs [35], [38], [56], [62]. On the other hand an interface
+ial Networks (GANs) [155], Conditional Variational Autoen- should convey all relevant information to downstream modules
+coders (CVAEs) [156], normalizing flows [157] or denoising to cover the long-tailed distribution of potential driving sce-
+diffusion [95], can be used [8], [158]–[161]. Alternatively, narios. Irrespective of the order of modules, information loss
+recent methods apply several prediction heads to the features is a problem of hand-crafted interfaces [145]. For instance,
+extracted by a common backbone to decode a set of diverse if a vehicle is currently occluded, but its presence can be
+trajectories [39], [42], [92], [162]. Other ways to obtain inferred from the reflection of its headlight in another car,
+diverse predictions are training loss functions [76], entropy bounding box representations [56], occupancy fields [71], or
+maximization [40], [163], variance-based non-maximum sup- affordances [181], [190] cannot propagate this information to
+pression [164], greedy goal sampling [94], [165], divide and downstream modules [37], [145]. Conversely, latent feature
+conquer strategy [166], evenly spaced goal states [167], en- representations allow uncertainty propagation, enabling down-
+sembling [168], or using pre-defined anchor trajectories [104], stream modules to compensate for errors at earlier stages, such
+[169], [170]. Nevertheless, a guarantee of coverage can only as undetected vehicles [62].
+    be given by specifying high-level behaviors [171] or regions of     2) Planning Paradigms:           When taking a closer look at
+    the map that must be covered by at least one prediction [77].           the planning module, three general planning paradigms can
+                                                                              be observed. We introduce each paradigm and discuss its
+    B. Planning                                                    suitability for the integration of prediction and planning. Recall
+        that in Eqns. 5 and 6 we defined planning to be a function f
+  1) Input Representations: The input of the planner depends mapping from observational inputs XEV, XSV, I and possibly
+on the order of modules in sequential IPPSs. If prediction predictions YSV to a trajectory YEV. In the following, we focus
+is conditioned on potential EV actions, planning is executed on the planning function f . To this end, we decompose f into
+first and takes the sparse or rasterized scene representation (cf. two parts: a proposal generator g, yielding a set of multiple
+    Sec. III-A1) as input. If prediction is executed before planning,   potentially suitable trajectories Yˆ (i), i = 1, .., N  and a
+    the predictions are fed to the planner as an additional input in    proposal selector h    EV      proposals
+    one of the formats described in Sec. III-A4.                         that selects the final plan                    YEV among the
+        proposed set. Hence, in this work, we propose to represent the
+  In both cases, goal information for the EV is available in planning function f as
+the planning module. It can have different forms like lane-
+    level route information [172], high-level commands [173],               f = h(g(XEV, XSV, I)                                  (7)
+    [174], and sparse goal points [173]. There are four cate-           or in case of prediction-conditioned planning as
+    gories how goal information is incorporated into the IPPS:
+    input features, separate submodules, routing cost, and route        f = h(g(X EV, XSV, I, YSV) .                              (8)
+attention. Simply providing goal information as input feature
+yields no guarantees for goal compliance but is straightfor- Based on this, we distinguish three different paradigms
+ward and widely adopted [22], [23], [26], [64], [65], [171], adopted for the planning task: Cost function optimization,
+[175]–[180]. Separate submodules are used only with high- regression, and hybrid planning.
+    level commands, which serve as a switch between command-            Cost function optimization.        As planning aims to find a
+    specific submodules [21], [68], [171], [175], [181]. This can   trajectory that optimizes objectives such as safety, comfort, and
+    prevent the model from over-adapting to driving modes that       progress, it is a natural approach to design and optimize a cost
+    dominate the training dataset, but requires a fixed number       function that balances these potentially conflicting objectives.
+
+                                                                                                                        6
+
+    Cost function-based planning methods [62], [191], [192] rely           Human Leader IPPS
+    entirely on the selection function h to find a suitable trajectory,
+                                                                          Prediction Step
+                  h = argmin c Yˆ (i)   ,                           (9)
+                  i              EV
+    where c          is a cost function of the planned trajectory. Con-      predicted mode 1   predicted mode 2    predicted mode 3
+    sequently, the proposal generator g             may randomly sample
+    feasible motion profiles [62] or obtain them by clustering real-      Planning Step
+    world expert demonstrations [71]. Traditional non-learning-
+    based methods rely on hand-crafted cost functions [193]–
+    [200]. However, designing a cost function that effectively
+    balances these goals and generalizes to the long-tailed distri-          candidate plan A   candidate plan B    candidate plan C
+    bution of possible driving scenarios is challenging. Learning-        Selection Step        Selected Plan
+    based methods aim to address this by learning a cost function         no collision         no collision        no collision
+    directly from expert demonstrations [201]–[203]. The learned          goal lane reached    goal lane reached   goal lane reached
+    cost function can be non-parametric [62], [204], [205] or com-         current SV state    current EV state   future SV state future EV state
+    prise hand-designed sub-costs of which only the weights are          Fig. 3: An exemplary sequential IPPS that falls in the human
+    learned [67], [70], [71], [191]. Cost function-based planning        leader category. First, the SV’s future is predicted, and then a
+    enables the intuitive integration with a prediction module by        plan is made based on the anticipated future. In this example,
+    including predictions in the cost function [69], [70]. Depend-       the planning step involves evaluating three candidate plans and
+    ing on the prediction output, this can be realized either by         selecting the one that does not collide with the predicted SV
+    explicit collision checking [189] or by adopting predicted           positions.
+    density functions [62] as non-parametric cost. For example, the
+    NMP [62] predicts a cost volume, which assigns a cost to each
+    potential future EV position within the planning horizon. In         C. Integration
+    contrast, P3 (Perceive, Predict, and Plan) [67] and MP3 (Map,
+    Perceive, Predict and Plan) [71] apply hand-designed sub-             1) Human Leader:     Most sequential IPPSs belong to the
+    costs with learned weighting to heuristically evaluate safety,       human leader integration principle [37], [62], [63], [67], [69]–
+    comfort, traffic rule compliance, and progress of candidate          [71], [189], [215]. Human leader IPPSs can only be realized in
+    trajectories [191]. In both cases, the cost function is then used    modular or modular E2E automated driving systems since the
+    to select the min-cost plan from the candidates.                     relation of prediction and planning is specifically engineered.
+  Regression approaches rely entirely on the proposal gener- The planned EV trajectory is conditioned on the predicted SV
+ator g. The selection function h is the identity, and all burden behavior as depicted exemplarily in Fig. 3. This means the
+is placed on the proposal generator g, which only generates influence of the EV’s plan on the SVs is not modeled. Due
+a single proposal YEV = Yˆ (1). Typically, regression-based to this unidirectional dependency, the EV shows a reactive
+        EV
+planning is not used in sequential IPPSs but rather found in behavior, which can lead to underconfident plans [5]. In the
+undirected IPPSs [9], [10], [21]–[23], [25], [26], [63]–[65], lane change example in Fig. 3, the EV tries to find a plan that is
+[68], [171], [179]–[181], [187], [206]. Unlike cost function- suitable given the three predicted SV behaviors without being
+based planning, regression cannot include predictions explic- aware that it can influence them. Consequently, it will favor
+itly. One possibility is to condition the plan on predictions the conservative plan and fail to reach its goal lane. If the
+as stated in Eqn. 8. Regression approaches directly output EV could reason about the influence of its own actions on the
+future waypoints [23], [26], [184] or, more rarely, actions [9], predicted SV behavior, it could anticipate that the SV might
+[25], [190], [206]. Both representations can be converted into slow down or speed up further in reaction to its behavior,
+one another using a kinematic model [49], [55]. Commonly, which would make the lane change maneuver possible. This
+they are trained by supervised learning from expert data [207], simple example demonstrates the limitations of unidirectional,
+called behavior cloning [208]–[210]. This is easy to implement sequential IPPSs and stresses the advantage of predictions that
+but vulnerable to distributional shifts, which occur when the depend on the EV’s behavior.
+    model reaches states not covered by the training data [23].            There is a vast body of literature on models that use a
+    Mitigation strategies include heuristically generated data aug-      human leader sequential IPPSs. Deep structured self-driving
+    mentations or policy rollouts during training [23], [211].           Network (DSDNet) [69] uses a modular E2E system archi-
+  Hybrid planning describes methods that combine both ideas. tecture. Each module builds on the outputs of the preceding
+First, a set of candidate trajectories is regressed by the proposal module and can additionally access the latent feature of the
+generator g. Then the best one is selected with a cost function perception backbone. Within the IPPS, a set of potential future
+in h [212]. For instance, [35], [188], [189], [213], [214] trajectories is predicted for each detected vehicle. The planning
+perform collision checks on the candidate plans to rule out module then samples candidate EV trajectories and applies a
+unsafe proposals. In contrast to cost function optimization, traditional hand-crafted cost function. The cost includes the
+the generated trajectory proposals are not fixed but scene- collision probability based on the SV predictions. In contrast,
+    dependent.                                                           the Neural Motion Planner (NMP) [62] is based on a learned
+
+                                                                                                                                                    7
+
+      Robot Leader IPPS                                                             then select the best one with a hand-crafted cost function.
+     Candidate Plans                                                                Intuitively, these methods forecast different future scenarios
+                                                                                    based on pre-defined candidate plans. Like human leader
+                                                                                    IPPSs, they can only be realized in modular or modular E2E
+                                                                                    automated driving systems due to the manually engineered
+      candidate plan A             candidate plan B          candidate plan C       influence of EV and SVs. In contrast to human leader IPPSs,
+     Prediction Step                                                                the EV can anticipate the reaction of SVs to its own actions
+                                                                                    in robot leader IPPSs. Hence, the EV can effectively seek
+                                                                                    to make the SV react to its trajectory, which can result in
+                                                                                    aggressive driving behavior [90], [220], [221]. Consequently,
+      conditional prediction A conditional prediction B  conditional prediction C   in the example in Fig. 4, the EV might reason that when it
+     Selection Step                 Selected Plan                                   follows the fast-progressing plan B, the observed SV will slow
+                                                                                    down to prevent a collision.
+     no collision      no collision             no collision                                   Overall, robot leader IPPSs are no common choice in AD
+     goal lane reached      goal lane reached   goal lane reached                   (cf. Fig. 7). In a pioneering work [220], classic optimization
+      current SV state     current EV state    future SV state future EV state      is mixed with learned elements to model the effect of EV
+    Fig. 4: An exemplary robot leader IPPS. First, three candidate                  behavior on SVs. The first fully learning-based method applies
+    plans are generated, e.g., with a kinematic sampler. Then, a                    a conditional variational autoencoder to obtain diverse rollouts
+    prediction conditioned on each candidate plan is inferred. In                   of the future of the scene recurrently [221]. At each timestep of
+    the example, the EV expects the SV to brake for it if it slowly                 the rollout, the prediction is conditioned on the next step of a
+    merges to the left lane. Thus, it opts for this plan. Selecting                 pre-defined candidate plan. Evaluating multimodal predictions
+    this plan without hedging against the risk that the EV does                     for each candidate plan with a hand-crafted cost function
+    not brake as expected results in overconfident behavior.                        yields the best plan.
+                                                                                              The example in Fig. 4 reveals that robot leader systems
+                                                                                    can, other than human leader systems, anticipate the reaction
+    cost function. Features of a shared backbone network are                        of SVs to EV actions. However, this paradigm might lead to
+    fed to a prediction module that forecasts future bounding                       overconfident behavior. Altogether, this section has shown that
+    boxes and a planning module that generates a spatio-temporal                    no sequential IPPS can account for the bidirectional influence
+    cost function. As in DSDNet, planning involves sampling                         of EV behavior on SVs and vice versa. To resolve the issue,
+    feasible trajectories, evaluating them with the cost function,                  other integration principles are necessary.
+    and selecting the best one. Beside P3 [67], LookOut [70],                       IV. UNDIRECTED IPPS
+    and MP3 [71] are further examples of this development.
+    Specifically, P3 and MP3 predict an occupancy map while                                 In contrast to sequential IPPSs, which are separated into
+LookOut [70] predicts discrete trajectories. Then a cost func- various submodules, monolithic E2E systems employ a single
+tion that combines rule-based and learned components is neural network. Implicit systems directly map the state inputs
+used to evaluate pre-defined candidate plans. In comparison, XSV, XEV, and I to the planned EV trajectory YEV [222].
+SafetyNet [189] follows a unique approach. A monolithic E2E Alternatively, joint optimization methods perform prediction
+planner with implicit prediction (cf. Sec. IV-A) is applied in and planning in a single step. Alongside YEV they output SV
+parallel to a module that outputs explicit predictions. Collision predictions XSV. In the following, we first examine implicit
+checks between the EV plan and SV predictions are performed systems and then discuss joint optimization approaches.
+to ensure the plan’s safety. If the initial plan is classified as
+unsafe, a hand-crafted fallback layer generates a lane-aligned A. Implicit
+    trajectory. Hence, the prediction module affects the selected                               Reasoning about the future outcome of the environment
+    plan, and we classify SafetyNet as a human leader IPPS.                         is crucial when planning the behavior of the EV. Hence,
+    UniAD [37] implements a completely learning-based modular                       it can be assumed that even models without a dedicated
+    E2E system, which employs queries as the interface between                      prediction output anticipate the behavior of their environment.
+    the submodules. Thus the planning module can attend to agent-                   Generally, the expert’s actions, which the E2E planner learns
+    level features from previous network layers. Various works                      to imitate in training, are based on reasoning of how the future
+    follow a similar approach: Vectorized Autonomous Driving                        will unfold. By learning to imitate actions, the model could
+    (VAD) [36] and Hydra-MDP [216] use the output features of                       exhibit behavior that is implicitly based on such reasoning
+    previous layers explicitly for collision and map compliance                     as well. For instance, consider a scenario where the EV’s
+    checks during training.                                                         leading vehicle brakes. An expert or a human driver will
+      2) Robot Leader: In robot leader IPPSs, candidate EV plans                    base their driving decision on the likely future scenario that
+    are inferred based on the current state, and the prediction                     the safety margin will shrink and thus brake as well. Hence,
+    step for the whole environment is conditioned on it [217].                      an E2E planner that imitates the expert’s behavior makes a
+    For instance, [217]–[219] predict SV trajectories conditioned                   decision that is implicitly based on a predicted future. For
+    on candidate plans for the EV with a neural module and                          instance, HydraMDP [216] is a monolithic system that plans
+
+                                                                                                                                                8
+
+      Joint Optimization IPPS                                                     B. Joint Optimization
+              Joint Prediction and Planning Step                                        Joint optimization describes IPPSs that deterministically
+                                                                                    approximate a joint objective [226] under the assumption that
+                                                                                   an optimal outcome exists. The EV’s plan is obtained by global
+                                                                                   optimization across all agents [227]. This erroneously implies
+      predicted scenario 1  predicted scenario 2        predicted scenario 3       that the behavior model used for SVs is exactly known and that
+    Global Cost Function                                                          every traffic participant optimizes this same global objective.
+                            Selected Plan                                            This becomes particularly challenging when considering goal-
+     no collision           no collision                no collision                conditioning for the EV. If the joint prediction and planning
+     goal lane reached      goal lane reached           goal lane reached           process is conditioned on the EV’s goal, it suggests that all
+     SV makes progress      SV makes progress  (    )   SV makes progress          SVs will behave in a manner that enables the EV to achieve its
+      current SV state     current EV state    future SV state   future EV state  goal. At the architecture level, these systems predict and plan
+    Fig. 5: An exemplary joint optimization IPPS. A joint global                   in a joint step. This can mean explicitly optimizing a learned
+    cost function is optimized by selecting the best of several                  or hand-crafted cost function or decoding a joint prediction for
+    potential scenarios. Therefore, a joint prediction and planning            all agents, including the EV. In the latter case, the optimization
+    step forecasts several potential scenarios that describe the EV                     can be an iterative process [35], [228] or limited to one
+    and SV behavior. Then, each of them is evaluated using a                            step [188]. An exemplary architecture is shown in Fig. 5,
+    global cost function that evaluates the outcome for all vehicles.                where a global cost function is used to identify the optimal
+    Here, a plan for the EV is selected that corresponds to the                      plan for the EV from a set of possible future scenarios. The
+    scenario where the SV brakes to let the EV merge before it.                      selected plan relies on the SV to break so the EV can merge.
+                                                                                   However, the EV selects this plan without considering that the
+                                                                                  SV might not behave accordingly. In particular, joint optimiza-
+                                                                                tion applies to monolithic planners that map all inputs to a plan
+                                                                                       for the EV YEV and the predicted future of the SVs XSV. As
+                                                                                    only the EV plan is propagated to a downstream controller and
+    by regressing a score for each candidate trajectory within                 the predictions are not used further, they act as a regularization
+    a predefined set. In training, an auxiliary collision cost is                       which can make the learning process more sample-efficient
+    predicted for each candidate. Predicting this accurately is                    and can improve generalization capabilities [56], [171], [181]
+    impossible without reasoning about the future behavior of SVs.                 as it was previously demonstrated for other auxiliary tasks in
+    Thus, the SVs’ future behavior and the interactions among                        prediction and planning like and occupancy forecasting [67].
+    them, as well as between the SVs and the EV, are modeled                             A seminal work in this area is GameFormer [35]. Inspired
+    implicitly.                                                                   by hierarchical game-theoretic frameworks [229]–[232],       it
+  Pioneered by ALVINN [9], there is a vast body of literature models interaction between agents as a level-k game [233],
+on IPPSs based on monolithic E2E planners [10], [21]– [234]. Thus, a Transformer decoder models the interaction
+[23], [25], [63]–[65], [68], [175], [179], [180], [206], [223], between all agents, including the EV, by iteratively updating
+[224]. The main disadvantage is their black-box nature, which the individual predictions based on the predicted behavior of
+makes model introspection and safety verification difficult. all agents from the previous level. Similarly, SafePathNet [188]
+Moreover, understanding the limitations and their capabili- employs a Transformer module for joint prediction and plan-
+ties with respect to their interactive behavior is difficult. In ning of multiple scenarios and then ranks them based on their
+fact, this can only be evaluated empirically in comprehensive estimated probability and collision avoidance. Generative end-
+benchmarks, which is what we outline as a direction for to-end autonomous driving (GenAD) [235] adapts a generative
+future research in Sec. VI-C3. To improve interpretability, decoder to regress SV and EV trajectories jointly. The main
+some works generate interpretable intermediate outputs such problem with this approach is that there is no guarantee that
+as online HD maps [225], semantic segmentations [176], and the SVs will behave accordingly. Demonstrations show how
+object detections [26]. These provide additional training super- this can lead to fatal errors [5]. However, in applications with
+vision and introspection into the perception part of the system. vehicle-to-vehicle or vehicle-to-infrastructure communication,
+We clearly separate this from systems that additionally output intentions can be communicated between agents, and global
+predictions. For instance, if the prediction output is branched optimization is a valid modeling assumption. There, a global
+off from an intermediate feature layer, the downstream part cost function reflecting each actor’s individual goals is op-
+is focused exclusively on planning [56], [62], [176], [187], timized either by a central server or by negotiation among
+while the upstream part is relevant to all subtasks. Given agents. The resulting plan is assigned to each vehicle leading
+that this makes planning a downstream task of prediction, to more efficient and safe traffic [236], [237].
+the architecture would fall into the human leader category.
+    In contrast, if prediction and planning are both outputs of                       V. BIDIRECTIONAL IPPS
+    the final layer, we assume that both tasks are addressed in                        We term systems that react to anticipated behaviors of SVs
+    a single step, which means that the architecture resembles a                  but also expect SVs to react to their own actions bidirectional
+    joint optimization system, discussed in the next section.                        IPPSs, as they model the influence of prediction on planning
+
+    9
+
+
+    Co-Leader IPPS                                             Rollout Step
+
+                                                                                     predicted mode 1   scenario 1
+
+                                                                                                                          next EV action
+                  scenario 1    scenario 2
+                                                                                     predicted mode 2   scenario 2
+                                                                                  conditional multimodal
+                                                               parent node (state t=1)  prediction  child nodes (state t=2)  Planning
+
+    scenario 1-1      scenario 1-2  scenario 2-1   scenario 2-2
+                      Scenario Tree                            current SV state      current EV state   future SV state      future EV state
+            Fig. 6: Exemplary tree-based co-leader planner. Starting at an initial state (t = 0) a tree is constructed to model potential EV
+              plans and SV behaviors. The tree spans across several stages, each reflecting a discrete timestep within the planning horizon.
+                In each stage, child nodes are generated by predicting the SVs and unrolling one EV action, both conditioned on the state of
+          the parent node. This is visualized in the “rollout step” section. Note that the state in the parent node (t = 1) includes how far
+                the EV has progressed along the candidate plan until this point. Thus, the prediction can only observe the candidate plan up
+        to t = 1. It is not conditioned on the EV’s next action, i.e., it’s causal. Due to space limitations, we only visualize a prediction
+                 with two modes and only a single EV plan per rollout step. In practice, a tree might comprise more predictions and evaluate
+              multiple potential EV behaviors. Based on the anticipated outcome of each EV behavior, i.e. the evaluation of each node w.r.t.
+    collisions, progress and comfort, the best action can be chosen by the planner.
+
+and vice versa. Intuitively, this causes a chicken-and-egg and its surroundings. Multimodality caused by different EV
+problem, where predictions are needed to plan an appropriate decisions or multiple potential reactions of SVs is handled
+behavior, and at the same time, the EV’s future plan is needed by branching [241], [242]. Tree-structured policy planning
+to predict the SVs’ reactions to it. In this section, we highlight (TPP) [185] presents a readily comprehensible tree-structured
+how such systems can be realized by predicting a reactive framework that implements co-leader planning. It involves
+policy instead of a fixed behavior for SVs. The resulting sampling kinematically feasible trajectories for the EV and
+    interactive behavior is termed co-leader.                                   then conditioning prediction on each of them. An autoregres-
+                                                                           sive formulation for prediction ensures causality: it can be seen
+    A. Co-leader                                                               as a way to roll out the scene with SV predictions and the EV
+  Co-leader planning sets the highest requirements for an plan such that both can only access the observation history
+IPPS. It must model the influence of SVs’ potential future up until the respective rollout step. Autoregressive decoding
+behaviors on the EV plan as well as their stochastic reaction can help to enforce high-quality social interactions and scene
+to potential ego trajectories [5], [238], [239]. The result is understanding [41], [77], [94], [114], [203], [243] but might
+an interaction-aware system that can model the anticipated lead to compounding errors since predicted information is
+behavior of its surroundings and how it can influence it. used to make further predictions [209]. Finally, the best
+However, it does not assume this reaction to be deterministic, EV trajectory proposal is selected with a dynamic program-
+which is in contrast to joint optimization. Thus, the EV cannot ming algorithm. Differentiable tree-structured policy planning
+be certain about SVs’ reactions and must be prepared to react (DTPP) [38] extends this with a Transformer-based conditional
+to multiple future outcomes [240]. For instance, in the opening prediction module, which allows the forecast of all agents
+example in Fig. 1, the EV can try to approach the intersection conditioned on multiple EV plans at once. It also replaced the
+to provoke a reaction of the SV. This reaction can either dynamic program with a learnable cost function and applied
+indicate that the SV is going to make a turn, e.g., with a turn node pruning to reduce computational burden. Still, the EV
+signal or by slowing down, or the opposite, i.e., accelerating or reaction to the prediction is taken over entirely by the cost
+keeping its speed, to indicate that the SV will continue straight. function because the sampled ego-proposals are non-reactive
+The former will enable the EV to confidently decide in favor with respect to the SV predictions. In general, representing the
+of the faster-progressing plan. Even though this paradigm is potential EV and SV behaviors in a temporal tree is easy to
+most capable in theory, only a few works exist that fulfill the implement and interpret. An exemplary tree-based co-leader
+    challenging requirements set to the system.                                    planning architecture similar to TPP and DTPP is shown in
+  1) IPPS Architectures: Contingencies from Observations Fig 6. It can be seen that the future planning horizon has to
+(CfO) [5] originally introduced this paradigm, leveraging be discretized into a limited number of steps that refer to the
+normalizing flows to represent multi-agent behavior as a levels of the tree. Further, the figure shows, how the number of
+learned coupling of independent variables. However, the in- leaf nodes grows exponentially with the branching factor, the
+tricate nature of this architecture may pose obstacles to wider depth and the number of candidate plans. The branching factor
+adoption. Furthermore, their benchmark is simplistic, encom- has to be large enough to accurately reflect the uncertainty
+passing only a few scenarios with hard-coded agent behaviors. in the SVs’ behavior as well as the behavior options of the
+Alternatively, tree-structured methods overcome the circular EV and the number of candidate plans can be very high if a
+dependence of prediction and planning by representing future dense kinematic sampler is used. Moreover, discretizing the
+outcomes in a tree, where each node is a state of the EV future horizon over which a scenario unfolds introduces a
+
+
+
+
+
+
+
+
+
+
+    Rollout Step
+
+t=2  t=1     t=0
+
+                                                                                                                                       10
+
+  sensitive hyperparameter. The discretization timestep is subject    scenarios Y(j) [244]–[246]. The resulting plan hedges against
+                                                                      worst-case risks while enabling progress in expectation. For
+   to a tradeoff between runtime and accuracy w.r.t. capturing all    SV
+      relevant intermediate states. To counter this, TPP [185] and    instance, [70], [244], [247] find a plan that is safe for scenarios
+       DTPP [38] build a tree with very limited depth of 2 stages.    on the short horizon (independently of their probability, i.e.,
+          TPP uses a branching factor of 4, while DTPP forecasts 5    worst-case) and also optimize the expected cost on the long
+  states in the first stage and branches each into 6 in the second    horizon (marginalization). Thus,
+      stage. This makes architectures, which are able to model how
+        the future unrolls without relying on discrete timesteps a    h = argmini   maxj cs(Y (i), Y(SVj)) + Ej [cl(YEV(i), Y(SVj))] ,
+                                                                                        EV
+    promising opportunity for future research.                                                                                       (11)
+  2) Scenario-Based Trajectory Planning: Bidirectional where cs and cl consider the short-term and the long-term part
+         IPPSs, i.e., co-leader planning methods, are more complex                  EV
+       than sequential or undirected IPPSs because they anticipate    of the proposal Y (i), respectively. In the example in Fig. 1, this
+          and consider multiple future scenarios and to make plans    planner allows the most progress while still ensuring safety.
+    based on this. For instance, sequential IPPSs can be used with    It can exploit that both candidate plans have a common short-
+    unimodal predictions or employ a single representation for all    term action. Hence, it could opt for the faster-progressing
+     scenarios (e.g., occupancy grids), whereas co-leader planning    plan as it is aware that it could still re-plan and fall back
+          methods must model the multimodal stochastic behavior of    to the slower one. This method can also be applied to non-
+    their surroundings and plan accordingly. Similarly, monolithic    bidirectional IPPSs. For instance, it can be combined with
+        E2E IPSSs with undirected integration (cf. Sec. IV) do not    a sequential human leader IPPS, which forecasts multiple
+    explicitly consider multiple future scenarios. Hence, the rep-    scenarios. CfO [5] terms this passive contingency, as the EV is
+  resentation marginalizes all future outcomes. While this is easy    contingent upon the SVs [70], [244], [247], [248]. In contrast,
+  to realize, it can be safety-critical. In the example of Fig. 1,    active contingency refers to co-leader systems that are aware
+    the cost function must balance high progress and the potential    that the EV can influence the SVs’ behavior behavior [238],
+   safety risk if the unlikely prediction occurs for one plan with    [239], [249].
+     low progress for the other. Hence, it must trade off unlikely        VI. DISCUSSION AND FRONTIERS
+      but dangerous scenarios (e.g. collision) against likely low-    A. Categorization Edge-cases
+    cost scenarios. Conversely, a co-leader architecture must make
+  plans in the face of the uncertain reaction of SVs to its plans.           In the previous sections, we described and discussed differ-
+        In the following, we will discuss methods that incorporate    ent system architectures and paradigms to integrate prediction
+            multiple outcome scenarios when choosing among various    and planning in interaction-aware autonomous systems. Here,
+       EV plans. We denote the number of relevant future scenarios    we want to emphasize the distinction between these categories
+    with                                                              and describe corner cases that transition fluently from one cat-
+        (i) , i = 1, .., N
+        P YNs. They can be reflected by a multinomial distribution    egory to another with minor architectural tweaks. For instance,
+        SV                s describing the behavior of SVs and the    an IPPS that directly maps observational inputs to a trajectory
+EV in each scenario. Based on this, we describe two groups for the EV is clearly a monolithic IPPS that falls into the
+of existing methods: Worst-case planning and contingency implicit integration category. Extending it with an additional
+planning. Their difference lies in the cost function component decoder head that outputs predicted trajectories for SVs makes
+h of the planning function f = h(g(XEV, XSV, I), which it more interpretable. For instance, NMP [62] employs such
+selects one plan among a set of potential plans generated by g. an architecture. Thus, the changed architecture consists of
+In the architecture described in Fig 6, g is the tree generation a shared backbone for all tasks, which is connected to a
+step (green). The selection function h would evaluate all nodes prediction decoder module as well as a downstream planner
+    and select the most suitable plan (not visualized).               module. Therefore, this change transforms the monolithic IPPS
+       Worst-case planning refers to IPPSs that evaluate each plan    into a modular system. As the planning step comes after
+       based on the worst-case outcome scenario. In the tree-based    prediction, the system falls into the human leader category.
+      example, this would mean that if there is a collision in one    Similarly, extending the implicit IPPS architecture with a
+          node, then all nodes that share the same action would be
+    discarded. No probabilities P (Y(j)) are considered. The moti-    prediction output from the final layer means that the entire
+                              SV                                      network performs prediction and planning in a joint step, turn-
+ vation behind this assumption is that the final output trajectory    ing it into a joint optimization IPPS. Similarly, the exemplary
+         must be safe in each possible scenario. Consequently, the    architecture presented in Fig. 4 can be modified: It is a robot
+    selection function h can be formulated as                         leader IPPS because it expects the SV to react deterministically
+              h = argmin maxj  c(Y (i), Y(j)).                (10)    to the EV’s actions, and the plan is selected with only the
+                          i      EV     SV                            EV’s goals in mind. However, if the cost function used in
+         This paradigm strongly focuses on collision avoidance and    the final selection step also optimizes the SV’s outcome, the
+   can result in overly conservative behavior, as shown in Fig. 1,    architecture would fall into the “joint optimization” category.
+          where only the slower progressing plan is safe under all
+  predictions. Thus, it is preferred under worst-case assumptions.    B. Benchmarking IPPS
+         Contingency planning aims to improve this by additionally             In general, IPPSs need to be evaluated as a system, either
+taking into account the probabilities P (Y(j)) of different future    because no submodules can be distinguished (monolithic E2E)
+                              SV
+
+                                                                                                                                            11
+
+    or because of the interdependence of the submodules.                     be generated manually [57], [268]–[272] or automatically from
+  1) Prediction Benchmarks: A special case are widely recorded driving logs [273]–[275]. Other methods generate
+adopted sequential human leader architectures, where the adversarial critical scenarios by augmenting actors within
+prediction component can be evaluated independently of the the scene [276]–[283] or the scene itself [134], [284]–[287].
+downstream planning task. Various prediction datasets provide Similarly, [5], [65] investigate human-robot interaction more
+expert recordings split into training, validation, and test sets for closely with hand-crafted scenarios – an aspect that is uncared
+benchmarking. The most prominent ones are nuScenes [250], for in average driving situations.
+    WOMD [251], Argoverse [252], Argoverse2 [253], inD [254],                5) Traffic Agent Simulation:           Another major challenge in
+    highD [255], rounD [256], exiD [257], and Interaction [258].             closed-loop evaluation is to realistically simulate the SVs. In
+    However, optimizing the prediction performance might not                 NAVSIM [288], Waymax, and the non-reactive version of nu-
+    lead to better planning. In fact, some works even found that             Plan, traffic agents follow predefined trajectories obtained from
+    optimizing prediction metrics leads to worse planning results            real-world recordings. However, if the EV behaves differently
+    and, thus, worse driving performance [38]. One reason for this           than the expert during recording, this can result in collisions
+    is that prediction metrics average across all target vehicles, i.e.,     caused by the SVs, as they do not react to the EV. Hence, this
+    a prediction error for a vehicle far away has the same impact            simulation is usually limited to short sequences, where the EV
+    on the score as an error for a vehicle right in front of the             stays close to the expert’s trajectory [289]. Carla, nuPlan, and
+    EV. Moreover, the isolated assessment of prediction modules              Waymax provide a reactive driver model for the SV, such as the
+    does not consider the interplay with other submodules. For               Intelligent Driver Model (IDM) [16], [290]–[293]. In highway-
+    instance, a planner might navigate the EV to states that cause           env, traffic agents can be simulated with a driving model
+    severe distributional shifts and impair prediction performance.          based on IDM+MOBIL [17], which is capable of performing
+    Thus, it is broadly acknowledged that IPPSs must be evaluated            lane changes. Another line of work focuses on learning-based
+    as a system.                                                             methods to simulate realistic driving behavior [294]–[299]. In
+                  2) Open-loop Evaluation: There are two methods to evalu-   Waymax [262], users can plug in their own model to control
+    ate ADSs as a whole, namely open-loop evaluation and closed-             objects in the scene.
+    loop simulation. Open-loop evaluation is similar to an evalu-            6) Discussion: Despite recent advancements in scenario
+ation in the prediction task. It compares the planner output generation and traffic simulation, there are no prominent large-
+YEV to that of an expert planner YGT [259]. However, this scale benchmarks to evaluate the interactive behavior of IPPSs.
+does not give the planner control over the EV and ignores the Real-world datasets commonly comprise a limited number
+problems arising from compounding errors and distributional of lane changes or unprotected turns, and synthetic datasets
+shifts [260]. More severely, recent work demonstrated that with hand-crafted scenarios don’t scale to the needs of com-
+open-loop evaluation results do not correlate with driving prehensive benchmarking. Moreover, leading benchmarks do
+    performance [183], [261].                                                not report metrics highlighting the strengths and weaknesses
+  3) Closed-loop Simulation: Instead of merely comparing of different IPPS architectures concerning their interactive
+the planner output YEV to that of an expert planner YGT, closed- behavior. We emphasize this as an important avenue for future
+loop simulations let the planner control the EV. The evaluation research and hope our work inspires researchers to tackle this
+is based on metrics for comfort, safety, and progress. Thus, problem.
+closed-loop evaluation relates better to real-world driving but
+requires a simulator to let the model interact with its envi-
+ronment. Prominent simulators are Carla [173], nuPlan [172], C. Challenges and Trends
+    Waymax [262], Highway-Env [263], and CommonRoad [264].                            In the following section, we discuss existing trends and
+    Carla is a high-fidelity simulator that involves sensor simula-          future challenges in the field of IPPSs. Based on our overview
+    tion, whereas nuPlan, Waymax, CommonRoad, and Highway-                   of deep learning-based IPPSs and their components, we iden-
+    Env operate on abstract object representations (e.g., bounding           tify three challenges for future research: system design, com-
+    boxes) without rendering camera or lidar sensors. Many bench-            prehensive benchmarking, and vehicle-to-X communication.
+    mark datasets were proposed for the Carla simulator [26],                After discussing them, we draw a final conclusion.
+    [223], [261], [265]. However, the scenarios are purely syn-              1) Trends: A chronological overview and categorization
+thetic, which questions the generalizability to the real world. In of influential works in the field is given in Fig. 7. Clus-
+contrast, nuPlan and Waymax follow a data-driven approach, tering research trends based on this overview yields three
+which uses recordings from real-world scenarios to initialize main phases of IPPSs. Until 2019 mainly monolithic systems
+the simulation. Thus, users have access to corresponding with implicit prediction and output regression were used.
+large-scale real-world datasets to train their method before Following works since 2020 parted with regression and instead
+deploying it in simulation. CommonRoad is compatible with incorporated prior knowledge in interpretable cost functions.
+several smaller datasets [254]–[258]. Highway-env is based on Most of them integrated unconditioned predictions into the
+    simplistic synthetic environments.                                       cost function and thus followed a human leader approach,
+  4) Long-tail Scenarios: When simulating regular driv- which can lead to overly cautious behavior. Many works
+ing scenes, rare and critical scenarios are naturally under- have already modularized the monolithic system and are E2E-
+represented. This problem can be tackled with data cura- trainable. Notably, almost all current state-of-the-art systems
+tion [266], [267] or additional test case generation. These can are end-to-end differentiable. In a third phase, beginning at
+
+    12
+
+
+    Integrated Prediction and Planning Systems
+
+
+
+
+
+
+
+    1988      2016             2017            2018      2019               2020                2021            2022                   2023      2024
+     System Architecture Modular Monolithic E2E Modular E2E IPPS Implicit Human Robot Joint     Co-Leader   Planning Paradigm     Regression Cost Function Hybrid
+
+    Fig. 7: Important contributions to DL-based planning. We highlight how prediction and planning are integrated. The nodes and
+    stem of each entry encode different aspects, which are explained below the timeline. To avoid overlaps works marked with ←
+    and → were slightly moved into the past and future, respectively.
+
+    the end of 2022, the integration of prediction and planning                                     tectures to incorporate this additional information is a promis-
+    is getting more complex. In addition to sequential systems              ing direction for future research.
+    with human leader integration, undirected systems with joint
+    IPPSs and bidirectional systems with co-leader IPPSs are                D. Conclusion
+    implemented more frequently. Hybrid planning is also used
+    more frequently than before. After cost functions were initially                                          In this work, we surveyed and analyzed the integration
+    used to evaluate fixed candidate plans, newer methods often                                              of prediction and planning methods in automated driving
+    regress the candidates based on the scene and then apply the                                           systems based on a comprehensive overview of the individ-
+    cost function.                                                                                         ual tasks and respective methods. We described, proposed,
+     2) System Design: Our survey suggests that strictly sequen-                                        and analyzed categories to compare integrated prediction and
+    tial architectures cannot meet the requirements set for driving                                        planning works and highlighted implications on safety and
+    systems. Nonetheless, it remains unclear which integration                                             behavior. Based on this, we discussed the shortcomings of
+    architecture is most effective and if the theoretical advantages                                    undirected and sequential IPPSs and highlighted the need for
+    of bidirectional IPPSs can be realized in practice. Especially                                     IPPSs that model bidirectional interaction. We hope that this
+    the interactive behavior has seen little attention so far. We                                          way of approaching the architectures of IPPSs opens a new
+    believe that E2E differentiable bidirectional IPPSs offer great                                 perspective to understanding their implications and capabilities
+    potential for future study.                                                                    with respect to interaction with traffic. Finally, we pointed out
+   3) Benchmarking in Interactive Scenarios: We discussed promising directions for future research based on the identified
+different aspects of various IPPS architectures and design gaps.
+paradigms. However, no comprehensive empirical benchmark
+    reproduces and analyzes their strengths and weaknesses. Such                                            REFERENCES
+    an overview would help to better understand the effects of               [1]       E. Yurtsever, J. Lambert, A. Carballo, and K. Takeda, “A survey of autonomous
+    different system architectures.     This requires     simulation        in        driving: Common practices and emerging technologies,” IEEE access, vol. 8, pp.
+    realistic and highly interactive scenarios with realistic driver         [2]  58 443–58 469, 2020.
+    models for surrounding vehicles and expressive interaction                      D. Gruyer, V. Magnier, K. Hamdi, L. Claussmann, O. Orfila, and A. Rakotonirainy,
+                                                                                    “Perception, information processing and modeling: Critical stages for autonomous
+    metrics. In this regard, data-driven simulation is a fundamen-           [3]  driving applications,”    Annual Reviews in Control, vol. 44, pp. 323–341, 2017.
+    tal direction for future research. While powerful generative                      L.-H. Wen and K.-H. Jo, “Deep learning-based perception systems for autonomous
+                                                                                  driving: A comprehensive survey,” Neurocomputing, 2022.
+    models have already been applied to scenario generation,                 [4]           Q. Sun, X. Huang, J. Gu, B. C. Williams, and H. Zhao, “M2i: From factored
+    simulating and evaluating the interactive behavior requires ap-               marginal trajectory prediction to interactive prediction,” in       IEEE/CVF CVPR,
+                                                                                  2022, pp. 6543–6552.
+    propriate reactive policies to simulate traffic agents. Moreover,        [5]        N. Rhinehart, J. He, C. Packer, M. A. Wright, R. McAllister, J. E. Gonzalez,
+    benchmarks must cover corner case scenarios and test the                         and S. Levine, “Contingencies from observations: Tractable contingency planning
+                                                                                  with learned behavior models,” in ICRA. IEEE, 2021, pp. 13 663–13 669.
+    generalization to distributional shifts.                                 [6]   J. Ngiam, V. Vasudevan, B. Caine, Z. Zhang, H.-T. L. Chiang, J. Ling, R. Roelofs,
+     4) Vehicle-to-X Communication:               The systems described in        A. Bewley, C. Liu, A. Venugopal et al., “Scene transformer: A unified architecture
+                                                                                  for predicting future trajectories of multiple agents,” in ICLR, 2022.
+    this work leverage predictions to represent the anticipated              [7]          Z. Huang, H. Liu, J. Wu, and C. Lv, “Differentiable integrated motion pre-
+    intentions of other traffic participants. With vehicle-to-vehicle             diction and planning   with learnable cost   function for  autonomous    driving,”
+                                                                                  arXiv:2207.10422, 2022.
+    or vehicle-to-X communication, these intentions don’t need               [8]    N. Lee, W. Choi, P. Vernaza, C. B. Choy, P. H. Torr, and M. Chandraker, “Desire:
+    to be predicted but can be transmitted to surrounding agents.                      Distant future prediction in dynamic scenes with interacting agents,” in IEEE
+                                                                                  CVPR, 2017, pp. 336–345.
+    Thus, joint optimization methods (see Sec. IV-B) that can                [9]          D. A. Pomerleau, “Alvinn: An autonomous land vehicle in a neural network,”
+    optimize several vehicles’ goals can improve traffic efficiency         [10]  Advances in NeurIPS, vol. 1, 1988.
+                                                                                  D. Wang, C. Devin, Q.-Z. Cai, F. Yu, and T. Darrell, “Deep object-centric policies
+    and safety. However, such systems also need to hedge against            [11]  for autonomous driving,” in ICRA. IEEE, 2019, pp. 8853–8859.
+    erroneous transmissions or even malicious attacks. Moreover,                   S. Dong, P. Wang, and K. Abbas, “A survey on deep learning and its applications,”
+                                                                                  Computer Science Review, vol. 40, p. 100379, 2021.
+    they still need to be able to interact with non-communicating           [12]   S. Grigorescu, B. Trasnea, T. Cocias, and G. Macesanu, “A survey of deep learning
+    human-driven vehicles. Consequently, extending IPPS archi-                    techniques for autonomous driving,” Journal of Field Robotics, vol. 37, no. 3, pp.
+                                                                                  362–386, 2020.
+
+
+
+
+
+
+
+
+
+
+ ALVINN [9]
+
+ Deepdriving [190]
+
+
+ PAC [220]
+
+ End-to-End-CNN [25]
+
+
+ FCN-LSTM [206]
+
+
+
+ HRI [221]
+
+ CIL ↑ [175]
+ Camera360 [179]
+ Seg2WP ↓ [21]
+ CAL [181]
+
+ DeepImitative ↑ [63]
+ DOCP [10]
+ ChauffeurNet ↓ [56]
+ DILP ↑ [64]
+ CILRS [65]
+ PRECOG
+ NMP [62] ↓ [66]
+ UD-CIL ↑ [22]
+ JLTP ↓ ↓ [191]
+ MFP
+ LBC [68] [90]
+ PiP [217]
+ LSD [180]
+ DSDNet
+ P3 ↓ [67] ↑ [69]
+
+ LookOut ↑ [70]
+ MP3 ↓ [71]
+ Transfuser [26]
+
+ NEAT ↑ [176]
+ UrbanDriver [23]
+ SafetyNet ↓  [189]
+
+ LAV [171]
+
+ DIPP [7]
+ PlanT ↑ [187]
+ SafePathNet [188]
+ DiffStack [145]
+ TPP ↑ [185]
+ GameFormer ↑ [35]
+ VAD ↓ [36]
+ PDM-Open ↑ [183]
+ UniAD ↓ [37]
+ DTPP [38]
+
+ GenAD ↑ [235]
+ VADv2 ↓ [147]
+
+13
+
+
+
+[13]  S. Kuutti, R. Bowden, Y. Jin, P. Barber, and S. Fallah, “A survey of deep learning                                                                         [44]  J. Xu, L. Xiao, D. Zhao, Y. Nie, and B. Dai, “Trajectory prediction for autonomous
+      applications to autonomous vehicle control,” IEEE T-ITS, vol. 22, no. 2, pp. 712–                                                                                driving with topometric map,” in ICRA. IEEE, 2022, pp. 8403–8408.
+      733, 2020.                                                                                                                                                 [45]  J. Schmidt, J. Jordan, F. Gritschneder, and K. Dietmayer, “Crat-pred: Vehicle
+[14]  Y. Huang and Y. Chen, “Survey of state-of-art autonomous driving technologies                                                                                    trajectory prediction with crystal graph convolutional neural networks and multi-
+      with deep learning,” in QRS-C.                                                                     IEEE, 2020, pp. 221–228.                                      head self-attention,” in ICRA.     IEEE, 2022, pp. 7799–7805.
+[15]  Y. Huang, J. Du, Z. Yang, Z. Zhou, L. Zhang, and H. Chen, “A survey on                                                                                     [46]  P. Bhattacharyya, C. Huang, and K. Czarnecki, “Ssl-interactions: Pretext tasks for
+      trajectory-prediction methods for autonomous driving,” IEEE T-IV, vol. 7, no. 3,                                                                                 interactive trajectory prediction,” arXiv:2401.07729, 2024.
+      pp. 652–674, 2022.                                                                                                                                         [47]  T. Gilles, S. Sabatini, D. Tsishkou, B. Stanciulescu, and F. Moutarde, “Thomas:
+[16]  M. Treiber, A. Hennecke, and D. Helbing, “Congested traffic states in empirical                                                                                  Trajectory heatmap output with learned multi-agent sampling,” arXiv:2110.06607,
+      observations and microscopic simulations,” Physical review E, vol. 62, no. 2, p.                                                                                 2021.
+      1805, 2000.                                                                                                                                                [48]  S. Casas, C. Gulino, S. Suo, K. Luo, R. Liao, and R. Urtasun, “Implicit latent
+[17]  A. Kesting, M. Treiber, and D. Helbing, “General lane-changing model mobil                                                                                       variable model for scene-consistent motion forecasting,” in ECCV.         Springer,
+      for car-following models,” Transportation Research Record, vol. 1999, no. 1, pp.                                                                                 2020, pp. 624–641.
+[18]  86–94, 2007.                                                                                                                                               [49]  R. Rajamani, Vehicle dynamics and control.       Springer Science & Business Media,
+      S. Shalev-Shwartz, S. Shammah, and A. Shashua, “On a formal model of safe                                                                                        2011.
+[19]  and scalable self-driving cars,” arXiv:1708.06374, 2017.                                                                                                   [50]  S. Casas, W. Luo, and R. Urtasun, “Intentnet: Learning to predict intention from
+      C. Liu, S. Lee, S. Varnhagen, and H. E. Tseng, “Path planning for autonomous                                                                                     raw sensor data,” in CoRL. PMLR, 2018, pp. 947–956.
+[20]  vehicles using model predictive control,” in IV.                                                   IEEE, 2017, pp. 174–179.                                [51]  S. H. Park, G. Lee, J. Seo, M. Bhat, M. Kang, J. Francis, A. Jadhav, P. P. Liang, and
+      S. Hu, L. Chen, P. Wu, H. Li, J. Yan, and D. Tao, “St-p3: End-to-end vision-based                                                                                L.-P. Morency, “Diverse and admissible trajectory forecasting through multimodal
+      autonomous driving via spatial-temporal feature learning,” in ECCV.                                                                            Springer,         context understanding,” in ECCV.    Springer, 2020, pp. 282–298.
+[21]  2022, pp. 533–549.                                                                                                                                         [52]  Y. Chen, B. Ivanovic, and M. Pavone, “Scept: Scene-consistent, policy-based
+      M. M¨uller, A. Dosovitskiy, B. Ghanem, and V. Koltun, “Driving policy transfer                                                                                   trajectory predictions for planning,” in IEEE/CVF CVPR, 2022, pp. 17 103–17 112.
+[22]  via modularity and abstraction,”                                                                           arXiv:1804.09364, 2018.                         [53]  A. Kamenev, L. Wang, O. B. Bohan, I. Kulkarni, B. Kartal, A. Molchanov,
+      J. Hawke, R. Shen, C. Gurau, S. Sharma, D. Reda, N. Nikolov, P. Mazur,                                                                                           S. Birchfield, D. Nist´er, and N. Smolyanskiy, “Predictionnet: Real-time joint
+      S. Micklethwaite, N. Griffiths, A. Shah                                                                          et al., “Urban driving with conditional         probabilistic traffic prediction for planning, control, and simulation,” in ICRA.
+[23]  imitation learning,” in ICRA.                                                                             IEEE, 2020, pp. 251–257.                               IEEE, 2022, pp. 8936–8942.
+      O. Scheel, L. Bergamini, M. Wolczyk, B. Osi´nski, and P. Ondruska, “Urban                                                                                  [54]  M. Stoll, M. Mazzola, M. Dolgov, J. Mathes, and N. M¨oser, “Scaling planning
+      driver: Learning to drive from real-world demonstrations using policy gradients,”in                                                                              for automated driving using simplistic synthetic data,” arXiv:2305.18942, 2023.
+[24]      CoRL.                                                                              PMLR, 2022, pp. 718–728.                                            [55]  F. Janjoˇs, M. Dolgov, and J. M. Z¨ollner, “Self-supervised action-space prediction
+      D. Li, Q. Zhang, Z. Xia, K. Zhang, M. Yi, W. Jin, and D. Zhao, “Planning-inspired                                                                                for automated driving,” in IV.  IEEE, 2021, pp. 200–207.
+      hierarchical trajectory prediction for autonomous driving,”                                                                            arXiv:2304.11295,   [56]  M. Bansal, A. Krizhevsky, and A. Ogale, “Chauffeurnet: Learning to drive by
+      2023.
+[25]  M. Bojarski, D. Del Testa, D. Dworakowski, B. Firner, B. Flepp, P. Goyal, L. D.                                                                                  imitating the best and synthesizing the worst,” arXiv:1812.03079, 2018.
+      Jackel, M. Monfort, U. Muller, J. Zhang et al., “End to end learning for self-                                                                             [57]  L. Mi, H. Zhao, C. Nash, X. Jin, J. Gao, C. Sun, C. Schmid, N. Shavit, Y. Chai,
+      driving cars,” arXiv:1604.07316, 2016.                                                                                                                           and D. Anguelov, “Hdmapgen: A hierarchical graph generative model of high
+[26]  K. Chitta, A. Prakash, B. Jaeger, Z. Yu, K. Renz, and A. Geiger, “Transfuser:                                                                                    definition maps,” in IEEE/CVF CVPR, 2021, pp. 4227–4236.
+      Imitation with transformer-based sensor fusion for autonomous driving,” IEEE                                                                               [58]  J. Philion and S. Fidler, “Lift, splat, shoot: Encoding images from arbitrary camera
+      TPAMI, 2022.                                                                                                                                                     rigs by implicitly unprojecting to 3d,” in ECCV.       Springer, 2020, pp. 194–210.
+[27]  S. Lef`evre, D. Vasquez, and C. Laugier, “A survey on motion prediction and risk                                                                           [59]  Z. Li, W. Wang, H. Li, E. Xie, C. Sima, T. Lu, Y. Qiao, and J. Dai, “Bevformer:
+      assessment for intelligent vehicles,” ROBOMECH journal, vol. 1, no. 1, pp. 1–14,                                                                                 Learning bird’s-eye-view representation from multi-camera images via spatiotem-
+      2014.                                                                                                                                                            poral transformers,” in ECCV.      Springer, 2022, pp. 1–18.
+[28]  L. Claussmann, M. Revilloud, D. Gruyer, and S. Glaser, “A review of motion                                                                                 [60]  N. Djuric, V. Radosavljevic, H. Cui, T. Nguyen, F.-C. Chou, T.-H. Lin, and
+      planning for highway autonomous driving,” IEEE T-ITS, vol. 21, no. 5, pp. 1826–                                                                                  J. Schneider, “Short-term motion prediction of traffic actors for autonomous
+      1848, 2019.                                                                                                                                                      driving using deep convolutional networks,” arXiv:1808.05819, vol. 1, no. 2, p. 6,
+[29]  F. Leon and M. Gavrilescu, “A review of tracking and trajectory prediction                                                                                       2018.
+      methods for autonomous driving,” Mathematics, vol. 9, no. 6, p. 660, 2021.                                                                                 [61]  Y. LeCun, B. Boser, J. Denker, D. Henderson, W. Hubbard, and L. Jackel,
+[30]  S. Mozaffari, O. Y. Al-Jarrah, M. Dianati, P. Jennings, and A. Mouzakitis, “Deep                                                                                 “Handwritten digit recognition with a back-propagation network,” Advances in
+      learning-based vehicle behavior prediction for autonomous driving applications:                                                                                  NeurIPS, vol. 2, 1989.
+      A review,” IEEE T-ITS, vol. 23, no. 1, pp. 33–47, 2020.                                                                                                    [62]  W. Zeng, W. Luo, S. Suo, A. Sadat, B. Yang, S. Casas, and R. Urtasun, “End-to-
+[31]  J. Liu, X. Mao, Y. Fang, D. Zhu, and M. Q.-H. Meng, “A survey on deep-                                                                                           end interpretable neural motion planner,” in         IEEE/CVF CVPR, 2019, pp. 8660–
+      learning approaches for vehicle trajectory prediction in autonomous driving,” in                                                                                 8669.
+      IEEE ROBIO.                                                                               IEEE, 2021, pp. 978–985.                                         [63]  N. Rhinehart, R. McAllister, and S. Levine, “Deep imitative models for flexible
+[32]  Z. Ding and H. Zhao, “Incorporating driving knowledge in deep learning based                                                                                     inference, planning, and control,” arXiv:1810.06544, 2018.
+      vehicle trajectory prediction: A survey,” IEEE T-IV, 2023.                                                                                                 [64]  J. Chen, B. Yuan, and M. Tomizuka, “Deep imitation learning for autonomous
+[33]  W. Schwarting, J. Alonso-Mora, and D. Rus, “Planning and decision-making                                                                                         driving in generic urban scenarios with enhanced safety,” in IROS.        IEEE/RSJ,
+      for autonomous vehicles,” Annual Review of Control, Robotics, and Autonomous                                                                                     2019, pp. 2884–2890.
+      Systems, vol. 1, pp. 187–210, 2018.                                                                                                                        [65]  F. Codevilla, E. Santana, A. M. L´opez, and A. Gaidon, “Exploring the limitations
+[34]  L.     Chen,                                                                           P. Wu,  K. Chitta, B. Jaeger,   A. Geiger, and H. Li, “End-to-end         of behavior cloning for autonomous driving,” in IEEE/CVF ICCV, 2019, pp. 9329–
+      autonomous driving: Challenges and frontiers,” arXiv:2306.16927, 2023.                                                                                           9338.
+[35]  Z. Huang, H. Liu, and C. Lv, “Gameformer: Game-theoretic modeling and                                                                                      [66]  N. Rhinehart, R. McAllister, K. Kitani, and S. Levine, “Precog: Prediction
+      learning of transformer-based interactive prediction and planning for autonomous                                                                                 conditioned on goals in visual multi-agent settings,” in       IEEE/CVF ICCV, 2019,
+      driving,”     arXiv:2303.05760, 2023.                                                                                                                            pp. 2821–2830.
+[36]  B. Jiang, S. Chen, Q. Xu, B. Liao, J. Chen, H. Zhou, Q. Zhang, W. Liu, C. Huang,                                                                           [67]  A. Sadat, S. Casas, M. Ren, X. Wu, P. Dhawan, and R. Urtasun, “Perceive, predict,
+      and X. Wang, “Vad: Vectorized scene representation for efficient autonomous                                                                                      and plan: Safe motion planning through interpretable semantic representations,”
+      driving,” in IEEE/CVF ICCV, 2023, pp. 8340–8350.                                                                                                                 in ECCV. Springer, 2020, pp. 414–430.
+[37]  Y. Hu, J. Yang, L. Chen, K. Li, C. Sima, X. Zhu, S. Chai, S. Du, T. Lin, W. Wang                                                                           [68]  D. Chen, B. Zhou, V. Koltun, and P. Kr¨ahenb¨uhl, “Learning by cheating,” in
+      et al., “Planning-oriented autonomous driving,” in                                                                              IEEE/CVF CVPR, 2023, pp.         CoRL. PMLR, 2020, pp. 66–75.
+      17 853–17 862.                                                                                                                                             [69]  W. Zeng, S. Wang, R. Liao, Y. Chen, B. Yang, and R. Urtasun, “Dsdnet: Deep
+[38]  Z. Huang, P. Karkus, B. Ivanovic, Y. Chen, M. Pavone, and C. Lv, “Dtpp:                                                                                          structured self-driving network,” in ECCV.   Springer, 2020, pp. 156–172.
+      Differentiable joint conditional prediction and cost evaluation for tree policy                                                                            [70]  A. Cui, S. Casas, A. Sadat, R. Liao, and R. Urtasun, “Lookout: Diverse multi-
+      planning in autonomous driving,” arXiv:2310.05885, 2023.                                                                                                         future prediction and planning for self-driving,” in       IEEE/CVF ICCV, 2021, pp.
+[39]  B. Varadarajan, A. Hefny, A. Srivastava, K. S. Refaat, N. Nayakanti, A. Cornman,                                                                                 16 107–16 116.
+      K. Chen, B. Douillard, C. P. Lam, D. Anguelov et al., “Multipath++: Efficient                                                                              [71]  S. Casas, A. Sadat, and R. Urtasun, “Mp3: A unified model to map, perceive,
+      information fusion and trajectory aggregation for behavior prediction,” in ICRA.                                                                                 predict and plan,” in IEEE/CVF CVPR, 2021, pp. 14 403–14 412.
+      IEEE, 2022, pp. 7814–7821.                                                                                                                                 [72]  S. Konev, K. Brodt, and A. Sanakoyeu, “Motioncnn: a strong baseline for motion
+[40]  N. Deo and M. M. Trivedi, “Trajectory forecasts in unknown environments                                                                                          prediction in autonomous driving,” arXiv:2206.02163, 2022.
+      conditioned on grid-based plans,” arXiv:2001.00735, 2020.                                                                                                  [73]  F. Diehl, T. Brunner, M. T. Le, and A. Knoll, “Graph neural networks for
+[41]  T.     Salzmann,                                                                           B.  Ivanovic,  P. Chakravarty, and M.  Pavone, “Trajectron++:         modelling traffic participant interaction,” in IV. IEEE, 2019, pp. 695–701.
+      Dynamically-feasible trajectory forecasting with heterogeneous data,” in                                                                           2020.   [74]  T. N. Kipf and M. Welling, “Semi-supervised classification with graph convolu-
+      Springer, 2020, pp. 683–700.                                                                                                                                     tional networks,” in ICLR, 2017.
+[42]  M. Liang, B. Yang, R. Hu, Y. Chen, R. Liao, S. Feng, and R. Urtasun, “Learning                                                                             [75]  J. Gao, C. Sun, H. Zhao, Y. Shen, D. Anguelov, C. Li, and C. Schmid, “Vectornet:
+      lane graph representations for motion forecasting,” in ECCV.                                                                             Springer, 2020,         Encoding hd maps  and agent     dynamics   from    vectorized representation,”   in
+      pp. 541–556.                                                                                                                                                     IEEE/CVF CVPR, 2020, pp. 11 525–11 533.
+[43]  J. Mercat, T. Gilles, N. El Zoghby, G. Sandou, D. Beauvois, and G. P. Gil, “Multi-                                                                         [76]  H. Zhao, J. Gao, T. Lan, C. Sun, B. Sapp, B. Varadarajan, Y. Shen, Y. Shen,
+      head attention for multi-modal joint vehicle motion forecasting,” in ICRA.                                                                         IEEE,         Y. Chai, C. Schmid et al., “Tnt: Target-driven trajectory prediction,” in     CoRL.
+      2020, pp. 9638–9644.                                                                                                                                             PMLR, 2021, pp. 895–904.
+
+    14
+
+
+
+ [77] Y. Liu, J. Zhang, L. Fang, Q. Jiang, and B. Zhou, “Multimodal motion prediction [111] J. Pan, H. Sun, K. Xu, Y. Jiang, X. Xiao, J. Hu, and J. Miao, “Lane-attention:
+       with stacked transformers,” in IEEE/CVF CVPR, 2021, pp. 7577–7586.                           Predicting vehicles’ moving trajectories by learning their attention over lanes,” in
+ [78]  N. Mu, J. Ji, Z. Yang, N. Harada, H. Tang, K. Chen, C. R. Qi, R. Ge, K. Goel,                IROS.                 IEEE/RSJ, 2020, pp. 7949–7956.
+       Z. Yang et al., “Most: Multi-modality scene tokenization for motion prediction,”      [112]  J. Gu, C. Sun, and H. Zhao, “Densetnt: End-to-end trajectory prediction from
+       in CVPR, 2024, pp. 14 988–14 999.                                                            dense goal sets,” in  IEEE/CVF ICCV, 2021, pp. 15 303–15 312.
+ [79] N. Deo, E. Wolff, and O. Beijbom, “Multimodal trajectory prediction conditioned [113] L. L. Li, B. Yang, M. Liang, W. Zeng, M. Ren, S. Segal, and R. Urtasun, “End-to-
+       on lane-graph traversals,” in CoRL.     PMLR, 2022, pp. 203–212.                             end contextual perception and prediction with interaction transformer,” in IROS.
+ [80]  F. Janjoˇs, M. Dolgov, M. Kuri´c, Y. Shen, and J. M. Z¨ollner, “San: Scene anchor            IEEE/RSJ, 2020, pp. 5784–5791.
+       networks for joint action-space prediction,” in IV. IEEE, 2022, pp. 1751–1756. [114] Y. Yuan, X. Weng, Y. Ou, and K. M. Kitani, “Agentformer: Agent-aware
+ [81]  X. Mo, Z. Huang, Y. Xing, and C. Lv, “Multi-agent trajectory prediction with                 transformers for socio-temporal multi-agent forecasting,” in        IEEE/CVF ICCV,
+       heterogeneous edge-enhanced graph attention network,” IEEE T-ITS, vol. 23, no. 7,            2021, pp. 9813–9823.
+       pp. 9554–9567, 2022.                                                                  [115]  W. Chen, F. Wang, and H. Sun, “S2tnet: Spatio-temporal transformer networks
+ [82]  M. Pittner, J. Janai, and A. P. Condurache, “Lanecpp: Continuous 3d lane detection           for trajectory prediction in autonomous driving,” in  ACML.        PMLR, 2021, pp.
+       using physical priors,” in IEEE/CVF CVPR, 2024, pp. 10 639–10 648.                           454–469.
+ [83] F. Rosenblatt, “The perceptron: a probabilistic model for information storage and [116] A. Quintanar, D. Fern´andez-Llorca, I. Parra, R. Izquierdo, and M. Sotelo,
+       organization in the brain.” Psychological review, vol. 65, no. 6, p. 386, 1958.              “Predicting vehicles trajectories in urban scenarios with transformer networks and
+ [84]  D. E. Rumelhart, G. E. Hinton, and R. J. Williams, “Learning representations by              augmented information,” in IV. IEEE, 2021, pp. 1051–1056.
+       back-propagating errors,” nature, vol. 323, no. 6088, pp. 533–536, 1986.              [117]  R. Girgis, F. Golemo, F. Codevilla, M. Weiss, J. A. D’Souza, S. E. Kahou,
+ [85]  B. Kim, S. H. Park, S. Lee, E. Khoshimjonov, D. Kum, J. Kim, J. S. Kim, and                  F. Heide, and C. Pal, “Latent variable sequential set transformers for joint multi-
+       J. W. Choi, “Lapred: Lane-aware prediction of multi-modal future trajectories of             agent motion prediction,” arXiv:2104.00563, 2021.
+       dynamic agents,” in IEEE/CVF CVPR, 2021, pp. 14 636–14 645.                           [118]  A. Postnikov, A. Gamayunov, and G. Ferrer, “Transformer based trajectory
+ [86]  S. Hochreiter and J. Schmidhuber, “Long short-term memory,” Neural computa-                  prediction,” arXiv:2112.04350, 2021.
+       tion, vol. 9, no. 8, pp. 1735–1780, 1997.                                             [119]  D. Singh and R. Srivastava, “Multi-scale graph-transformer network for trajectory
+ [87]  J. Chung, C. Gulcehre, K. Cho, and Y. Bengio, “Empirical evaluation of gated                 prediction of the autonomous vehicles,” Intelligent Service Robotics, vol. 15, no. 3,
+       recurrent neural networks on sequence modeling,” arXiv:1412.3555, 2014.               [120]  pp. 307–320, 2022.
+ [88]  A. Vaswani, N. Shazeer, N. Parmar, J. Uszkoreit, L. Jones, A. N. Gomez, Ł. Kaiser,           C. Hazard, A. Bhagat, B. R. Buddharaju, Z. Liu, Y. Shao, L. Lu, S. Omari,
+       and I. Polosukhin, “Attention is all you need,” Advances in NeurIPS, vol. 30, 2017.          and H. Cui, “Importance is in your attention: agent importance prediction for
+ [89] T. Gilles, S. Sabatini, D. Tsishkou, B. Stanciulescu, and F. Moutarde, “Gohome: [121] autonomous driving,” in IEEE/CVF CVPR, 2022, pp. 2532–2535.
+       Graph-oriented heatmap output for future motion estimation,” in     ICRA.     IEEE,          K. Zhang, X. Feng, L. Wu, and Z. He, “Trajectory prediction for autonomous
+       2022, pp. 9107–9114.                                                                         driving using spatial-temporal graph attention transformer,” IEEE T-ITS, vol. 23,
+ [90] C. Tang and R. R. Salakhutdinov, “Multiple futures prediction,” Advances in [122] no. 11, pp. 22 343–22 353, 2022.
+       NeurIPS, vol. 32, 2019.                                                                      S.  Wonsak, M. Al-Rifai, M.    Nolting,   and W. Nejdl,       “Multi-modal  motion
+        prediction with graphormers,” in ITSC. IEEE, 2022, pp. 3521–3528.
+ [91] Z. Zhou, L. Ye, J. Wang, K. Wu, and K. Lu, “Hivt: Hierarchical vector transformer [123] E. Amirloo, A. Rasouli, P. Lakner, M. Rohani, and J. Luo, “Latentformer:
+       for multi-agent motion prediction,” in IEEE/CVF CVPR, 2022, pp. 8823–8833.                   Multi-agent transformer-based interaction modeling and trajectory prediction,”
+ [92]  N. Nayakanti, R. Al-Rfou, A. Zhou, K. Goel, K. S. Refaat, and B. Sapp,                       arXiv:2203.01880, 2022.
+       “Wayformer: Motion forecasting via simple & efficient attention networks,” [124] H. Hu, Q. Wang, Z. Zhang, Z. Li, and Z. Gao, “Holistic transformer: A joint neural
+       arXiv:2207.05844, 2022.                                                                      network for trajectory prediction and decision-making of autonomous vehicles,”
+ [93]  S. Shi, L. Jiang, D. Dai, and B. Schiele, “Motion transformer with global intention          Pattern Recognition, vol. 141, p. 109592, 2023.
+       localization and local movement refinement,” Advances in NeurIPS, vol. 35, pp.        [125]  Y. Chen, S. Tonkens, and M. Pavone, “Categorical traffic transformer: Interpretable
+       6531–6543, 2022.                                                                             and diverse behavior prediction with tokenized latent,”    arXiv:2311.18307, 2023.
+ [94] A. Cui, S. Casas, K. Wong, S. Suo, and R. Urtasun, “Gorela: Go relative for [126] A. Arnab, M. Dehghani, G. Heigold, C. Sun, M. Luˇci´c, and C. Schmid, “Vivit:
+       viewpoint-invariant motion forecasting,” arXiv:2211.02545, 2022.                             A video vision transformer,” in IEEE/CVF ICCV, 2021, pp. 6836–6846.
+ [95]  C. Jiang, A. Cornman, C. Park, B. Sapp, Y. Zhou, D. Anguelov et al., “Motiondif-      [127]  J. Ho, N. Kalchbrenner, D. Weissenborn, and T. Salimans, “Axial attention in
+       fuser: Controllable multi-agent motion prediction using diffusion,” in IEEE/CVF              multidimensional transformers,” arXiv:1912.12180, 2019.
+       CVPR, 2023, pp. 9644–9653.                                                            [128]  S. Khandelwal, W. Qi, J. Singh, A. Hartnett, and D. Ramanan, “What-if motion
+ [96]  M. Liu, H. Cheng, L. Chen, H. Broszio, J. Li, R. Zhao, M. Sester, and M. Y.                  prediction for autonomous driving,” arXiv:2008.10587, 2020.
+       Yang, “Laformer: Trajectory prediction for autonomous driving with lane-aware [129] W. Zeng, M. Liang, R. Liao, and R. Urtasun, “Lanercnn: Distributed represen-
+       scene constraints,” in  IEEE/CVF CVPR, 2024, pp. 2039–2049.                                  tations for graph-centric motion forecasting,” in IROS.        IEEE/RSJ, 2021, pp.
+ [97]  J. Philion, X. B. Peng, and S. Fidler, “Trajeglish: Traffic modeling as next-token           532–539.
+       prediction,” in ICLR, 2024.                                                           [130]  R. Reiter, R. Quirynen, M. Diehl, and S. Di Cairano, “Equivariant deep learning
+ [98]  H. Liao, Z. Li, H. Shen, W. Zeng, D. Liao, G. Li, and C. Xu, “Bat: Behavior-                 of mixed-integer optimal control solutions for vehicle decision making and motion
+       aware human-like trajectory prediction for autonomous driving,” in AAAI CAI,                 planning,” IEEE TCST, 2024.
+       vol. 38, no. 9, 2024, pp. 10 332–10 340.                                              [131]  S. Hagedorn, M. Milich, and A. P. Condurache, “Pioneering se (2)-equivariant
+ [99]  E. Tolstaya, R. Mahjourian, C. Downey, B. Vadarajan, B. Sapp, and D. Anguelov,               trajectory planning for automated driving,”  arXiv:2403.11304, 2024.
+       “Identifying driver interactions via conditional behavior prediction,” in ICRA. [132] F. Janjoˇs, M. Dolgov, and J. M. Z¨ollner, “Starnet: Joint action-space prediction
+       IEEE, 2021, pp. 3473–3479.                                                                   with star graphs and implicit global-frame self-attention,” in IEEE IV.      IEEE,
+[100]  T. Demmler, A. Tamke, T. Dang, K. Haug, and L. Mikelsons, “Towards con-                      2022, pp. 280–286.
+       sistent and explainable motion prediction using heterogeneous graph attention,” [133] X. Jia, L. Sun, H. Zhao, M. Tomizuka, and W. Zhan, “Multi-agent trajectory
+       arXiv:2405.10134, 2024.                                                                      prediction by combining egocentric and allocentric views,” in      CoRL.     PMLR,
+[101]  X. Li, X. Ying, and M. C. Chuah, “Grip: Graph-based interaction-aware trajectory             2022, pp. 1434–1443.
+       prediction,” in ITSC.   IEEE, 2019, pp. 3960–3966.                                    [134]  M. Bahari, S. Saadatnejad, A. Rahimi, M. Shaverdikondori, A. H. Shahidzadeh,
+[102]  W. Luo, B. Yang, and R. Urtasun, “Fast and furious: Real time end-to-end 3d                  S.-M. Moosavi-Dezfooli, and A. Alahi, “Vehicle trajectory prediction works, but
+       detection, tracking and motion forecasting with a single convolutional net,” in              not everywhere,” in IEEE/CVF CVPR, 2022, pp. 17 123–17 133.
+       IEEE CVPR, 2018, pp. 3569–3577.                                                       [135]  M. Hallgarten, I. Kisa, M. Stoll, and A. Zell, “Stay on track: A frenet wrapper to
+[103]  H. Cui, V. Radosavljevic, F.-C. Chou, T.-H. Lin, T. Nguyen, T.-K. Huang,                     overcome off-road trajectories in vehicle motion prediction,” arXiv:2306.00605,
+       J. Schneider, and N. Djuric, “Multimodal trajectory predictions for autonomous               2023.
+       driving using deep convolutional networks,” in ICRA.          IEEE, 2019, pp. 2090–   [136]  D. Ridel, N. Deo, D. Wolf, and M. Trivedi, “Scene compliant trajectory forecast
+       2096.                                                                                        with agent-centric spatio-temporal grids,” IEEE RA-L, vol. 5, no. 2, pp. 2816–
+[104]  Y. Chai, B. Sapp, M. Bansal, and D. Anguelov, “Multipath: Multiple probabilistic             2823, 2020.
+       anchor trajectory hypotheses for behavior prediction,” arXiv:1910.05449, 2019.        [137]  K. Messaoud, N. Deo, M. M. Trivedi, and F. Nashashibi, “Multi-head attention
+[105]  Y. Zhang, D. Qian, D. Li, Y. Pan, Y. Chen, Z. Liang, Z. Zhang, S. Zhang,                     with  joint agent-map representation  for    trajectory prediction in   autonomous
+       H. Li, M. Fu et al., “Graphad: Interaction scene graph for end-to-end autonomous [138] driving,” arXiv:2005.02545, vol. 2, 2020.
+       driving,” arXiv:2403.19098, 2024.                                                            M. Niedoba, H. Cui, K. Luo, D. Hegde, F.-C. Chou, and N. Djuric, “Improving
+[106]  Y. Wang, Y. Sun, Z. Liu, S. E. Sarma, M. M. Bronstein, and J. M. Solomon,                    movement prediction of traffic actors using off-road loss and bias mitigation,” in
+       “Dynamic graph cnn for learning on point clouds,” Acm Transactions On Graphics               Workshop on’Machine Learning for Autonomous Driving’at Conference on Neural
+       (tog), vol. 38, no. 5, pp. 1–12, 2019.                                                [139]  Information Processing Systems, vol. 1, 2019, p. 2.
+[107]  X. Li, X. Ying, and M. C. Chuah, “Grip++: Enhanced graph-based interaction-                  F. A. Boulton, E. C. Grigore, and E. M. Wolff, “Motion prediction using trajectory
+       aware trajectory prediction for autonomous driving,” arXiv:1907.07792, 2019.          [140]  sets and self-driving domain knowledge,” arXiv:2006.04767, 2020.
+                                                                                                    R. Greer, N. Deo, and M. Trivedi, “Trajectory prediction in autonomous driving
+[108]  D. Bahdanau, K. Cho, and Y. Bengio, “Neural machine translation by jointly                   with a lane heading auxiliary loss,” RA-L, vol. 6, no. 3, pp. 4907–4914, 2021.
+       learning to align and translate,” arXiv:1409.0473, 2014.                              [141]  S. Casas, C. Gulino, S. Suo, and R. Urtasun, “The importance of prior knowledge
+[109]  M.-T. Luong, H. Pham, and C. D. Manning, “Effective approaches to attention-                 in precise multimodal prediction,” in IROS.   IEEE/RSJ, 2020, pp. 2295–2302.
+       based neural machine translation,” arXiv:1508.04025, 2015.                            [142]  A. Houenou, P. Bonnifait, V. Cherfaoui, and W. Yao, “Vehicle trajectory prediction
+[110]  P. Velickovic, G. Cucurull, A. Casanova, A. Romero, P. Lio, Y. Bengio et al.,                based on motion model and maneuver recognition,” in IROS.          IEEE/RSJ, 2013,
+       “Graph attention networks,” stat, vol. 1050, no. 20, pp. 10–48 550, 2017.                    pp. 4363–4369.
+
+    15
+
+
+
+[143] W. Yao, H. Zhao, P. Bonnifait, and H. Zha, “Lane change trajectory prediction [174] J.-T. Zhai, Z. Feng, J. Du, Y. Mao, J.-J. Liu, Z. Tan, Y. Zhang, X. Ye, and
+           by using recorded human driving data,” in IV.     IEEE, 2013, pp. 430–436.                   J. Wang, “Rethinking the open-loop evaluation of end-to-end autonomous driving
+    [144]  L. Zhang, P.-H. Su, J. Hoang, G. C. Haynes, and M. Marchetti-Bowick, “Map-                   in nuscenes,” arXiv:2305.10430, 2023.
+           adaptive goal-based trajectory prediction,” in   CoRL.        PMLR, 2021, pp. 1371–   [175]  F. Codevilla, M. M¨uller, A. L´opez, V. Koltun, and A. Dosovitskiy, “End-to-end
+           1383.                                                                                        driving via conditional imitation learning,” in ICRA.     IEEE, 2018, pp. 4693–4700.
+[145] P. Karkus, B. Ivanovic, S. Mannor, and M. Pavone, “Diffstack: A differentiable [176] K. Chitta, A. Prakash, and A. Geiger, “Neat: Neural attention fields for end-to-end
+           and modular control stack for autonomous vehicles,” in    CoRL.         PMLR, 2023,          autonomous driving,” in IEEE/CVF ICCV, 2021, pp. 15 793–15 803.
+           pp. 2170–2180.                                                                        [177]  H. Shao, L. Wang, R. Chen, H. Li, and Y. Liu, “Safety-enhanced autonomous
+    [146]  C. Hubmann, J. Schulz, M. Becker, D. Althoff, and C. Stiller, “Automated driving             driving using interpretable sensor fusion transformer,” in CoRL.         PMLR, 2023,
+           in uncertain environments: Planning with interaction and uncertain maneuver                  pp. 726–737.
+           prediction,” IEEE T-IV, vol. 3, no. 1, pp. 5–17, 2018.                                [178]  P. Wu, X. Jia, L. Chen, J. Yan, H. Li, and Y. Qiao, “Trajectory-guided control
+    [147]  S. Chen, B. Jiang, H. Gao, B. Liao, Q. Xu, Q. Zhang, C. Huang, W. Liu, and                   prediction for end-to-end autonomous driving: A simple yet strong baseline,”
+           X. Wang, “Vadv2: End-to-end vectorized autonomous driving via probabilistic                  Advances in NeurIPS, vol. 35, pp. 6119–6132, 2022.
+           planning,” arXiv:2402.13243, 2024.                                                    [179]  S. Hecker, D. Dai, and L. Van Gool, “End-to-end learning of driving models with
+    [148]  C. Luo, L. Sun, D. Dabiri, and A. Yuille, “Probabilistic multi-modal trajectory              surround-view cameras and route planners,” in ECCV, 2018, pp. 435–453.
+       prediction with lane attention for autonomous vehicles,” in IROS. IEEE/RSJ, [180] E. Ohn-Bar, A. Prakash, A. Behl, K. Chitta, and A. Geiger, “Learning situational
+           2020, pp. 2370–2376.                                                                         driving,” in IEEE/CVF CVPR, 2020, pp. 11 296–11 305.
+[149] A. Knittel, M. Hawasly, S. V. Albrecht, J. Redford, and S. Ramamoorthy, “Dipa: [181] A. Sauer, N. Savinov, and A. Geiger, “Conditional affordance learning for driving
+           Probabilistic multi-modal interactive prediction for autonomous driving,” IEEE               in urban environments,” in CoRL.                    PMLR, 2018, pp. 237–252.
+           RA-L, 2023.                                                                           [182]  E. Bronstein, M. Palatucci, D. Notz, B. White, A. Kuefler, Y. Lu, S. Paul,
+    [150]  T. Gilles, S. Sabatini, D. Tsishkou, B. Stanciulescu, and F. Moutarde, “Home:                P. Nikdel, P. Mougin, H. Chen et al., “Hierarchical model-based imitation learning
+           Heatmap output for future motion estimation,” in ITSC.         IEEE, 2021, pp. 500–          for planning in autonomous driving,” in IROS.         IEEE/RSJ, 2022, pp. 8652–8659.
+           507.                                                                                  [183]  D. Dauner, M. Hallgarten, A. Geiger, and K. Chitta, “Parting with misconceptions
+    [151]  B. Kim, C. M. Kang, J. Kim, S. H. Lee, C. C. Chung, and J. W. Choi,                          about learning-based vehicle motion planning,” arXiv:2306.07962, 2023.
+       “Probabilistic vehicle trajectory prediction over occupancy grid map via recurrent [184] M. Hallgarten, M. Stoll, and A. Zell, “From prediction to planning with goal
+           neural network,” in ITSC.   IEEE, 2017, pp. 399–404.                                         conditioned lane graph traversals,” arXiv:2302.07753, 2023.
+    [152]  J. Kim,  R.    Mahjourian,  S. Ettinger,    M. Bansal,    B. White, B. Sapp,    and   [185]  Y. Chen, P. Karkus, B. Ivanovic, X. Weng, and M. Pavone, “Tree-structured policy
+           D. Anguelov, “Stopnet: Scalable trajectory and occupancy prediction for urban                planning with learned behavior models,” arXiv:2301.11902, 2023.
+           autonomous driving,” in ICRA.           IEEE, 2022, pp. 8957–8963.                    [186]  D. Wang, C. Devin, Q.-Z. Cai, P. Kr¨ahenb¨uhl, and T. Darrell, “Monocular plan
+    [153]  R. Mahjourian, J. Kim, Y. Chai, M. Tan, B. Sapp, and D. Anguelov, “Occupancy                 view networks for autonomous driving,” in IROS.            IEEE/RSJ, 2019, pp. 2876–
+           flow fields for motion forecasting in autonomous driving,”       IEEE RA-L, vol. 7,          2883.
+           no. 2, pp. 5639–5646, 2022.                                                           [187]  K. Renz, K. Chitta,  O.-B. Mercea,   A.    Koepke,    Z. Akata,   and  A.    Geiger,
+    [154]  B. Agro, Q. Sykora, S. Casas, and R. Urtasun, “Implicit occupancy flow fields                “Plant: Explainable planning   transformers   via     object-level representations,”
+           for perception and prediction in self-driving,” in         IEEE/CVF CVPR, 2023, pp.          arXiv:2210.14222, 2022.
+           1379–1388.                                                                            [188]  S. Pini, C. S. Perone, A. Ahuja, A. S. R. Ferreira, M. Niendorf, and S. Zagoruyko,
+    [155]  I. Goodfellow, J. Pouget-Abadie, M. Mirza, B. Xu, D. Warde-Farley, S. Ozair,                 “Safe real-world autonomous driving by learning to predict and plan with a
+           A. Courville, and Y. Bengio, “Generative adversarial networks,” Communications               mixture of experts,” arXiv:2211.02131, 2022.
+           of the ACM, vol. 63, no. 11, pp. 139–144, 2020.                                       [189]  M. Vitelli, Y. Chang, Y. Ye, A. Ferreira, M. Wołczyk, B. Osi´nski, M. Niendorf,
+    [156]  K. Sohn, H. Lee, and X. Yan, “Learning structured output representation using                H. Grimmett, Q. Huang, A. Jain et al., “Safetynet: Safe planning for real-world
+           deep conditional generative models,” Advances in NeurIPS, vol. 28, 2015.                     self-driving vehicles using machine-learned policies,” in ICRA.      IEEE, 2022, pp.
+    [157]  D. Rezende and S. Mohamed, “Variational inference with normalizing flows,” in                897–904.
+           ICML.         PMLR, 2015, pp. 1530–1538.                                              [190]  C. Chen, A. Seff, A. Kornhauser, and J. Xiao, “Deepdriving: Learning affordance
+    [158]  T. Zhao, Y. Xu, M. Monfort, W. Choi, C. Baker, Y. Zhao, Y. Wang, and Y. N.                   for direct perception in autonomous driving,” in          IEEE ICCV, 2015, pp. 2722–
+           Wu, “Multi-agent tensor fusion for contextual trajectory prediction,” in IEEE/CVF            2730.
+           CVPR, 2019, pp. 12 126–12 134.                                                        [191]  A. Sadat, M. Ren, A. Pokrovsky, Y.-C. Lin, E. Yumer, and R. Urtasun, “Jointly
+    [159]  N. Sriram, B. Liu, F. Pittaluga, and M. Chandraker, “Smart: Simultaneous multi-              learnable behavior and trajectory planning for self-driving vehicles,” in      IROS.
+           agent recurrent trajectory prediction,” in ECCV.   Springer, 2020, pp. 463–479.              IEEE/RSJ, 2019, pp. 3949–3956.
+[160] C. Choi, S. Malla, A. Patil, and J. H. Choi, “Drogon: A trajectory prediction [192] S. Biswas, S. Casas, Q. Sykora, B. Agro, A. Sadat, and R. Urtasun, “Quad:
+           model based on intention-conditioned behavior reasoning,” in      CoRL.       PMLR,          Query-based interpretable neural    motion planning   for  autonomous      driving,”
+           2021, pp. 49–63.                                                                             arXiv:2404.01486, 2024.
+    [161]  P. Dendorfer, S. Elflein, and L. Leal-Taix´e, “Mg-gan: A multi-generator model        [193]  N. H. Truong, H. T. Mai, T. A. Tran, M. Q. Tran, D. D. Nguyen, and N. V. P.
+           preventing out-of-distribution samples in pedestrian trajectory prediction,” in              Pham, “Paas: Planning as a service for reactive driving in carla leaderboard,” in
+           Proceedings of ICCV.        IEEE/CVF, 2021, pp. 13 158–13 167.                               ICSSE.  IEEE, 2023, pp. 101–107.
+[162] Y. Wang, H. Zhou, Z. Zhang, C. Feng, H. Lin, C. Gao, Y. Tang, Z. Zhao, S. Zhang, [194] M. Werling, J. Ziegler, S. Kammel, and S. Thrun, “Optimal trajectory generation
+           J. Guo et al., “Tenet: Transformer encoding network for effective temporal flow              for dynamic street scenarios in a frenet frame,” in ICRA.       IEEE, 2010, pp. 987–
+           on motion prediction,” arXiv:2207.00170, 2022.                                        [195]  993.
+    [163]  N. Aghasadeghi and T. Bretl, “Maximum entropy inverse reinforcement learning                 M. Buehler, K. Iagnemma, and S. Singh,                The DARPA urban challenge: au-
+       in continuous state spaces with path integrals,” in IROS. IEEE/RSJ, 2011, pp. [196] tonomous vehicles in city traffic. springer, 2009, vol. 56.
+           1561–1566.                                                                                   H. Fan, F. Zhu, C. Liu, L. Zhang, L. Zhuang, D. Li, W. Zhu, J. Hu, H. Li, and
+[164] J. Wang, T. Ye, Z. Gu, and J. Chen, “Ltp: Lane-based trajectory prediction for [197] Q. Kong, “Baidu apollo em motion planner,” arXiv:1807.08048, 2018.
+           autonomous driving,” in IEEE/CVF CVPR, 2022, pp. 17 134–17 142.                              M. Montremerlo, J. Beeker, S. Bhat, and H. Dahlkamp, “The stanford entry in
+[165] T. Phan-Minh, E. C. Grigore, F. A. Boulton, O. Beijbom, and E. M. Wolff, [198] the urban challenge,” Journal of Field Robotics, vol. 7, no. 9, pp. 468–492, 2008.
+           “Covernet: Multimodal behavior prediction using trajectory sets,” in IEEE/CVF                J. Ziegler, P. Bender, T. Dang, and C. Stiller, “Trajectory planning for bertha—a
+           CVPR, 2020, pp. 14 074–14 083.                                                        [199]  local, continuous method,” in IV.   IEEE, 2014, pp. 450–457.
+    [166]  S. Narayanan, R. Moslemi, F. Pittaluga, B. Liu, and M. Chandraker, “Divide-and-              Z. Ajanovic, B. Lacevic, B. Shyrokau, M. Stolz, and M. Horn, “Search-based
+           conquer for lane-aware diverse trajectory prediction,” in IEEE/CVF CVPR, 2021,               optimal motion planning for automated driving,” in IROS.         IEEE/RSJ, 2018, pp.
+           pp. 15 799–15 808.                                                                    [200]  4523–4530.
+    [167]  Q. Lu, W. Han, J. Ling, M. Wang, H. Chen, B. Varadarajan, and P. Coving-                     H. Pulver, F. Eiras, L. Carozza, M. Hawasly, S. V. Albrecht, and S. Ramamoor-
+           ton, “Kemp: Keyframe-based hierarchical end-to-end deep model for long-term                  thy, “Pilot: Efficient planning by imitation learning and optimisation for safe
+           trajectory prediction,” in ICRA.         IEEE, 2022, pp. 646–652.                     [201]  autonomous driving,” in IROS.                    IEEE/RSJ, 2021, pp. 1442–1449.
+    [168]  M. Ye, J. Xu, X. Xu, T. Wang, T. Cao, and Q. Chen, “Dcms: Motion forecasting                 B. D. Ziebart, A. L. Maas, J. A. Bagnell, A. K. Dey et al., “Maximum entropy
+           with dual consistency and multi-pseudo-target supervision,”       arXiv:2204.05859,          inverse reinforcement learning.” in AAAI, vol. 8.        Chicago, IL, USA, 2008, pp.
+           2022.                                                                                 [202]  1433–1438.
+    [169]  H. Song, D. Luan, W. Ding, M. Y. Wang, and Q. Chen, “Learning to predict                     M. Wulfmeier, P. Ondruska, and I. Posner, “Maximum entropy deep inverse
+           vehicle trajectories with model-based planning,” in     CoRL.       PMLR, 2022, pp.   [203]  reinforcement learning,” arXiv:1507.04888, 2015.
+           1035–1045.                                                                                   N. Rhinehart, K. M. Kitani, and P. Vernaza, “R2p2: A reparameterized pushfor-
+                                                                                                        ward policy for diverse, precise generative path forecasting,” in ECCV, 2018, pp.
+    [170]  L. Fang, Q. Jiang, J. Shi, and B. Zhou, “Tpnet: Trajectory proposal network for              772–788.
+           motion prediction,” in IEEE/CVF CVPR, 2020, pp. 6797–6806.                            [204]  B. Wei, M. Ren, W. Zeng, M. Liang, B. Yang, and R. Urtasun, “Perceive, attend,
+    [171]  D. Chen and P. Kr¨ahenb¨uhl, “Learning from all vehicles,” in        IEEE/CVF CVPR,          and drive: Learning spatial attention for safe self-driving,” in ICRA.   IEEE, 2021,
+           2022, pp. 17 222–17 231.                                                                     pp. 4875–4881.
+[172] H. Caesar, J. Kabzan, K. S. Tan, W. K. Fong, E. Wolff, A. Lang, L. Fletcher, [205] P. Hu, A. Huang, J. Dolan, D. Held, and D. Ramanan, “Safe local motion
+           O. Beijbom, and S. Omari, “nuplan: A closed-loop ml-based planning benchmark                 planning with self-supervised freespace forecasting,” in        IEEE/CVF CVPR, 2021,
+           for autonomous vehicles,” arXiv:2106.11810, 2021.                                            pp. 12 732–12 741.
+[173] A. Dosovitskiy, G. Ros, F. Codevilla, A. Lopez, and V. Koltun, “Carla: An open [206] H. Xu, Y. Gao, F. Yu, and T. Darrell, “End-to-end learning of driving models
+           urban driving simulator,” in CoRL.       PMLR, 2017, pp. 1–16.                               from large-scale video datasets,” in IEEE CVPR, 2017, pp. 2174–2182.
+
+    16
+
+
+
+    [207]  S. Schaal, “Learning from demonstration,” Advances in NeurIPS, vol. 9, 1996.         [238]  E. Galceran, A. G. Cunningham, R. M. Eustice, and E. Olson, “Multipolicy
+    [208]  M. Bain and C. Sammut, “A framework for behavioural cloning.” in Machine                    decision-making for autonomous driving via changepoint-based behavior predic-
+           Intelligence 15, 1995, pp. 103–129.                                                         tion: Theory and experiment,” Autonomous Robots, vol. 41, pp. 1367–1382, 2017.
+[209] S. Ross, G. Gordon, and D. Bagnell, “A reduction of imitation learning and struc- [239] J. F. Fisac, E. Bronstein, E. Stefansson, D. Sadigh, S. S. Sastry, and A. D. Dragan,
+           tured prediction to no-regret online learning,” in AISTATS.      JMLR Proceedings,          “Hierarchical game-theoretic planning for autonomous vehicles,” in ICRA.   IEEE,
+           2011, pp. 627–635.                                                                          2019, pp. 9590–9596.
+[210] S. Daftry, J. A. Bagnell, and M. Hebert, “Learning transferable policies for [240] A. G. Cunningham, E. Galceran, R. M. Eustice, and E. Olson, “Mpdm: Multipol-
+           monocular reactive mav control,” in ISER. Springer, 2016, pp. 3–11.                         icy decision-making in dynamic, uncertain environments for autonomous driving,”
+    [211]  E. Kumar, Y. Zhang, S. Pini, S. Stent, A. Ferreira, S. Zagoruyko, and C. S. Perone,         in  IEEE ICRA, 2015, pp. 1670–1677.
+       “Cw-erm: Improving autonomous driving planning with closed-loop weighted [241] L. Zhang, W. Ding, J. Chen, and S. Shen, “Efficient uncertainty-aware decision-
+           empirical risk minimization,” arXiv:2210.02174, 2022.                                       making for automated driving using guided branching,” in IEEE ICRA, 2020, pp.
+    [212]  J. Cheng, Y. Chen, and Q. Chen, “Pluto: Pushing the limit of imitation learning-            3291–3297.
+           based planning for autonomous driving,” arXiv:2404.14327, 2024.                      [242]  W. Ding, L. Zhang, J. Chen, and S. Shen, “Epsilon: An efficient planning system
+    [213]  Y. Hu, K. Li, P. Liang, J. Qian, Z. Yang, H. Zhang, W. Shao, Z. Ding, W. Xu, and            for automated vehicles in highly interactive environments,” IEEE Transactions on
+           Q. Liu, “Imitation with spatial-temporal heatmap: 2nd place solution for nuplan             Robotics, vol. 38, no. 2, pp. 1118–1138, 2021.
+           challenge,” arXiv:2306.15700, 2023.                                                  [243]  B. Ivanovic and M. Pavone, “The trajectron: Probabilistic multi-agent trajectory
+    [214]  W. Xi, L. Shi, and G. Cao, “An imitation learning method with data augmentation             modeling with dynamic spatiotemporal graphs,” in IEEE/CVF ICCV, 2019, pp.
+           and post processing for planning in autonomous driving,” https://opendrivelab.              2375–2384.
+       com/e2ead/AD23Challenge/Track 4 pe-gasus weitao.pdf, 2023, accessed: 2023- [244] J. Hardy and M. Campbell, “Contingency planning over probabilistic obstacle
+           07-07.                                                                                      predictions  for   autonomous road vehicles,” IEEE Transactions on     Robotics,
+    [215]  T. Ye, W. Jing, C. Hu, S. Huang, L. Gao, F. Li, J. Wang, K. Guo, W. Xiao,                   vol. 29, no. 4, pp. 913–929, 2013.
+       W. Mao et al., “Fusionad: Multi-modality fusion for prediction and planning tasks [245] T. Li, L. Zhang, S. Liu, and S. Shen, “Marc: Multipolicy and risk-aware
+           of autonomous driving,” arXiv:2308.01006, 2023.                                             contingency planning for autonomous driving,” IEEE Robotics and Automation
+    [216]  Z. Li, K. Li, S. Wang, S. Lan, Z. Yu, Y. Ji, Z. Li, Z. Zhu, J. Kautz, Z. Wu                 Letters, 2023.
+           et al., “Hydra-mdp: End-to-end multimodal planning with multi-target hydra-          [246]  ——, “Multi-modal integrated prediction and decision-making with adaptive
+           distillation,” arXiv:2406.06978, 2024.                                                      interaction modality explorations,” arXiv:2408.13742, 2024.
+[217] H. Song, W. Ding, Y. Chen, S. Shen, M. Y. Wang, and Q. Chen, “Pip: Planning- [247] W. Zhan, C. Liu, C.-Y. Chan, and M. Tomizuka, “A non-conservatively defensive
+           informed trajectory prediction for autonomous driving,” in ECCV.         Springer,   [248]  strategy for urban autonomous driving,” in ITSC.   IEEE, 2016, pp. 459–464.
+           2020, pp. 598–614.                                                                          A. Bajcsy, A. Siththaranjan, C. J. Tomlin, and A. D. Dragan, “Analyzing human
+[218] S. Bae, D. Isele, A. Nakhaei, P. Xu, A. M. Anon, C. Choi, K. Fujimura, and [249] models that adapt online,” in ICRA. IEEE, 2021, pp. 2754–2760.
+           S. Moura, “Lane-change in dense traffic with model predictive control and neural            T. Bandyopadhyay, K. S. Won, E. Frazzoli, D. Hsu, W. S. Lee, and D. Rus,
+           networks,” IEEE Transactions on Control Systems Technology, vol. 31, no. 2, pp.             “Intention-aware motion planning,” in Algorithmic Foundations of Robotics X:
+           646–659, 2022.                                                                              Tenth Workshop on the Algorithmic Foundations of Robotics.       Springer, 2013,
+[219] Z. Sheng, L. Liu, S. Xue, D. Zhao, M. Jiang, and D. Li, “A cooperation-aware [250] pp. 475–491.
+           lane change method for automated vehicles,”       IEEE Transactions on Intelligent          H. Caesar, V. Bankiti, A. H. Lang, S. Vora, V. E. Liong, Q. Xu, A. Krishnan,
+           Transportation Systems, vol. 24, no. 3, pp. 3236–3251, 2022.                                Y. Pan,  G.    Baldan,  and O. Beijbom, “nuscenes:  A multimodal     dataset for
+[220] D. Sadigh, S. Sastry, S. A. Seshia, and A. D. Dragan, “Planning for autonomous [251] autonomous driving,” in IEEE/CVF CVPR, 2020, pp. 11 621–11 631.
+           cars that leverage effects on human actions.” in    Robotics: Science and systems,          S. Ettinger, S. Cheng, B. Caine, C. Liu, H. Zhao, S. Pradhan, Y. Chai, B. Sapp,
+           vol. 2.   Ann Arbor, MI, USA, 2016, pp. 1–9.                                                C. R. Qi, Y. Zhou    et al., “Large scale interactive motion forecasting for au-
+                                                                                                       tonomous driving: The waymo open motion dataset,” in IEEE/CVF ICCV, 2021,
+    [221]  E. Schmerling, K. Leung, W. Vollprecht, and M. Pavone, “Multimodal probabilis-              pp. 9710–9719.
+           tic model-based planning for human-robot interaction,” in   ICRA.      IEEE, 2018,   [252]  M.-F. Chang, J. Lambert, P. Sangkloy, J. Singh, S. Bak, A. Hartnett, D. Wang,
+           pp. 3399–3406.                                                                              P. Carr, S. Lucey, D. Ramanan  et al., “Argoverse: 3d tracking and forecasting
+    [222]  U. Muller, J. Ben, E. Cosatto, B. Flepp, and Y. Cun, “Off-road obstacle avoidance           with rich maps,” in IEEE/CVF CVPR, 2019, pp. 8748–8757.
+           through end-to-end learning,” Advances in NeurIPS, vol. 18, 2005.                    [253]  B. Wilson, W. Qi, T. Agarwal, J. Lambert, J. Singh, S. Khandelwal, B. Pan,
+    [223]  A. Prakash, K. Chitta, and A. Geiger, “Multi-modal fusion transformer for end-              R. Kumar, A. Hartnett, J. K. Pontes et al., “Argoverse 2: Next generation datasets
+           to-end autonomous driving,” in IEEE/CVF CVPR, 2021, pp. 7077–7087.                          for self-driving perception and forecasting,” arXiv:2301.00493, 2023.
+[224] Z. Li, T. Motoyoshi, K. Sasaki, T. Ogata, and S. Sugano, “Rethinking self-driving: [254] J. Bock, R. Krajewski, T. Moers, S. Runde, L. Vater, and L. Eckstein, “The
+           Multi-task knowledge for better generalization and accident explanation ability,”           ind dataset: A drone dataset of naturalistic road user trajectories at german
+           arXiv:1809.11100, 2018.                                                                     intersections,” in IV.  IEEE, 2020, pp. 1929–1934.
+[225] A. Zhao, T. He, Y. Liang, H. Huang, G. Van den Broeck, and S. Soatto, “Sam: [255] R. Krajewski, J. Bock, L. Kloeker, and L. Eckstein, “The highd dataset: A drone
+           Squeeze-and-mimic networks for conditional visual driving policy learning,” in              dataset of naturalistic vehicle trajectories on german highways for validation of
+           CoRL.     PMLR, 2021, pp. 156–175.                                                          highly automated driving systems,” in ITSC.   IEEE, 2018, pp. 2118–2125.
+[226] J. Liu, W. Zeng, R. Urtasun, and E. Yumer, “Deep structured reactive planning,” [256] R. Krajewski, T. Moers, J. Bock, L. Vater, and L. Eckstein, “The round dataset:
+           in ICRA.  IEEE, 2021, pp. 4897–4904.                                                        A drone dataset of road user trajectories at roundabouts in germany,” in ITSC.
+    [227]  Y. Chen, S. Veer, P. Karkus, and M. Pavone, “Interactive joint planning for                 IEEE, 2020, pp. 1–6.
+           autonomous vehicles,” IEEE RA-L, 2023.                                               [257]  T. Moers, L. Vater, R. Krajewski, J. Bock, A. Zlocki, and L. Eckstein, “The exid
+    [228]  Z. Chen, M. Ye, S. Xu, T. Cao, and Q. Chen, “Deepemplanner: An em motion                    dataset: A real-world trajectory dataset of highly interactive highway scenarios in
+           planner with iterative interactions,” arXiv:2311.08100, 2023.                               germany,” in IV.     IEEE, 2022, pp. 958–964.
+[229] P. Hang, C. Lv, C. Huang, Y. Xing, and Z. Hu, “Cooperative decision making [258] W. Zhan, L. Sun, D. Wang, H. Shi, A. Clausse, M. Naumann, J. Kummerle,
+           of connected automated vehicles at multi-lane merging zone: A coalitional game              H. Konigshof, C. Stiller, A. de La Fortelle     et al., “Interaction dataset: An
+           approach,” IEEE T-ITS, vol. 23, no. 4, pp. 3829–3841, 2021.                                 international, adversarial and cooperative motion dataset in interactive driving
+    [230]  W. Wang, L. Wang, C. Zhang, C. Liu, L. Sun        et al., “Social interactions for          scenarios with semantic maps,” arXiv:1910.03088, 2019.
+       autonomous driving: A review and perspectives,” Foundations and Trends® in [259] J. Cheng, Y. Chen, X. Mei, B. Yang, B. Li, and M. Liu, “Rethinking imitation-
+           Robotics, vol. 10, no. 3-4, pp. 198–376, 2022.                                              based planner for autonomous driving,” arXiv:2309.10443, 2023.
+[231] N. Li, D. W. Oyler, M. Zhang, Y. Yildiz, I. Kolmanovsky, and A. R. Girard, [260] Z. Li, Z. Yu, S. Lan, J. Li, J. Kautz, T. Lu, and J. M. Alvarez, “Is ego status
+           “Game theoretic modeling of driver and vehicle interactions for verification and            all you need for open-loop end-to-end autonomous driving?” in CVPR, 2024, pp.
+           validation of autonomous vehicle control systems,” IEEE TCST, vol. 26, no. 5,               14 864–14 873.
+           pp. 1782–1797, 2017.                                                                 [261]  F. Codevilla, A. M. Lopez, V. Koltun, and A. Dosovitskiy, “On offline evaluation
+[232] P. Geiger and C.-N. Straehle, “Learning game-theoretic models of multiagent [262] of vision-based driving models,” in ECCV, 2018, pp. 236–251.
+           trajectories using implicit layers,” in   Proceedings of AAAI CAI, vol. 35, no. 6,          C. Gulino, J. Fu, W. Luo, G. Tucker, E. Bronstein, Y. Lu, J. Harb, X. Pan, Y. Wang,
+           2021, pp. 4950–4958.                                                                        X. Chen et al., “Waymax: An accelerated, data-driven simulator for large-scale
+[233] J. Wright and K. Leyton-Brown, “Beyond equilibrium: Predicting human behavior [263] autonomous driving research,” Advances in NeurIPS, vol. 36, 2024.
+           in normal-form games,” in AAAI CAI, vol. 24, no. 1, 2010, pp. 901–907.                      E. Leurent, “An environment for autonomous driving decision-making,” https:
+[234] M. A. Costa-Gomes, V. P. Crawford, and N. Iriberri, “Comparing models of [264] //github.com/eleurent/highway-env, 2018.
+           strategic thinking in van huyck, battalio, and beil’s coordination games,” Journal          M. Althoff, M. Koschi, and S. Manzinger, “Commonroad: Composable bench-
+           of the European Economic Association, vol. 7, no. 2-3, pp. 365–376, 2009.            [265]  marks for motion planning on roads,” in IV.   IEEE, 2017, pp. 719–726.
+    [235]  W. Zheng, R. Song, X. Guo, and L. Chen, “Genad: Generative end-to-end                       Z. Zhang, A. Liniger, D. Dai, F. Yu, and L. Van Gool, “End-to-end urban driving
+           autonomous driving,” arXiv:2402.11502, 2024.                                                by imitating a reinforcement learning coach,” in        IEEE/CVF ICCV, 2021, pp.
+                                                                                                       15 222–15 232.
+    [236]  M. Klimke, B. V¨olz, and M. Buchholz, “Cooperative behavior planning for             [266]  A. Filos, P. Tigkas, R. McAllister, N. Rhinehart, S. Levine, and Y. Gal, “Can
+           automated driving using graph neural networks,” in 2022 IEEE Intelligent Vehicles           autonomous vehicles identify, recover from, and adapt to distribution shifts?” in
+           Symposium (IV).   IEEE, 2022, pp. 167–174.                                                  ICML.    PMLR, 2020, pp. 3145–3153.
+[237] ——, “Automatic intersection management in mixed traffic using reinforcement [267] P. Wu, L. Chen, H. Li, X. Jia, J. Yan, and Y. Qiao, “Policy pre-training
+           learning and graph neural networks,” in 2023 IEEE Intelligent Vehicles Symposium            for end-to-end autonomous driving via self-supervised geometric modeling,”
+           (IV).     IEEE, 2023, pp. 1–8.                                                              arXiv:2301.01006, 2023.
+
+17
+
+
+
+[268]  F. Kl¨uck, Y. Li, J. Tao, and F. Wotawa, “An empirical comparison of combinatorial  [298]  Z. Guo, X. Gao, J. Zhou, X. Cai, and B. Shi, “Scenedm: Scene-level multi-agent
+       testing and search-based testing in the context of automated and autonomous                trajectory generation with consistent diffusion models,” arXiv:2311.15736, 2023.
+       driving systems,” Information and Software Technology, vol. 160, p. 107225, 2023.   [299]  Z. Zhong, D. Rempe, D. Xu, Y. Chen, S. Veer, T. Che, B. Ray, and M. Pavone,
+[269]  E. Rocklage, H. Kraft, A. Karatas, and J. Seewig, “Automated scenario generation           “Guided conditional diffusion for controllable traffic simulation,” in ICRA. IEEE,
+       for regression testing of autonomous vehicles,” in ITSC.        IEEE, 2017, pp. 476–       2023, pp. 3560–3566.
+       483.
+[270]  L. Birkemeyer, T. Pett,     A. Vogelsang,  C. Seidl, and  I.  Schaefer,    “Feature-
+       interaction sampling for scenario-based testing of advanced driver assistance
+       systems,” in 16th VaMoS International Working Conference, 2022, pp. 1–10.
+[271]  J. Erz, B. Sch¨utt, T. Braun, H. Guissouma, and E. Sax, “Towards an ontology that
+       reconciles the operational design domain, scenario-based testing, and automated
+       vehicle architectures,” in  SYSCON.  IEEE, 2022, pp. 1–8.
+[272]  M. Hallgarten, J. Zapata, M. Stoll, K. Renz, and A. Zell, “Can vehicle motion
+       planning generalize to realistic long-tail scenarios?” arXiv:2404.07569, 2024.
+[273]  A. Gambi, V. Nguyen, J. Ahmed, and G. Fraser, “Generating critical driving
+       scenarios from accident sketches,” in AITest. IEEE, 2022, pp. 95–102.
+[274]  J. Langner, J. Bach, L. Ries, S. Otten, M. Holz¨apfel, and E. Sax, “Estimating the
+       uniqueness of test scenarios derived from recorded real-world-driving-data using
+       autoencoders,” in IV. IEEE, 2018, pp. 1860–1866.
+[275]  F. Hauer, I. Gerostathopoulos, T. Schmidt, and A. Pretschner, “Clustering traffic
+       scenarios using mental models as little as possible,” in IV.         IEEE, 2020, pp.
+       1007–1012.
+[276]  J. Wang, A. Pun, J. Tu, S. Manivasagam, A. Sadat, S. Casas, M. Ren, and R. Ur-
+       tasun, “Advsim: Generating safety-critical scenarios for self-driving vehicles,” in
+       IEEE/CVF CVPR, 2021, pp. 9909–9918.
+[277]  Y. Abeysirigoonawardena, F. Shkurti, and G. Dudek, “Generating adversarial
+       driving scenarios in high-fidelity simulators,” in ICRA.       IEEE, 2019, pp. 8271–
+       8277.
+[278]  M. Althoff and S. Lutz, “Automatic generation of safety-critical test scenarios for
+       collision avoidance of road vehicles,” in IV. IEEE, 2018, pp. 1326–1333.
+[279]  F. Indaheng, E. Kim, K. Viswanadha, J. Shenoy, J. Kim, D. J. Fremont, and
+       S. A. Seshia, “A scenario-based platform for testing autonomous vehicle behavior
+       prediction models in simulation,” arXiv:2110.14870, 2021.
+[280]  M. Klischat and M. Althoff, “Generating critical test scenarios for automated
+       vehicles with evolutionary algorithms,” in IV. IEEE, 2019, pp. 2352–2358.
+[281]  P. Kothari, S. Kreiss, and A. Alahi, “Human trajectory forecasting in crowds: A
+       deep learning perspective,” IEEE T-ITS, vol. 23, no. 7, pp. 7386–7400, 2021.
+[282]  A. Wachi, “Failure-scenario maker for rule-based agent using multi-agent ad-
+       versarial reinforcement     learning and its application to autonomous     driving,”
+       arXiv:1903.10654, 2019.
+[283]  N. Hanselmann, K. Renz, K. Chitta, A. Bhattacharyya, and A. Geiger, “King:
+       Generating safety-critical driving scenarios for robust imitation via kinematics
+       gradients,” in ECCV.  Springer, 2022, pp. 335–352.
+[284]  H. Zhou, W. Li, Z. Kong, J. Guo, Y. Zhang, B. Yu, L. Zhang, and C. Liu, “Deep-
+       billboard: Systematic physical-world testing of autonomous driving systems,” in
+       ACM/IEEE 42nd ICSE, 2020, pp. 347–358.
+[285]  Z. Kong, J. Guo, A. Li, and C. Liu, “Physgan: Generating physical-world-resilient
+       adversarial examples for autonomous driving,” in IEEE/CVF CVPR, 2020, pp.
+       14 254–14 263.
+[286]  A. Boloor, K. Garimella, X. He, C. Gill, Y. Vorobeychik, and X. Zhang, “Attacking
+       vision-based perception in end-to-end autonomous driving models,” Journal of
+       Systems Architecture, vol. 110, p. 101766, 2020.
+[287]  T. Sato, J. Shen, N. Wang, Y. Jia, X. Lin, and Q. A. Chen, “Dirty road can attack:
+       Security of deep learning based automated lane centering under {Physical-World}
+       attack,” in USENIX Security Symposium, 2021, pp. 3309–3326.
+[288]  D. Dauner, M. Hallgarten, T. Li, X. Weng, Z. Huang, Z. Yang, H. Li, I. Gilitschen-
+       ski, B. Ivanovic, M. Pavone et al., “Navsim: Data-driven non-reactive autonomous
+       vehicle simulation and benchmarking,” arXiv:2406.15349, 2024.
+[289]  C. Zhang, R. Guo, W. Zeng, Y. Xiong, B. Dai, R. Hu, M. Ren, and R. Urtasun,
+       “Rethinking closed-loop training for autonomous driving,” in ECCV.         Springer,
+       2022, pp. 264–282.
+[290]  A. Kesting, M. Treiber, and D. Helbing, “Enhanced intelligent driver model
+       to access the impact of driving strategies on traffic capacity,”       Philosophical
+       Transactions of the Royal Society A: Mathematical, Physical and Engineering
+       Sciences, vol. 368, no. 1928, pp. 4585–4605, 2010.
+[291]  O. Derbel, T. Peter, H. Zebiri, B. Mourllion, and M. Basset, “Modified intelligent
+       driver model for driver safety and traffic stability improvement,” IFAC Proceedings
+       Volumes, vol. 46, no. 21, pp. 744–749, 2013.
+[292]  S. Albeaik, A. Bayen, M. T. Chiri, X. Gong, A. Hayat, N. Kardous, A. Keimer,
+       S. T. McQuade, B. Piccoli, and Y. You, “Limitations and improvements of the
+       intelligent driver model (idm),”          SIAM Journal on Applied Dynamical Systems,
+       vol. 21, no. 3, pp. 1862–1892, 2022.
+[293]  M. Sharath and N. R. Velaga, “Enhanced intelligent driver model for two-
+       dimensional motion planning in mixed traffic,” Transportation Research Part C:
+       Emerging Technologies, vol. 120, p. 102780, 2020.
+[294]  S. Suo, S. Regalado, S. Casas, and R. Urtasun, “Trafficsim: Learning to simulate
+       realistic multi-agent behaviors,” in IEEE/CVF CVPR, 2021, pp. 10 400–10 409.
+[295]  S. Suo, K. Wong, J. Xu, J. Tu, A. Cui, S. Casas, and R. Urtasun, “Mixsim: A
+       hierarchical framework for mixed reality traffic simulation,” in IEEE/CVF CVPR,
+       2023.
+[296]  M. Igl, D. Kim, A. Kuefler, P. Mougin, P. Shah, K. Shiarlis, D. Anguelov,
+       M. Palatucci, B. White, and S. Whiteson, “Symphony: Learning realistic and
+       diverse agents for autonomous driving simulation,” in ICRA.          IEEE, 2022, pp.
+       2445–2451.
+[297]  D. Xu, Y. Chen, B. Ivanovic, and M. Pavone, “Bits: Bi-level imitation for traffic
+       simulation,” arXiv:2208.12403, 2022.
+

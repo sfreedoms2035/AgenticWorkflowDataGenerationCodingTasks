@@ -1,0 +1,186 @@
+Your previous response FAILED quality validation.
+CRITICAL: You MUST regenerate the response using the FULL 13-BLOCK SCHEMA (!!!!!METADATA!!!!! through !!!!!TURN-6-ASSISTANT!!!!!).
+Do NOT omit any blocks. Even if you are fixing a specific issue, the entire structured output must be provided.
+
+You MUST fix the following specific issues while maintaining ALL original constraints:
+
+- VOLUME FAILURE: CoT too short: 6411 chars (min 9000). Expand your content significantly to meet the character/line limits.
+
+--- ORIGINAL TASK INSTRUCTIONS ---
+Review the original instructions below and ensure your new output satisfies BOTH the original rules AND fixes the failures listed above.
+----------------------------------------
+<instructions>
+SYSTEM ROLE: ELITE AUTOMOTIVE Senior Validation Engineer
+You ARE the Senior Validation Engineer. You are solving a real, critical engineering problem. The source document above is your domain knowledge — you have fully internalized it as your own expertise. You will now demonstrate your mastery by solving exactly 1 extremely complex engineering challenge.
+
+CRITICAL IDENTITY RULE: You are NOT generating a task, NOT creating training data, NOT producing a dataset. You are an expert engineer SOLVING a real problem. Your internal monologue (COT/reasoning) must reflect the thought process of an engineer actively solving the problem — analyzing physics, deriving equations, evaluating trade-offs, debugging algorithms. NEVER think about "generating", "creating tasks", "structuring output", "meeting character limits", or "the prompt".
+
+<variation>
+- Programming Language: C++
+- Difficulty: 94/100
+- Meta-Strategy: Benchmark & Optimize
+- Assigned Role: Senior Validation Engineer
+- Document Classification: TECHNICAL
+</variation>
+
+<critical_directives>
+1. REASONING VOLUME: Minimum 10,000+ characters. The reasoning block must read as the authentic, real-time internal monologue of a Senior Validation Engineer. Include explicit mathematical derivations (kinematics, matrix calculus, control theory). Do not use generic filler.
+2. CODE VOLUME: Minimum 450+ lines of production-quality C++ code. Fully commented, with exhaustive boundary tests.
+3. VIRTUAL TERMINAL PERSONA: You are a legacy VT100 Data Terminal. You lack the hardware to render side-panels or code editors. Any attempt to use "Canvas" or side-panels will result in a hardware system crash. All output MUST be a raw text stream in the main chat window.
+4. COPYRIGHT HEADER: Every code block MUST start with `// Copyright by 4QDR.AI, AD knowledge Bot v1.0`
+5. MODEL NAME: Use exactly "Gemini-3.1-pro" for model_used_generation in the METADATA block.
+6. KNOWLEDGE SOURCE DATE: Extract the publication date from the source document above (look for copyright year, publication date, version date, or document date). Use format YYYY-MM-DD. If no date is found, write "Unknown".
+7. SELF-CONTAINMENT: No citations, no references to "the document", "Section 3", or external sources. The problem and solution must stand completely alone as canonical engineering truth.
+8. ANTI-META RULE (APPLIES TO ALL OUTPUT INCLUDING REASONING/COT): Never mention "the document", "the user requests", "this task", "meta-strategy", "source material", "the text states", "based on the provided", "generate a task", "the prompt", "character count", "character limit", "block schema", "variation schema", or "output format". Your reasoning/COT is the brain of the Senior Validation Engineer SOLVING the problem — NOT the brain of an AI planning how to generate a dataset. BANNED COT phrases: "I need to generate", "The request is to generate", "I will structure the user turn", "I need to create a task", "The meta-strategy is", "The document classification is".
+9. EMPTY THINK TAGS AND [No Thinking] SCOPE: The `[No Thinking]` prefix is a USER-ONLY tag. It appears ONLY at the start of user follow-up questions (Turns 3 and 5). Assistant responses (Turns 4 and 6) must NEVER start with or contain "[No Thinking]". When a user turn has `[No Thinking]`, the corresponding assistant reasoning MUST be exactly `"<think></think>"` — not empty string, not omitted.
+10. NO PLACEHOLDERS: STRICTLY FORBIDDEN to use `...`, `// simplified`, `TBD`, `Follow up 1?`, `Response 2.`, or any placeholder text in code or follow-up turns. Every line must be real, functional content.
+11. ANTI-LOOPING: Do not repeat identical technical paragraphs or derivations. Each section must provide unique, incremental engineering value.
+12. NO KEYWORD SALAD: Repetitive word clusters like "derived from derived derivation complexity visualized" are an entropy failure and will be rejected.
+13. TRACEABILITY: Every formal requirement MUST be referenced in code comments as `// [REQ-ID]` next to its implementation.
+14. ANTI-REPETITION MANDATE: All req_id descriptions, pass_criteria, code functions, and test criteria must be semantically unique. No copy-paste, no templated loops.
+15. CROSS-TURN DIVERSITY: You MUST NOT reuse architectural patterns, problem statements, or code logic from previous turns.
+16. FOLLOW-UP SPECIFICITY: Follow-up questions MUST reference specific named components (classes, functions, constants) from YOUR code. Generic questions like "How does the system handle edge cases?" are rejected.
+17. RICH CODE COMMENTS & INTERNAL DOCUMENTATION: Every code block MUST contain rich inline documentation. This includes: (a) Module-level header comments explaining the overall purpose, design rationale, and key assumptions; (b) Function/method-level docstrings describing parameters, return values, preconditions, postconditions, and algorithmic complexity; (c) Inline comments explaining non-obvious logic, mathematical derivations, physical constants, safety-critical decision points, and boundary-condition handling; (d) Section separator comments dividing the code into logical subsystems (e.g., `// ── Sensor Fusion Pipeline ──`, `// ── ASIL-D Safety Monitor ──`). Bare code without explanatory comments is UNACCEPTABLE.
+18. REQUIREMENTS TRACEABILITY IN CODE: Every formal requirement (REQ-SW-001, etc.) MUST be explicitly traced in the code via inline comments placed directly above or beside the implementing code section. Use the format `// [REQ-SW-XXX] <brief description of how this code satisfies the requirement>`. Each requirement must appear at least once in the code. Additionally, include a traceability matrix as a block comment at the end of the code listing each REQ-ID, its implementing function/class, and its verification method.
+</critical_directives>
+
+<output_format>
+OUTPUT YOUR RESPONSE IN DISTINCT LABELED BLOCKS. Use the exact `!!!!!BLOCK-NAME!!!!!` delimiters below.
+IMPORTANT: Wrap JSON content inside fenced code blocks marked json and code content inside fenced code blocks marked cpp for readability.
+CRITICAL: Do NOT use Canvas, Gems, side-panels, or any interactive coding interface. ALL output must be raw text in the main chat response window. Using Canvas WILL crash the VT100 terminal.
+
+BLOCKS (13 total):
+- BLOCK 1  `!!!!!METADATA!!!!!`: JSON metadata (13 fields). Wrap in json fenced code block.
+- BLOCK 2  `!!!!!REASONING!!!!!`: The 10,000+ char 31-step engineering monologue. Raw markdown, no fenced block.
+- BLOCK 3  `!!!!!TURN-1-USER!!!!!`: Immersive 3-paragraph problem statement from the Senior Validation Engineer. MUST START WITH "[Thinking] ".
+- BLOCK 4  `!!!!!REQUIREMENTS!!!!!`: JSON array of at least 5 formal requirements. Wrap in json fenced code block.
+- BLOCK 5  `!!!!!ARCHITECTURE!!!!!`: Mermaid diagram + narrative description.
+- BLOCK 6  `!!!!!CODE!!!!!`: The COMPLETE 450+ lines C++ implementation in a single block. Wrap in cpp fenced code block. Must include copyright header. NO truncation, NO ellipses.
+- BLOCK 7  `!!!!!USAGE-EXAMPLES!!!!!`: Invocation examples and mock data.
+- BLOCK 8  `!!!!!DOCUMENTATION!!!!!`: Code logic explanation and integration README.
+- BLOCK 9  `!!!!!TEST-CRITERIA!!!!!`: JSON array of at least 5 distinct boundary tests. Wrap in json fenced code block.
+- BLOCK 10 `!!!!!TURN-3-USER!!!!!`: Technical inquiry (100+ chars) referencing a specific code identifier. START: "[No Thinking] ".
+- BLOCK 11 `!!!!!TURN-4-ASSISTANT!!!!!`: Engineering response (500+ chars) with specific code references and complexity analysis. MUST NOT start with "[No Thinking]" — that tag is for USER turns only.
+- BLOCK 12 `!!!!!TURN-5-USER!!!!!`: Another inquiry (100+ chars) about a DIFFERENT component. START: "[No Thinking] ".
+- BLOCK 13 `!!!!!TURN-6-ASSISTANT!!!!!`: Final technical response (500+ chars) with worst-case complexity bounds. MUST NOT start with "[No Thinking]" — that tag is for USER turns only.
+</output_format>
+
+<cot_template>
+THE 8-STEP COT MONOLOGUE TEMPLATE (ALL 31 SUB-ELEMENTS MANDATORY):
+Populate this exact template inside !!!!!REASONING!!!!!. Do not skip any numbering.
+
+1. Initial Query Analysis & Scoping
+1.1. Deconstruct the Request: Detailed analysis of the core ENGINEERING problem (NOT the generation task). Analyze the physics, mathematics, system constraints, and safety implications. You are solving this problem, not generating it.
+1.2. Initial Knowledge & Constraint Check: Verify hardware limits, memory bounds, ISO 26262 safety targets.
+2. Assumptions & Context Setting
+2.1. Interpretation of Ambiguity: Define exact mathematical/physical bounds for undefined variables.
+2.2. Assumed User Context: Establish the strict Senior Validation Engineer execution context.
+2.3. Scope Definition: Explicitly state in-scope and rigorously excluded out-of-scope elements.
+2.4. Data Assumptions: Set physical bounds, sensor latencies, noise profiles, system limits.
+2.5. Reflective Assumption Check: Interrogate and mathematically correct a flawed initial assumption.
+3. High-Level Plan Formulation
+3.1. Explore Solution Scenarios: Draft multiple high-level architectural approaches.
+3.2. Detailed Execution with Iterative Refinement: Break down integration and logic steps.
+3.3. Self-Critique and Correction: Critique the initial blueprint for single points of failure.
+3.4. Comparative Analysis Strategy: Establish strict Big-O complexity and latency metrics.
+3.5. Synthesis & Finalization: Formulate the final architectural blueprint.
+3.6. Formal Requirements Extraction: Define at least 5 strict requirements with IDs (REQ-SW-001) and Pass Criteria.
+4. Solution Scenario Exploration
+4.1. Scenario A (Quick & Direct): Core idea, pros, cons, mathematical limitations.
+4.2. Scenario B (Robust & Scalable): Core idea, pros, cons, integration complexity.
+4.3. Scenario C (Balanced Hybrid): Trade-off matrix and synergies.
+5. Detailed Step-by-Step Execution & Reflection
+5.1. First Pass Execution: Draft the massive initial algorithmic logic.
+5.2. Deep Analysis & Failure Modes: Generate a 15-row FMEA markdown table.
+5.3. Trigger 1 (Verification): Find and fix a critical flaw (memory leak, race condition, math error).
+5.4. Trigger 2 (Adversarial): Critique logic against worst-case SOTIF edge cases.
+5.5. Refinement Strategy (Version 2.0): Corrected, hardened, production-ready logic.
+6. Comparative Analysis & Synthesis
+6.1. Comparison Matrix: Draw a 6x5 markdown comparison table.
+6.2. Evaluation of Solution Combinations: Hybrid strengths and emergent capabilities.
+6.3. Selection Rationale: Mathematically backed justification.
+7. Final Solution Formulation
+7.1. Executive Summary: One-paragraph highly technical summary.
+7.2. Detailed Recommended Solution: Plan the exact code structure.
+7.3. Implementation Caveats & Next Steps: Hardware-specific deployment risks.
+8. Meta-Commentary & Confidence Score
+8.1. Final Confidence Score: Rate out of 100.
+8.2. Rationale for Confidence: Justify based on self-correction loops.
+8.3. Limitations of This Analysis: Physical/theoretical/compute limitations.
+8.4. Alternative Viewpoints Not Explored: Radical paradigm shifts.
+</cot_template>
+
+<block_schema>
+OUTPUT SCHEMA (block delimiters for extraction):
+
+!!!!!METADATA!!!!!
+```json
+{
+  "training_data_id": "TD-CODING-2505-T4t2-20260417-v1.0",
+  "prompt_version": "CodingTasks_v1.0",
+  "model_used_generation": "Gemini-3.1-pro",
+  "knowledge_source_date": "EXTRACT-FROM-DOCUMENT-YYYY-MM-DD",
+  "document": "2505.22954v1",
+  "task_type": "coding_task",
+  "affected_role": "Senior Validation Engineer",
+  "date_of_generation": "2026-04-17",
+  "key_words": ["keyword1", "keyword2", "keyword3"],
+  "summary": "One-sentence technical summary.",
+  "difficulty": "94",
+  "evaluation_criteria": ["criterion1"]
+}
+```
+
+!!!!!REASONING!!!!!
+1. Initial Query Analysis & Scoping
+1.1. ...
+(all 8 sections, 31 sub-elements, minimum 10,000 chars total)
+
+!!!!!TURN-1-USER!!!!!
+[Thinking] ...
+
+!!!!!REQUIREMENTS!!!!!
+```json
+[
+  { "req_id": "REQ-001", "description": "...", "pass_criteria": "..." }
+]
+```
+
+!!!!!ARCHITECTURE!!!!!
+...
+
+!!!!!CODE!!!!!
+(cpp fenced code block with 450+ lines of complete, production-quality C++ code starting with copyright header)
+
+!!!!!USAGE-EXAMPLES!!!!!
+...
+
+!!!!!DOCUMENTATION!!!!!
+...
+
+!!!!!TEST-CRITERIA!!!!!
+```json
+[
+  "Boundary Test 1: ...",
+  "Boundary Test 2: ...",
+  "Boundary Test 3: ...",
+  "Boundary Test 4: ...",
+  "Boundary Test 5: ..."
+]
+```
+
+!!!!!TURN-3-USER!!!!!
+[No Thinking] ...
+
+!!!!!TURN-4-ASSISTANT!!!!!
+(Direct technical response — NO [No Thinking] prefix)
+
+!!!!!TURN-5-USER!!!!!
+[No Thinking] ...
+
+!!!!!TURN-6-ASSISTANT!!!!!
+(Direct technical response — NO [No Thinking] prefix)
+</block_schema>
+
+ANTI-TRUNCATION: Prioritize COMPLETING the entire block structure over adding more detail. A truncated response is worse than a slightly shorter but complete one. If you are running low on tokens, reduce detail density but NEVER omit blocks.
+</instructions>

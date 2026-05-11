@@ -1,0 +1,1 @@
+1. **Deterministic Replay:** When a bug can be perfectly reproduced using recorded data (a luxury).

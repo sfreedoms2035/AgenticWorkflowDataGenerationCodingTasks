@@ -1,0 +1,641 @@
+Learning Autonomous Driving Tasks via Human Feedbacks with Large
+    Language Models
+
+      Yunsheng Ma¹, Xu Cao², Wenqian Ye3, Can Cui¹, Kai Mei⁴, Ziran Wang¹,
+        1Purdue University, 2UIUC, 3University of Virginia, 4Rutgers University
+        Correspondence: ziran@purdue.edu
+
+
+
+
+                             Abstract
+           Traditional autonomous driving systems have        Human Instruction: I saw the news that there is
+                                                              congestion ahead. Let’s take a left at the next light
+            mainly focused on making driving decisions        and re-navigate to my destination.
+          without human interaction, overlooking human-
+          like decision-making and human preference re-
+          quired in complex traffic scenarios. To bridge
+             this gap, we introduce a novel framework                                               Not Satisfied
+             leveraging Large Language Models (LLMs)                                                Satisfied
+          for learning human-centered driving decisions
+          from diverse simulation scenarios and environ-
+            ments that incorporate human feedback. Our                                          Simulator
+           contributions include a GPT-4-based program-                                         results
+           ming planner that integrates seamlessly with                                             Human Feedback
+            the existing CARLA simulator to understand
+         traffic scenes and react to human instructions.
+           Specifically, we build a human-guided learn-      Figure 1: Schematic view of human feedback learning
+           ing pipeline that incorporates human driver       in the CARLA autonomous driving simulation.
+         feedback directly into the learning process and
+          stores optimal driving programming policy us-
+            ing Retrieval Augmented Generation (RAG).        There will be instances where autonomous vehicles
+           Impressively, our programming planner, with       must make a choice between undesirable outcomes,
+            only 50 saved code snippets, can match the       like deciding between harming pedestrians or en-
+         performance of baseline extensively trained re-     dangering the vehicle and its occupants to protect
+           inforcement learning (RL) models. Our paper
+            highlights the potential of an LLM-powered       the pedestrians (Bonnefon et al., 2016). Creating
+           shared-autonomy system, pushing the frontier      the human-centered decision-making algorithms
+           of autonomous driving system development to       that enable these vehicles to navigate such ethical
+       be more interactive and intuitive.                    dilemmas presents a significant challenge.
+    1  Introduction                                                In recent months, the advancements in large lan-
+                                                             guage models (LLMs) have shown emerging ca-
+         Autonomous driving has the potential to revolu-     pabilities in many aspects. One study (Wei et al.,
+        tionize transportation and urban mobility and has    2022a) introduced this concept and defined emer-
+         been a primary focus of research and development    gence as abilities that are "not present in smaller
+        for the past two decades (Cui et al., 2024b). Tra-   models but are present in larger models”. Experi-
+          ditional development of autonomous driving has     ments show that LLMs can tackle complicated lan-
+         primarily focused on achieving perfect black box    guage tasks on challenges benchmarks including
+       safe navigation, and the role of humans in the sys-        TruthfulQA (Lin et al., 2022), Massive Multi-task
+       tem is often minimized, due to the doubts about the   Language Understanding (MMLU) (Hendrycks
+        feasibility and benefits of integrating human and    et al., 2021), and Word in Context (WiC) (Pilehvar
+        autonomous driving systems collaboratively (Para-    and Camacho-Collados, 2019).
+           suraman and Riley, 1997; Andrew, 2003). How-              This advancement also offers new possibilities
+       ever, the human-like decision is still an important   for redefining human-vehicle interaction and has
+         factor in designing autonomous driving systems.     inspired researchers to reconsider the human roles
+                                                4985
+       Findings of the Association for Computational Linguistics: EMNLP 2024, pages 4985–4995
+                November 12-16, 2024 ©2024 Association for Computational Linguistics
+
+within the autonomous driving ecosystem. For ex- 2 Related Work
+ample, the "Drive as you speak" concept (Cui et al.,
+2024a) proposes a more intuitive, human-like in- 2.1 Human-Centered Autonomous Driving
+teraction inside autonomous vehicles, enabling the Human-centered autonomous driving prioritizes
+vehicles to understand and respond to natural lan- the demand for the safety and comfort of street
+guage commands. Moreover, the incorporation stakeholders in the system design (Xing et al.,
+of reasoning and reflective modules in the DiLu 2021). Unlike traditional autonomous driving tech-
+framework (Wen et al., 2024) endows autonomous nologies, which primarily focus on the efficiency
+vehicles with decision-making processes that mir- and performance of the vehicle itself, human-
+ror human common-sense reasoning. These efforts centered autonomous driving emphasizes integrat-
+show the potential of autonomous vehicle systems ing user feedback into the driving planning and con-
+not just as independent units, but as interactive plat- trol to create more intuitive, trustworthy, and user-
+    forms that engage with users.                       friendly autonomous driving experiences (Fridman,
+  Essentially, an autonomous driving system is 2018). Previous research has demonstrated that lan-
+an AI-infused system (Amershi et al., 2019) that guage models can facilitate smoother interactions
+interfaces with users. Therefore, it is crucial to by answering questions between humans and vehi-
+incorporate a human-centric approach in its de- cles (Deruyttere et al., 2019). Nonetheless, these
+sign and operation. The Human-Computer Inter- advancements are often constrained by the mod-
+actions (HCI) community has proposed principles, els’ scale and performance, grappling with safety
+guidelines, and strategies for AI system interac- and efficiency challenges that are important for
+tions. These are becoming increasingly relevant in real-world application. Moreover, human-centered
+    autonomous vehicle development.                     autonomous driving recognizes the critical role of
+  Drawing from the design patterns suggested in interactions with other street stakeholders, not only
+the People + AI Guidebook (Google PAIR, 2019), language-based communication with drivers. To
+such as "let users supervise automation" and "let address these complexities, recent studies suggest
+users give feedback," as well as the "shared auton- leveraging large language models such as GPT-4
+omy" concept, which views rich, effective commu- to understand and integrate key street stakeholders’
+nication as the most essential design element (Frid- information and user’s verbal feedback (Fu et al.,
+man, 2018), this paper focuses on two essential 2024b; Yang et al., 2024b; Cui et al., 2024b).
+features as shown in Fig. 2: (1) to interact with 2.2 Reasoning with Large Language Models
+users based on spontaneous user instructions, and
+(2) to adapt and learn from user feedback in nat- Reasoning is a fundamental aspect of human in-
+ural language. Specifically, our contributions are telligence. It is defined as a cognitive concept in-
+    summarized as follows:                              volving the use of evidence, arguments, and logic,
+                                                        playing a central role in intellectual activities such
+     • An LLM-based programming planner is devel-       as problem solving, decision making, and critical
+      oped to serve as a plug-in module for classical   thinking. Recently, LLMs have shown some emer-
+          autonomous driving pipelines to enable them   gent behaviors, including the ability to "reason".
+        to understand traffic scenes and follow human   One approach to encourage LLMs to reason is us-
+      instructions.                                     ing chain-of-thought (CoT) prompting (Wei et al.,
+                                                        2022b). CoT decomposes a complicated reasoning
+       • A human-guided learning pipeline is proposed   task, such as a multi-step math word problem into
+           for the programming planner to allow it to   intermediate steps, and solves each before giving
+      continuously learn from human feedback.           the final answer. Additionally, LLMs have demon-
+                                                        strated zero-shot reasoning abilities by introducing
+     • The experiment results from the CARLA au-        phrases like "Let’s think step by step" before each
+            tonomous driving simulation show that the   answer (Kojima et al., 2022). Tree-of-Thoughts
+          proposed programming planner, using only 50   (Yao et al., 2023) further generalizes CoT by ex-
+         saved code snippets, matches the performance   ploring multiple reasoning paths. A closely related
+      of reinforcement learning (RL) methods.           previous study is Auto-CoT (Zhang et al., 2023),
+                                                        which leverages zero-shot CoT to generate diverse
+                                                        reasoning chains as demonstrations and samples
+          4986
+
+                           Execuation        Language Model Program
+
+                           Let’s take a right at the
+                           next light and re-navigate
+                           to my destination.
+               Structured  Instruction        Code Generation
+               Language                                          Retrival
+               Generator   There is a trafic light and it is     Augmented
+                           Red. It is 5.52 m ahead. My           Generation
+                           current speed is 7.0 m/s. There
+                           are no obstacles in the vicinity.     (RAG)
+                           Driving Context
+
+                           writes Python code to complete
+    Simulator   System     You are a helpful assistant who           Knowledge
+               Message     any autonomous driving task               Database
+                           speciied by me.
+
+
+
+Figure 2: An overview of the proposed programming planner. Initially, the Large Language Model (LLM) is given a
+prompt composed of human instruction, driving context, and system message. It then conducts chain-of-thought
+reasoning to generate language model programs, which serve as driving policies. This policy code is executed in the
+CARLA simulator to complete the driving task as specified in the instructions. Verified code is then added to the
+knowledge database for future reference, utilizing Retrieval Augmented Generation.
+
+them as examples for in-context learning. Concur- LLMs in the code understanding and generation
+rently, there also exist some pioneer autonomous domain (Liu et al., 2023). Furthermore, this suc-
+driving works (Sima et al., 2023; Wen et al., 2024) cess catalyzed the exploration of utilizing LLMs for
+focusing on the reasoning in the driving context. robotics planning and control (Yang et al., 2024a),
+        as evidenced by studies such as Voyager (Wang
+2.3 Language-Guided Autonomous Driving et al., 2023a) and Code as Policies (Liang et al.,
+LLMs have shown remarkable potential in com- 2023). Recent advancements have seen LLMs
+plicated scenarios such as driving scene under- generate executable code that interfaces with driv-
+standing and decision-making (Rufus et al., 2021; ing planning and control APIs, including LaMPi-
+Marcu et al., 2023; Mao et al., 2023; Malla lot (Ma et al., 2024), LangProp (Ishida et al., 2024).
+et al., 2023; Nanwani et al., 2023; Cao et al., Despite these advancements, there still needs im-
+2024). Recent advancements focus on build- provement in current works to embed LLMs in
+ing visual-language models to generate driving enhancing human-centered human-vehicle interac-
+policy such as DriveMLM (Wang et al., 2023b) tions and teaming within driving models.
+and DriveVLM (Tian et al., 2024). An equally 3
+crucial area of research is the development of Methodology
+language-guided closed-loop autonomous driving 3.1 Overview
+systems. These systems leverage multimodal sen- This section elaborates on the framework of our
+sor data from simulators, as demonstrated by Lim- proposed programming planner. It integrates the
+Sim++ (Fu et al., 2024a) and LMDrive (Shao et al., world knowledge and reasoning capabilities of
+2024). Additionally, RAG-Driver (Yuan et al., LLMs into the autonomous driving system that
+2024) introduces a novel retrieval-augmented in- powers two essential shared autonomy features,
+context learning approach, significantly enhancing namely following user instructions and integrat-
+the zero-shot generalization capabilities of driving ing human feedback. As illustrated in Fig. 2, the
+LLMs. programming planner has the following key de-
+  Building on LLMs’ success in NLP, there are signs: (1) Inspired by the ‘code as policies’ con-
+also a great number of research works utilizing cept (Liang et al., 2023), we let LLMs generate
+        4987
+
+    System Message (X⁰sys)
+    You are a helpful assistant that writes python code to complete any autonomous driving task specified by me.
+    Here are the APIs you can use: {apis}
+    Here are some useful programs written with the provided APIs: {programs}
+    At each round of conversation, I will give you
+    Code from last round: ... Command: ... Context: ... Feedback: ...
+    You should then respond to me with
+    Explain (if applicable): Are there any steps missing in your plan? Why is the code not satisfactory?
+    Plan: How to complete the task step by step.
+    Code: 1) Write a function taking NO argument. 2) Only use the APIs that I provided. 3) Anything defined outside a function will be ignored, define
+    all your variables inside your functions. 4) Name your function in a meaningful way (considering both command and context). 5) You should only
+    write one function, which will be called by me. Do not write multiple functions. 6) When calling ‘proceed()’ or ‘stop()’ function, you should always
+    ‘yield’ the return value of the function. 7) You can reuse the above useful programs. 8) Do not write infinite loops. 9) Do not use any constant from
+    the context, as it may dynamically change. Call the APIs to get the latest values. 10) Always provide feedback to the user using the ‘say’ function.
+    You should only respond in the format as described below: {response_format}
+    Instruction (X⁰q)
+    Take a left at the next light.
+    Driving Context (X⁰c)
+    There is a traffic light and it is Red. It is 5.52 m ahead. My current speed is 7.0 m/s. There are no obstacles in the
+    vicinity.
+    Chain-of-Thought Reasoning (X⁰ᵣ )
+    1) First, check the status of the traffic light. If it’s red, the vehicle should stop before the intersection. 2) Once the
+    traffic light turns green, the vehicle should prepare to take a left turn at the intersection. 3) The vehicle will then turn
+    left at the next intersection. 4) Throughout the process, provide feedback to the passenger about what actions the
+    vehicle is planning to take.
+    Code as Policies (X⁰ₚ)
+
+    def  take_left_at_next_light () :
+         if  check_red_light () :
+             yield  stop ()
+             say (" Stopping  for     the     red light .")
+         say (" The light is  green     now .     Preparing to   take     a    left turn .")
+         turn_left_at_next_intersection ()
+         say (" Taking a left   turn     at     the  intersection .")
+         yield proceed ( check_speed_limit () )
+
+
+    Human Feedback (X¹f )
+    You should have slowed down a little bit while making turns.
+    Explanation (X¹ᵣ )
+    Reducing the speed slightly below the speed limit during a turn can enhance safety, especially in autonomous driving
+    scenarios where precise control is crucial for both passenger comfort and safety.
+    Code as Policies (X¹ₚ)
+
+# ... [ omitted ]
+# Reduce speed by a small factor (e.g., 90 % of the speed limit ) to ensure a safer turn
+safe_turn_speed = check_speed_limit () * 0.9
+# ... [ omitted ]
+yield proceed ( safe_turn_speed )
+
+
+    Human Feedback (X²f )
+    The turning speed was too fast.
+    Explanation (X²ᵣ )
+    It appears that the safe turning speed calculated as 90% of the speed limit was too fast for a safe left turn. To address
+    this, we can further reduce the target speed for the turn to ensure safety.
+    Code as Policies (X²ₚ)
+
+    #  ... [ omitted ]
+    #  Reduce the   speed to 70 % of the speed  limit for a     safer turn
+    safe_turn_speed    = check_speed_limit ()  * 0.7
+    #  ... [ omitted ]
+
+
+
+
+Table 1: This example illustrates the reasoning and code generation process of the proposed programming planner.
+The three blocks indicate that the generations occur in different iterations. Content with blue titles (chain-of-thought
+reasoning, explanation, and code as policies) is generated by LLMs. Content with red titles (instruction and human
+feedback) is provided by humans. The initial prompt includes three components: a system message (Xsys), human
+instruction (Xq), and the current driving context (Xc). Subsequent prompts also include human feedback (Xf ) and
+the policy code (Xp) from the last round. For brevity, the system message, human instruction, driving context, and
+code from the last round are not included in subsequent prompts.
+
+        4988
+
+     Method                              Learning                Navigation DS (↑)      RC (↑)  IP (↑)
+     Roach Expert (Zhang et al., 2021)   Reinforcement Learning   Waypoint        63.4  100.0    0.63
+     TCP Expert (Wu et al., 2022)        Reinforcement Learning   Waypoint        68.1   95.8    0.71
+     Programming Planner Expert (Ours)   0-Shot CoT          Human Instruction    0.00   48.7    0.00
+     Programming Planner Expert (Ours)   3-Shot CoT          Human Instruction    17.3   65.3    0.31
+     Programming Planner Expert (Ours)   Human-Feedback CoT  Human Instruction    65.4   95.1    0.68
+
+    Table 2: Driving performance of expert drivers on CARLA leaderboard testing routes. The driving score (DS) is
+    calculated by multiplying the route completion percentage (RC) by the infraction penalty (IP). The "Navigation"
+    column specifies the format of the navigation information. Here, "Waypoint" refers to a predetermined sequence of
+    GPS-style coordinates and enum route instructions, while "Human Instruction" refers to natural language navigation
+    commands like "turn right at the next light", which is a more challenging setting. ↑: Higher values are better.
+
+language model programs (LMPs). These LMPs perception modules or directly communicated by
+serve as the action space, leveraging the inherent humans.
+potential of programs to symbolize actions that are
+both temporally extensive and hierarchically struc- 3.2 Programming Planner
+tured. For instance, a complex maneuver like over- LLMs have shown remarkable abilities in compre-
+taking can be programmatically split into a series hending complex contexts and creating high-level
+of actions, including lane changes, acceleration, plans by leveraging their inherent common-sense
+and possibly another lane change, composed with knowledge. However, despite their proficiency in
+conditional logic. (2) We propose a human-guided high-level reasoning, LLMs face challenges when
+learning pipeline to allow it to continuously learn it comes to generating precise low-level control
+    from user’s feedback.                                   signals for autonomous vehicles. As highlighted
+   As our experiments are based on the by Cui et al. in their survey (Cui et al., 2024b),
+CARLA (Dosovitskiy et al., 2017) (the most LLMs struggle with accurately interpreting spatial
+widely used and realistic publicly available coordinates and creating detailed motion control
+autonomous driving simulator), with Python as the commands. Moreover, the substantial size and au-
+programming language for code generation, We’ll toregressive nature of these models often introduce
+use specific terminologies related to this setup for significant latency in output generation, posing ma-
+clarity, but it’s important to note that our approach jor obstacles for real-time objectives such as obsta-
+    isn’t restricted to this setting.                       cle avoidance. This gap between high-level plan-
+     The programming planner with the LLM back-             ning and low-level execution necessitates a novel
+    bone ℓ takes inputs including system messages           approach to effectively harness the capabilities of
+    (Xsys), human instructions (Xq), driving context        LLMs in autonomous driving systems.
+    (Xc). It leverages CoT reasoning (Xr) (Wei et al.,       To address these limitations, we propose a plug-
+    2022b) to write policy code (Xp), which can be          and-play programming planner that seamlessly in-
+    formulated as:                                          tegrates with existing autonomous driving systems,
+     [Xr, Xp] = ℓ([Xsys, Xq, Xc])                   (1)     rather than attempting to replace them entirely.
+                                                            This design allows our approach to synergize the
+           An example to show the generation process is     emerging capabilities of LLMs with the proven effi-
+    provided in Table 1. The system message (Xsys) is       ciency of classical autonomous driving algorithms.
+    a high-level instruction that guides the behavior of    Instead of directly generating real-time, low-level
+    the model ℓ, which sets the overall objective for the   control signals like steering or throttle changes,
+    generation. It also includes the API documentation      which LLMs are ill-suited for, our planner operates
+    (detailed in Section 3.2) and retrieved programs        at a higher level of abstraction. It generates code
+    (detailed in Section 3.3). The human instructions       snippets at lower frequencies, which serve as tem-
+    (Xq) are spontaneous commands from users. The           porary policies to guide the strategic navigation of
+    driving context (Xc), including information on cur-     the ego vehicle based on user instructions. These
+    rent road conditions and other road users, forms        policy code snippets are structured as Python gen-
+    the foundation for the planning process. This in-       erator functions, which gracefully unfold until the
+    formation can be derived from sensor data with          completion of each policy.
+                                             4989
+
+   These generated code snippets involve calls to tinuous learning: positive feedback (i.e., the hu-
+various functional primitives — specialized driving man is satisfied with the execution) results in the
+APIs based on classical planning and control algo- code (Xp) being committed to the database to be
+rithms. The API suite covers a broad spectrum of retrieved for reuse in the future. Otherwise, the
+driving functions, including navigation functions feedback will serve as guidance for another round
+like turning and lane changing, control functions of improvement. The new generation process can
+such as waiting or proceeding, and perception func- be formulated as:
+tions which involve monitoring the immediate driv-
+ing environment, including other vehicles, pedestri- [Xr, X′p] = ℓ([Xsys, Xq, Xc, Xp, Xf ]), (2)
+ans, traffic signals, and other functions like check-
+ing the vehicle’s current speed or providing user where X′p is the improved code based on Xp and
+feedback. The API documentation, which includes the human feedback Xf as a cue.
+a complete list of these functional primitives and The database serves two purposes: firstly, as
+their details, is provided in the Appendix. The a repository for autonomous driving knowledge,
+same documentation is also included in the system offering insights into corner cases for continu-
+message (Xsys). ous learning following the knowledge-driven au-
+   The API suite provides substantial flexibility in tonomous driving paradigm (Wen et al., 2024); and
+formulating driving policies. For example, Naviga- secondly, as the database is built with personal
+tion APIs can be used to specify the vehicle’s future feedback, it automatically incorporates personal-
+trajectory, dynamically creating waypoints based ized preferences in the interaction process. This
+on map data and classical planning algorithms. methodology transforms the programming planner
+Control APIs, on the other hand, help with precise from a static, open-loop system into a dynamic,
+vehicle control by issuing momentary control sig- continuous learning framework, which we show in
+nals. Perception APIs, like the check_red_light Section 4.4 that improved fundamentally compared
+function in Table 1, can be used for identifying to baselines.
+and tracking nearby traffic objects. This is vital for 4 Experiments and Results
+actions that react to the immediate driving context,
+enabling a closed-loop control policy. 4.1 Task Description
+3.3 Human-in-the-Loop Learning The experiments utilize the official testing routes
+An additional challenge arises from the phe- from the CARLA (under CC-BY License) leader-
+nomenon known as “LLM hallucination", where board 1.0 (CARLA, 2020) but with a more chal-
+LLMs may make up facts as their knowledge is lim- lenging setting. In each route, the agents start from
+ited to the data they were trained on (Huang et al., a specific point. Originally, agents were provided
+2023). This becomes problematic in the context of with a series of GPS-style coordinates to drive to
+generating policy code, where LLMs might make a destination (Chen et al., 2019; Prakash et al.,
+up non-existent API functions. Additionally, the 2021; Chitta et al., 2021; Toromanoff et al., 2020;
+generation process of LLMs restricts that tokens Chen et al., 2021; Chekroun et al., 2023; Chen and
+generated early cannot be modified within the cycle. Krähenbühl, 2022; Zhang et al., 2021; Wu et al.,
+This constraint limits the models’ ability to revise 2022). However, in our setting, agents are given
+initial responses, potentially leading to suboptimal only natural language navigation instructions based
+solutions. on their current position (e.g., turn left at the next
+   To address these challenges, we introduce a intersection). As our study mainly focuses on rea-
+human-in-the-loop learning approach, based on soning and planning tasks, the driving context infor-
+Retrieval Augmented Generation (RAG) (Lewis mation is crafted using a structured language gener-
+et al., 2020) to ground LLMs to generate responses ator (Chen et al., 2024) derived from the CARLA’s
+to the input queries based on custom knowledge privileged information, eliminating the influence
+databases. The key process is that after a generated of perception.
+policy code (Xp) has been executed, the human
+passenger will provide feedback (Xf ) in natural 4.2 Evaluation Metrics
+language, which, will be fed back into the LLM The evaluation metrics include (1) Route Comple-
+together with Xp. This feedback loop enables con- tion (RC), which measures the percentage of the
+        4990
+
+    route distance that an agent completes; (2) Infrac-     loop learning process is conducted on the official
+    tion Penalty (IP), which keeps track of various in-     training routes and concludes once the database
+    fractions (e.g., collisions, running a red light) in    contains 50 programs.
+    the simulation.      The IP aggregates these infrac-         We compare our programming planner-based
+    tions committed by an agent as a geometric series.      agent with RL experts that have access to privi-
+    Agents start with an ideal 1.0 base score, which        leged information, such as Roach (Zhang et al.,
+    is reduced each time an infraction is committed;        2021) and TCP (Wu et al., 2022). It’s important
+    (3) Driving Score (DS), the principal metric, is de-    to note that these comparisons aren’t necessarily
+    fined as the product of the route completion and        fair. Our setting of following user instructions is
+    the infraction penalty.                                 inherently more difficult than following waypoints.
+    4.3  Implementation Details                             The comparison aims to reference previous works,
+                                                            and the results can be found in Table 2.
+    Our  programming    planner     leverages        GPT         From these results, we make the following obser-
+Model APIs (gpt-4-turbo-preview and vations: Initially, without any few-shot examples,
+gpt-3.5-turbo)(OpenAI, 2023) as the LLMs. the out-of-the-box LLM struggles with the precise
+    Specifically, we use GPT-4 as the planning LLM          reasoning needed for complex closed-loop driving
+    (ℓ). For the database implementation, we utilize        in CARLA. The 3-shot baseline also falls short,
+    the open-source vector database Chroma(Chroma,          resulting in significantly lower scores according to
+    2023), where the key is the embedding vector for        CARLA’s standard metrics. However, our program-
+    the program description generated by GPT-3.5,           ming planner with 50 code snippets learned from
+    and the value is the policy code itself, following      human feedback, performs on par with the Roach
+    the approach in (Wang et al., 2023a).                   Expert RL baseline.                  Most of the programming
+   To facilitate efficient retrieval, we employ planner’s failures stem from the trade-off made for
+text-embedding-ada-002 APIs for text embed- the LLM low-level planning frequency. Here’s an
+    ding. In the RAG process, we include the top-3          example of this failure:
+retrieved programs in the prompt to provide ad- # Command : Alright , you can start driving .
+ditional context for generating the driving policy. # Context Info :
+The navigation instructions used in our experiments # There is a vehicle at a distance of 6.8 m.
+        # It is moving at a speed of 0.0 m/s.
+    are provided by (Shao et al., 2024). We generate        ##   It  is  at   an angle      of             1.9 degrees .
+                                                                 The    angle      between  the  headings is 0.0  degrees .
+    the driving environment context using a structured      #    My  current        speed is   0.0  m/s.
+    language generator, following (Chen et al., 2024).      def     start_driving_with_front_vehicle_check () :
+                                                                    ( is_front_vehicle ,
+              The execution of an LMP involves using the             distance_to_front_vehicle ,
+                                                                     speed_of_front_vehicle )
+    Python exec function, which takes the LMP code                  if= check_front_vehicle ()
+    as an input string, along with two dictionaries                           ( is_front_vehicle
+                                                                         and        distance_to_front_vehicle  <  5
+    defining the execution scope: (i) apis, contain-                     and  speed_of_front_vehicle       ==  0.0):
+                                                                         yield   stop ()
+    ing all driving APIs the code may call, and (ii)                else :speed_limit       =  check_speed_limit ()
+    local_vars, initially empty, but later holding a                     yield                   proceed ( speed_limit )
+    generator variable named policy once executed.               In this case, the vehicle could collide with a front
+    4.4  Results                                            vehicle if it starts to move. This issue arises because
+In the experiments, the programming plan- the LLM reasoning is based on the current context
+    ner—without human-in-the-loop learning and RAG          information, not accounting for all potential future
+    integration—is referred to as either the 0-shot or      actions of surrounding agents. However, due to the
+    3-shot chain-of-thought baselines, in line with stan-   latency of LLM reasoning, it’s not feasible to em-
+    dard practices (Wei et al., 2022b). Both baselines      ploy LLM to reason at every single timestamp. We
+    use the same API documentation for all test routes.     leave this issue to be addressed in future research.
+            In the few-shot setting, in-context examples    5       Discussion
+are created by a human programmer proficient in
+Python. These programmers are given API docu- 5.1 The Benefits and Risks of Driving with
+    mentation and allowed to write and test their code                                Human Feedback Learning
+    on the official training routes. The same examples      Many previous autonomous driving strategies have
+    are used across all test routes. The human-in-the-      relied heavily on data-driven approaches, such as
+        4991
+
+reinforcement learning and meta-learning, facing stand the human needs for driving and embed hu-
+challenges like data selection bias, long-tailed fail- man needs via code generation into existing driving
+ure cases, lack of interpretability, and difficulties pipelines.
+in transferring weights of models. Thus those RL- Besides, real-world driving demands interaction
+based methods have poor sample efficiency and with other road users. Interacting with human-
+it is quite challenging to collect massive amounts driven vehicles and understanding human behav-
+of offline data to pretrain the model. To address ior poses a significant challenge in autonomous
+these issues, our approach integrates human driver driving. Human drivers often rely on non-verbal
+feedback with LLMs to steer the creation of driv- signals, such as slowing down to yield the right-
+ing policy programs within the driving environ- of-way or using visible gestures to communicate
+ments. Leveraging the advanced capabilities of with other road users. These non-verbal cues play
+CodeLLMs and RAG, our proposed framework a vital role in communication on the road. In the
+matches the performance of reinforcement learning- past, there have been numerous accidents involving
+based methods, even under a more challenging con- autonomous driving systems because they behaved
+dition where access to waypoints during driving is unexpectedly. In the future, LLMs with human
+restricted. This demonstrates the potential of com- feedback learning can be utilized to enhance au-
+bining human insights with the power of LLMs to tonomous driving systems, where they can incorpo-
+enhance the capability of autonomous driving. rate context-rich information from various sources
+  There are also some potential risks of human and also analyze drivers’ driving styles to better
+feedback learning. Creating an efficient and sta- understand these social cues and make informed
+ble continual learning mechanism is essential in decisions. By estimating other drivers’ character-
+human feedback learning due to the absence of a istics (such as selfishness or altruism) and types
+clear mathematical or logical method to accurately of social interaction (such as cooperation, conflict,
+capture subjective human preferences. However, competition, coercion, or exchange) based on these
+collecting human feedback from a limited demo- social cues, LLMs can improve autonomous driv-
+graphic with similar behavior preferences can lead ing systems’ decision-making capabilities and over-
+to skewed model performance, especially when all safety.
+applied across diverse user groups or in contexts
+affected by evaluators’ inherent biases. This issue 6
+particularly appears in driving scenarios, where Conclusion
+varying driving styles, such as aggressive or defen- In this paper, we proposed a human-centered
+sive, significantly influence the feedback, under- autonomous driving learning pipeline with
+scoring the need for a broad approach to feedback CodeLLMs supported by Retrieval-Augmented
+collection to ensure the model’s safety, versatility, Generation (RAG). Our method exhibits strong
+and fairness. learning abilities to embed human driving knowl-
+5.2 Future Works edge and preference into the decision-making
+        process of autonomous driving. We conducted
+In autonomous driving, there exists an often over- interactive experiments in the CARLA autonomous
+looked area — adaptability to the individual driv- driving simulator by letting experienced human
+ing preferences of users. Traditional autonomous drivers provide feedback. After learning with
+driving systems have largely ignored the personal- human feedback, our programming planner
+ization factor, focusing instead on creating a cen- achieves much better performance than zero-shot
+tralized and general solution. However, the core and few-shot chain-of-thought baselines. More
+objective of the autonomous driving system is not importantly, our framework can perform com-
+only transportation, but also to serve human needs. pelling results using only 50 committed code
+This perspective highlights the notion that the au- snippets in the Knowledge Database for RAG
+tonomous driving system should not only follow without any parameter updates. Although our
+basic self-defined navigational commands but also framework has shown promising results in the
+understand and adapt to the unique driving styles of current setting, there are still some limitations.
+its users. To build better personalized autonomous Future improvements could focus on a better
+driving systems, our proposed method provides a personalization and understanding of human
+potential direction, that is using LLMs to under- behavior in real-world scenarios.
+        4992
+
+    Limitations                                              real-world large-scale vision-language benchmark
+          While LLMs can act as a bridge to connect users    for map and traffic scene understanding. In CVPR,
+                                                             pages 21819–21830.
+        and vehicles, they have inherent limitations, in-
+         cluding significant computational costs and high   CARLA. 2020. Autonomous Driving Leaderboard.
+        latency. To enhance time efficiency during infer-   Raphael Chekroun, Marin Toromanoff, Sascha Hor-
+          ence, we leverage RAG and human feedback learn-    nauer, and Fabien Moutarde. 2023. GRI: General
+      ing to collect user input and optimize action code.    Reinforced Imitation and Its Application to Vision-
+         However, this process also requires considerable    Based Autonomous Driving. Robotics, 12(5):127.
+          time. Ideally, human feedback could be replaced   Dian Chen, Vladlen Koltun, and Philipp Krähenbühl.
+         by another LLM acting as a code debugging agent,    2021. Learning To Drive From a World on Rails. In
+    a promising area for future research.                    ICCV.
+   A pertinent question is whether humans provide
+optimal solutions during human feedback learning. Dian Chen and Philipp Krähenbühl. 2022. Learning
+        Our experiments indicate that users may sometimes    From All Vehicles. In CVPR.
+            mislead the autonomous driving system by pro-   Dian Chen, Brady Zhou, Vladlen Koltun, and Philipp
+       viding incorrect feedback, potentially endangering    Krähenbühl. 2019. Learning by Cheating. In CoRL.
+          other road users. Consequently, our experiments   Long Chen, Oleg Sinavski, Jan Hünermann, Alice Karn-
+        and research conclusions are currently limited to    sund, Andrew James Willmott, Danny Birch, Daniel
+         simulation environments. There remains a signif-    Maund, and Jamie Shotton. 2024.   Driving with
+         icant journey ahead to fully integrate LLMs into    LLMs: Fusing Object-Level Vector Modality for Ex-
+            human-centric autonomous driving systems. The    plainable Autonomous Driving. In ICRA.
+       primary objective of our paper is not to propose a   Kashyap Chitta, Aditya Prakash, and Andreas Geiger.
+          framework ready for deployment in real vehicles    2021. NEAT: Neural Attention Fields for End-to-End
+         but to introduce a novel human-centric framework    Autonomous Driving. In ICCV.
+           for autonomous driving tasks and emphasize the   Chroma. 2023. The AI-native open-source embedding
+    critical role of human-vehicle interaction in enhanc-    database.
+    ing AI systems for human use.
+    Ethical Statement                                       Can Cui, Yunsheng Ma, Xu Cao, Wenqian Ye, and Zi-
+                                                             ran Wang. 2024a.  Drive as You Speak: Enabling
+         We acknowledge that our work is aligned with the    Human-Like Interaction with Large Language Mod-
+                                                             els in Autonomous Vehicles. In WACVW.
+        ACL Code of the Ethics and will not raise ethical
+        concerns. We do not use sensitive datasets/models   Can Cui, Yunsheng Ma, Xu Cao, Wenqian Ye, Yang
+    that may cause any potential issues.                     Zhou, Kaizhao Liang, Jintai Chen, Juanwu Lu, Zi-
+                                                             chong Yang, Kuei-Da Liao, Tianren Gao, Erlong Li,
+                                                             Kun Tang, Zhipeng Cao, Tong Zhou, Ao Liu, Xinrui
+    References                                               Yan, Shuqi Mei, Jianguo Cao, Ziran Wang, and Chao
+                                                             Zheng. 2024b. A Survey on Multimodal Large Lan-
+           Saleema Amershi, Dan Weld, Mihaela Vorvoreanu,    guage Models for Autonomous Driving. In WACVW.
+       Adam Fourney, Besmira Nushi, Penny Collisson, Jina   Thierry Deruyttere, Simon Vandenhende, Dusan Gruji-
+         Suh, Shamsi Iqbal, Paul N. Bennett, Kori Inkpen,    cic, Luc Van Gool, and Marie-Francine Moens. 2019.
+          Jaime Teevan, Ruth Kikin-Gil, and Eric Horvitz.    Talk2Car: Taking Control of Your Self-Driving Car.
+       2019. Guidelines for Human-AI Interaction. In CHI.    In EMNLP-IJCNLP.
+Alex M. Andrew. 2003. Humans and Automation:
+   System Design and Research Issues. Kybernetes, Alexey Dosovitskiy, German Ros, Felipe Codevilla, An-
+     32(9/10).                                               tonio Lopez, and Vladlen Koltun. 2017. CARLA:
+        An Open Urban Driving Simulator. In CoRL.
+Jean-François Bonnefon, Azim Shariff, and Iyad Rah-
+  wan. 2016. The social dilemma of autonomous ve- Lex Fridman. 2018. Human-Centered Autonomous
+     hicles.     Science, 352(6293):1573–1576. Publisher:    Vehicle Systems: Principles of Effective Shared Au-
+         American Association for the Advancement of Sci-    tonomy. arXiv.
+     ence.                                                  Daocheng Fu, Wenjie Lei, Licheng Wen, Pinlong Cai,
+          Xu Cao, Tong Zhou, Yunsheng Ma, Wenqian Ye, Can    Song Mao, Min Dou, Botian Shi, and Yu Qiao. 2024a.
+           Cui, Kun Tang, Zhipeng Cao, Kaizhao Liang, Zi-    LimSim++: A Closed-Loop Platform for Deploying
+            ran Wang, James M Rehg, et al. 2024. Maplm: A    Multimodal LLMs in Autonomous Driving. arXiv.
+         4993
+
+     Daocheng Fu, Xin Li, Licheng Wen, Min Dou, Pinlong   Ana-Maria Marcu, Long Chen, Jan Hünermann, Al-
+      Cai, Botian Shi, and Yu Qiao. 2024b. Drive Like a    ice Karnsund, Benoit Hanotte, Prajwal Chidananda,
+        Human: Rethinking Autonomous Driving with Large    Saurabh Nair, Vijay Badrinarayanan, Alex Kendall,
+    Language Models. In WACVW.                             Jamie Shotton, and Oleg Sinavski. 2023. LingoQA:
+                                                           Video Question Answering for Autonomous Driving.
+    Google PAIR. 2019. People + AI Guidebook.              arXiv.
+
+Dan Hendrycks, Collin Burns, Steven Basart, Andy Zou, Laksh Nanwani, Anmol Agarwal, Kanishk Jain,
+       Mantas Mazeika, Dawn Song, and Jacob Steinhardt.    Raghav Prabhakar, Aaron Monis, Aditya Mathur,
+         2021. Measuring Massive Multitask Language Un-    Krishna Murthy Jatavallabhula, AH Abdul Hafez,
+    derstanding. In ICLR.                                  Vineet Gandhi, and K Madhava Krishna. 2023.
+                                                           Instance-level semantic maps for vision language
+      Lei Huang, Weijiang Yu, Weitao Ma, Weihong Zhong,    navigation. In RO-MAN, pages 507–512. IEEE.
+           Zhangyin Feng, Haotian Wang, Qianglong Chen,
+        Weihua Peng, Xiaocheng Feng, Bing Qin, and Ting   OpenAI. 2023. GPT-4 Technical Report. arXiv.
+     Liu. 2023. A Survey on Hallucination in Large Lan-
+        guage Models: Principles, Taxonomy, Challenges,   Raja Parasuraman and Victor Riley. 1997. Humans and
+    and Open Questions. arXiv.                             Automation: Use, Misuse, Disuse, Abuse.    Human
+                                                           Factors, 39(2):230–253.
+    Shu Ishida, Gianluca Corrado, George Fedoseev, Hud-
+    son Yeo, Lloyd Russell, Jamie Shotton, João F. Hen-   Mohammad Taher Pilehvar and Jose Camacho-Collados.
+         riques, and Anthony Hu. 2024. LangProp: A code    2019. WiC: the Word-in-Context Dataset for Evalu-
+       optimization framework using Language Models ap-    ating Context-Sensitive Meaning Representations. In
+    plied to driving. arXiv.                               NAACL. ArXiv:1808.09121 [cs].
+  Takeshi Kojima, Shixiang (Shane) Gu, Machel Reid, Yu-   Aditya Prakash, Kashyap Chitta, and Andreas Geiger.
+      taka Matsuo, and Yusuke Iwasawa. 2022. Large Lan-    2021. Multi-Modal Fusion Transformer for End-to-
+      guage Models are Zero-Shot Reasoners. In NeurIPS.    End Autonomous Driving. In CVPR.
+   Patrick Lewis, Ethan Perez, Aleksandra Piktus, Fabio   Nivedita Rufus, Kanishk Jain, Unni Krishnan R Nair, Vi-
+        Petroni, Vladimir Karpukhin, Naman Goyal, Hein-    neet Gandhi, and K Madhava Krishna. 2021. Ground-
+       rich Küttler, Mike Lewis, Wen-tau Yih, Tim Rock-    ing linguistic commands to navigable regions. In
+      täschel, Sebastian Riedel, and Douwe Kiela. 2020.    IROS, pages 8593–8600. IEEE.
+          Retrieval-Augmented Generation for Knowledge-   Hao Shao, Yuxuan Hu, Letian Wang, Steven L. Waslan-
+    Intensive NLP Tasks. In NeurIPS.                       der, Yu Liu, and Hongsheng Li. 2024.    LMDrive:
+    Jacky Liang, Wenlong Huang, Fei Xia, Peng Xu, Karol    Closed-Loop End-to-End Driving with Large Lan-
+         Hausman, Brian Ichter, Pete Florence, and Andy    guage Models. In CVPR.
+  Zeng. 2023. Code as Policies: Language Model Chonghao Sima, Katrin Renz, Kashyap Chitta, Li Chen,
+    Programs for Embodied Control. In ICRA.                Hanxue Zhang, Chengen Xie, Ping Luo, Andreas
+    Stephanie Lin, Jacob Hilton, and Owain Evans. 2022.    Geiger, and Hongyang Li. 2023. DriveLM: Driving
+           TruthfulQA: Measuring How Models Mimic Human    with Graph Visual Question Answering. arXiv.
+    Falsehoods. In ACL.                                   Xiaoyu Tian, Junru Gu, Bailin Li, Yicheng Liu, Chenxu
+  Jiawei Liu, Chunqiu Steven Xia, Yuyao Wang, and Ling-    Hu, Yang Wang, Kun Zhan, Peng Jia, Xianpeng Lang,
+      ming Zhang. 2023. Is Your Code Generated by Chat-    and Hang Zhao. 2024. DriveVLM: The Convergence
+       GPT Really Correct? Rigorous Evaluation of Large    of Autonomous Driving and Large Vision-Language
+       Language Models for Code Generation. In NeurIPS.    Models. arXiv.
+    arXiv.                                                Marin Toromanoff, Emilie Wirbel, and       Fabien
+       Yunsheng Ma, Can Cui, Xu Cao, Wenqian Ye, Peiran    Moutarde. 2020. End-to-End Model-Free Reinforce-
+           Liu, Juanwu Lu, Amr Abdelraouf, Rohit Gupta,    ment Learning for Urban Driving Using Implicit Af-
+          Kyungtae Han, Aniket Bera, James M. Rehg, and    fordances. In CVPR.
+  Ziran Wang. 2024. LaMPilot: An Open Bench- Guanzhi Wang, Yuqi Xie, Yunfan Jiang, Ajay Man-
+          mark Dataset for Autonomous Driving with Lan-    dlekar, Chaowei Xiao, Yuke Zhu, Linxi Fan, and
+    guage Model Programs. In CVPR.                         Anima Anandkumar. 2023a. Voyager: An Open-
+                                                           Ended Embodied Agent with Large Language Mod-
+     Srikanth Malla, Chiho Choi, Isht Dwivedi, Joon Hee    els. arXiv.
+    Choi, and Jiachen Li. 2023.       DRAMA: Joint Risk
+    Localization and Captioning in Driving. In WACV.      Wenhai Wang, Jiangwei Xie, ChuanYang Hu, Haoming
+                                                           Zou, Jianan Fan, Wenwen Tong, Yang Wen, Silei
+       Jiageng Mao, Junjie Ye, Yuxi Qian, Marco Pavone,     Wu, Hanming Deng, Zhiqi Li, Hao Tian, Lewei Lu,
+    and Yue Wang. 2023.        A Language Agent for Au-    Xizhou Zhu, Xiaogang Wang, Yu Qiao, and Jifeng
+    tonomous Driving. arXiv.                               Dai. 2023b.       DriveMLM: Aligning Multi-Modal
+        4994
+
+    Large Language Models with Behavioral Planning
+    States for Autonomous Driving. arXiv.
+   Jason Wei, Yi Tay, Rishi Bommasani, Colin Raffel,
+    Barret Zoph, Sebastian Borgeaud, Dani Yogatama,
+    Maarten Bosma, Denny Zhou, Donald Metzler, Ed H.
+    Chi, Tatsunori Hashimoto, Oriol Vinyals, Percy
+    Liang, Jeff Dean, and William Fedus. 2022a. Emer-
+    gent Abilities of Large Language Models. Transac-
+    tions on Machine Learning Research.
+    Jason Wei, Xuezhi Wang, Dale Schuurmans, Maarten
+    Bosma, Brian Ichter, Fei Xia, Ed Chi, Quoc Le, and
+    Denny Zhou. 2022b. Chain-of-Thought Prompting
+    Elicits Reasoning in Large Language Models.   In
+    NeurIPS.
+    Licheng Wen, Daocheng Fu, Xin Li, Xinyu Cai, Tao
+    Ma, Pinlong Cai, Min Dou, Botian Shi, Liang He,
+    and Yu Qiao. 2024. DiLu: A Knowledge-Driven Ap-
+    proach to Autonomous Driving with Large Language
+    Models. In ICLR.
+      Penghao Wu, Xiaosong Jia, Li Chen, Junchi Yan,
+    Hongyang Li, and Yu Qiao. 2022. Trajectory-guided
+    Control Prediction for End-to-end Autonomous Driv-
+    ing: A Simple yet Strong Baseline. In NeurIPS.
+      Yang Xing, Chen Lv, Dongpu Cao, and Peng Hang.
+    2021. Toward human-vehicle collaboration: Review
+    and perspectives on human-centered collaborative
+    automated driving. Transportation Research Part C:
+    Emerging Technologies.
+   Ke Yang, Jiateng Liu, John Wu, Chaoqi Yang, Yi R.
+    Fung, Sha Li, Zixuan Huang, Xu Cao, Xingyao
+    Wang, Yiquan Wang, Heng Ji, and Chengxiang Zhai.
+    2024a.    If LLM Is the Wizard, Then Code Is the
+    Wand: A Survey on How Code Empowers Large Lan-
+    guage Models to Serve as Intelligent Agents. ICLR
+    Workshop on LLM Agents.
+ Yi Yang, Qingwen Zhang, Ci Li, Daniel Simões Marta,
+    Nazre Batool, and John Folkesson. 2024b. Human-
+    Centric Autonomous Systems With LLMs for User
+    Command Reasoning. In WACVW.
+   Shunyu Yao, Dian Yu, Jeffrey Zhao, Izhak Shafran,
+    Thomas  L. Griffiths, Yuan Cao,    and   Karthik
+    Narasimhan. 2023.    Tree of Thoughts: Deliber-
+    ate Problem Solving with Large Language Models.
+    arXiv preprint. ArXiv:2305.10601 [cs].
+  Jianhao Yuan, Shuyang Sun, Daniel Omeiza, Bo Zhao,
+    Paul Newman, Lars Kunze, and Matthew Gadd. 2024.
+    RAG-Driver: Generalisable Driving Explanations
+    with Retrieval-Augmented In-Context Learning in
+    Multi-Modal Large Language Model. arXiv.
+Zhejun Zhang, Alexander Liniger, Dengxin Dai, Fisher
+    Yu, and Luc Van Gool. 2021.       End-to-End Ur-
+    ban Driving by Imitating a Reinforcement Learning
+    Coach. In ICCV.
+       Zhuosheng Zhang, Aston Zhang, Mu Li, and Alex
+    Smola. 2023. Automatic Chain of Thought Prompt-
+    ing in Large Language Models. In ICLR.
+
+        4995
+

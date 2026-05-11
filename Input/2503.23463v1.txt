@@ -1,0 +1,610 @@
+arXiv:2503.23463v1 [cs.CV] 30 Mar 2025
+
+
+
+
+
+
+
+
+
+
+  OpenDriveVLA: Towards End-to-end Autonomous Driving with
+        Large Vision Language Action Model
+
+Xingcheng Zhou 1 * Xuyuan Han 1 Feng Yang 1 Yunpu Ma 2 Alois C. Knoll 1
+   1Technical University of Munich 2Ludwig Maximilian University of Munich
+
+
+
+
+                                                  http://drivevla.github.io
+
+    OPENDIVEVLA.   if                                                          Textil Encoder    | 2 Please Turn
+                          = ERE                                                         [ioe]      river:                   OL
+     |H                 Zp Then TEE           |Projector| | Projector                  ©     Command 1:2:   Keep  3vison    Encoder            |
+                                                                                       Please     Forward     ||     4
+                   Hom          mes      |    (omer       =                            Language                             fa]
+             pe                 TEE                      ETE:
+          fi                                             Driving Vision Language                                  Action
+
+     :       +     res     re
+          0      =       2             i||    eters.      pointing oth right,  an    pointing                     command   mse
+             >                                            tr                              snd                     Toe                          i
+     H             i  anceGiCaption  | H||                                         ©                               Scene
+              |
+    Figure 1. OpenDriveVLA leverages open-source pre-trained language foundation models to generate driving actions conditioned on 3D
+    environmental perception, ego vehicle states, and driver commands.             It achieves leading performance in both open-loop planning and
+    driving-related question answering, demonstrating its proficiency in driving action planning and scene understanding.
+
+                          Abstract                                                 tion process, ensuring both spatially and behaviorally in-
+                                                                                   formed trajectory planning. Extensive experiments on the
+    We    present OpenDriveVLA, a    Vision-Language              Action           nuScenes dataset demonstrate that OpenDriveVLA achieves
+    (VLA) model designed for end-to-end autonomous driving.                        state-of-the-art results across open-loop trajectory plan-
+OpenDriveVLA builds upon open-source pre-trained large ~~ ning and driving-related question-answering tasks. Qual-
+    Vision-Language Models (VLMs) to generate reliable driv-                       itative analyses further illustrate OpenDriveVLA’s superior
+    ing actions, conditioned on 3D environmental perception,                       capability to follow high-level driving commands and ro-
+    ego vehicle states, and driver commands.             To bridge the             bustly generate trajectories under challenging scenarios,
+    modality gap between driving visual representations and                        highlighting its potential for next-generation end-to-end au-
+    language embeddings, we propose a hierarchical vision-                         tonomous driving. We will release our code to facilitate fur-
+    language alignment process, projecting both 2D and 3D                          ther research in this domain.
+    structured visual tokens into a unified semantic space. Be-
+    sides, OpenDriveVLA models the dynamic relationships be-
+    tween the ego vehicle, surrounding agents, and static road                     1. Introduction
+    elements through an autoregressive agent-env-ego interac-
+                                                                                   End-to-end learning frameworks have emerged as a promis-
+         *Corresponding author: xingcheng.zhou@tum.de                              ing paradigm in autonomous driving, enabling perception,
+
+     prediction, and planning to be jointly optimized within a         Vision Language Model                   A/Explanation
+unified neural network [5, 54].      By leveraging large-scale          Feature Align   4  1
+    driving data, these models learn driving policies directly    IS
+      from raw sensor inputs, achieving impressive performance          - End-to-end Model
+   across diverse driving scenarios. Despite notable progress,          (a) VLM as additional Caption or QA Head.
+    existing end-to-end driving approaches still face critical
+   challenges, particularly in limited generalization to long-
+  tail scenarios, insufficient understanding of high-level se-    I=                           High=  Level    Decision
+    mantics within complex driving scenes, and inflexible rea-            End-to-end Model                                    Planing
+soning capabilities for task-driven planning [4]. In parallel,            (b) VLM as high-level decision-maker.
+       large language models (LLMs) and vision-language models
+         (VLMs) demonstrate strong in-context learning, common        End-to-end        N
+     sense understanding, and zero-short generalization abili-    II      — Driving Vision-Language-      pr                Planning)
+ties.      These emergent capabilities highlight their promise              Action Model
+    for autonomous driving, especially given the critical need    (c) OpenDriveVLA (Ours): Vision-Language-Action model as end-to-end
+    for robust scene understanding of diverse real-world driv-    model via integrated visual perception and language understanding.
+  ing conditions [28, 53]. However, directly leveraging exist-
+       ing VLMs for autonomous driving poses fundamental chal-    Figure 2. Three paradigms of leveraging vision language models
+     lenges. Firstly, current VLMs are predominantly optimized    for end-to-end autonomous driving.
+     for static, 2D image-language tasks, leading to poor spa-
+     tial reasoning performance in dynamic 3D driving environ-
+      ments [34, 50]. Besides, these models frequently produce             forecasting accuracy and trajectory reliability in complex
+   hallucinated outputs—incorrect or overly confident descrip-        traffic scenarios.
+      tions—that significantly compromise safety in autonomous    • Extensive experiments on nuScenes dataset show that
+     driving. Motivated by these limitations, our work answers                  OpenDriveVLA establishes new state-of-the-art results
+       a central question: How can we harness the emergent ca-                in both open-loop planning and driving-related question
+       pabilities of VLMs to produce reliable driving actions,                  answering, consistently outperforming prior LLM-based
+     while mitigating hallucination risks and balancing infer-        and end-to-end autonomous driving approaches.
+ence speed and planning effectiveness?
+         To this end, we propose OpenDriveVLA, a novel vision-
+      language action model designed explicitly for end-to-end    2. Related Work
+autonomous  driving. OpenDriveVLA     leverages          open-
+     source pre-trained language foundation models to generate    2.1. End-to-End Autonomous Driving
+interpretable and reliable driving trajectories conditioned on
+     multimodal inputs, including 3D environmental perception,    Autonomous driving evolves through two distinct stages.
+ego vehicle state, and driver commands.           OpenDriveVLA    Traditional approaches rely on a modular design, decom-
+     bridges vision-language understanding and trajectory gen-    posing the system into perception [3, 24, 40], prediction
+ eration within a unified model. It is rigorously evaluated on    [30, 48, 51], and planning [12, 37] components. While this
+     open-loop planning and driving-related question-answering    structure ensures interpretability and allows for independent
+benchmarks,          achieving leading results and demonstrat-    optimization, they suffer from cascading errors between
+   ing superior trajectory generation and driving-scene under-    stages and are not globally optimized for the final plan-
+   standing. Specifically, our contributions are summarized as    ning objective. In contrast, end-to-end autonomous driving
+follows:                                                          frameworks [5, 14, 17] address this by jointly optimizing
+• We   present     OpenDriveVLA, an end-to-end         vision-    perception, prediction, and planning within a unified neural
+       language action model, which generates reliable driving    network. These models learn driving policies directly from
+ trajectories conditioned on multimodal inputs.                   raw sensor inputs, which improves the model’s adaptability
+• We   introduce a  hierarchical vision-language       feature    to diverse driving conditions. However, existing end-to-end
+         alignment module, projecting structured 2D and 3D vi-    methods still face semantic reasoning bottlenecks—they
+        sual tokens into a unified semantic embedding space to    struggle to fully comprehend high-level scene semantics,
+ facilitate language-guided trajectory generation.                infer complex agent interactions, and adapt to dynamic task
+      • We design an agent-env-ego interaction process to cap-    requirements.             Moreover, their decision-making processes
+      ture interactions among the ego vehicle, dynamic agents,    remain opaque, making it difficult to diagnose failure cases,
+       and static map elements, significantly enhancing motion    especially in long-tail or unseen scenarios.
+
+       2D         |  Scene   Scene   Answer        Driving QA      Agent                                      [EEE Trajectory
+       Token         [=      am     gm             Tm] (Atm
+                                     ob
+    5         C0     [Wap    ap          yl    | |      | |                 |                                 YPerceiveARN|   |  =
+              00                     DriveVLA    |        @                     — brivewa                 |
+              OO                 ||  Question      Status                   Agent ew                      |                   By
+        Hierarchical Feature Algment Stage2    Driving Instruction Tuning   25 Agent-Env-Ego Interaction  |
+                                         yy ee                                  ey Trajectory Planning Tuning| \
+    Figure 3. Illustration of main training stages on OpenDriveVLA, including the hierarchical cross-modality alignment, driving instruction
+    tuning, agent-env-ego interaction, and trajectory planning tuning.
+
+
+2.2. Multi-modal Large Language Models guage models to influence decision-making, but retains a
+Large Language Models demonstrated strong emergent ca- modular separation between reasoning and motion plan-
+pabilities in in-context learning, instruction following, and ning, making joint optimization challenging. The third cat-
+reasoning [33, 39]. By training on vast amounts of Internet- egory directly applies VLMs to predict driving actions from
+scale data, these models acquire extensive world knowledge monocular video input [19, 44]. These methods process 2D
+and exhibit strong adaptability across diverse tasks. Their images and generate speed and steering commands based
+success has also driven the rise of large VLMs, which ex- on visual observations, without explicit modeling of the
+tend these capabilities into cross-modal reasoning by inte- 3D spatial layout or multi-agent interactions in the driving
+grating vision encoders with language models. State-of-the- ~~ scene. This limits their ability to reason about depth, occlu-
+art VLMs such as GPT-4V [31], LLaVA [26], DeepSeekVL sion, and agent dynamics in complex traffic environments.
+[41], and Qwen-VL [1] demonstrate strong visual under- In this work, we aim to investigate how LLMs can unify
+standing and multimodal reasoning in open-domain tasks. cross-modality semantic reasoning and 3D instance-aware
+However, these models are primarily trained on static 2D trajectory planning within an end-to-end autonomous driv-
+images or videos and exhibit limited spatial reasoning in ing framework.
+dynamic 3D driving environments. Moreover, VLMs are 3. OpenDriveVLA
+prone to hallucinations and generally over-confident but
+incorrect descriptions, which pose serious risks in safety- The overall architecture of OpenDriveVLA is shown in Fig-
+critical planning scenarios. Recently, Vision-Language Ac- ure 1, with its multi-stage training process further detailed
+tion models have emerged to directly predict actions from in Figure 3. OpenDriveVLA begins with a pre-trained vi-
+visual inputs, demonstrating strong performance in robotic sion encoder, which extracts tokenized environmental rep-
+manipulation tasks [22, 52]. However, the application of resentations from multi-view images (Sec. 3.1). These vi-
+such language-conditioned action generation in end-to-end sual tokens are then aligned into the textual domain through
+autonomous driving remains underexplored. cross-modal learning (Sec. 3.2). After alignment, Open-
+2.3. Language Models in Autonomous Driving DriveVLA undergoes driving instruction tuning (Sec. 3.3),
+        followed by agent-ego-environment interaction modeling
+Both LLMs and VLMs have been applied to a wide (Sec. 3.4). Finally, OpenDriveVLA is trained end-to-end
+range of autonomous driving tasks, including perception, to predict the ego vehicle’s future trajectory, guided by
+scene description, synthetic data generation, and high-level the aligned visual-language tokens and driving instructions
+decision-making [54]. Within the scope of end-to-end au- (Sec. 3.5).
+tonomous driving, existing works generally follow three 3.1. 3D Visual Environmental Perception
+types of design strategies. As shown in Figure 2, one line
+of research integrates language heads, such as captioning Recent VLM-based autonomous driving methods typically
+or question-answering modules, into driving models to en- rely on 2D visual encoders [34, 50], where visual token se-
+hance interpretability [8]. The second category employs lection and attention are indirectly guided through language
+language models to generate high-level driving instructions, supervision, often in the form of question-answering tasks.
+such as directional commands or abstract maneuvers, which While effective in open-domain vision-language applica-
+are subsequently interpreted by separate planning modules tions, this design lacks explicit 3D spatial grounding and
+into low-level controls [18, 38]. This approach allows lan- structured object-level attention, which can lead to severe
+
+hallucinations in safety-critical driving scenarios [42]. To       frozen, with only the token-specific projectors being train-
+mitigate this, OpenDriveVLA adopts a visual-centric query          able. The forward alignment step is formulated as follows:
+module, where the model first learns to focus on driving-
+relevant objects and map tokens through 3D vision tasks,              Xˆ k    = LLM (Φk(vk)) ,   k ∈ {scene, map}              (1)
+ensuring reliable visual token proposal.                           Xˆ iagent  = LLM Φagent(vi    ) ,     i = 1, . . . , N      (2)
+Specifically, given a set of multi-view images I              =                   agent              a
+{I i}N   , the visual module first extracts multi-scale 2D fea-    3.3. Driving Instruction Tuning
+    i=1
+tures from each image using a shared 2D backbone, de-              To embed   high-level driving knowledge into              Open-
+noted as f2D. These 2D features are then aggregated across         DriveVLA and enhance its reasoning ability, we introduce
+views and lifted into BEV space, producing the BEV fea-            a dedicated driving instruction tuning stage during train-
+ture fbev .      To obtain structured environmental representa-    ing. Instead of performing explicit chain-of-thought (CoT)
+tions, we adopt three visual query modules: Global Scene           reasoning at inference time, which would significantly in-
+Sampler Qscene, Agent QueryTransformer Qagent, and Map             crease latency, we distill essential driving knowledge into
+QueryTransformer Qmap. Each module extracts tokens fo-             the model through supervised instruction tuning to achieve
+cusing on a specific semantic aspect of the driving envi-          a trade-off between inference speed and reasoning efficacy.
+ronment.           Global Scene Sampler encodes the surrounding              During the tuning process, driving knowledge from the
+driving scene context from multi-view 2D features, produc-         language domain is injected into the model using a cu-
+ing the scene token vscene          = Qscene(f2D). Agent Query-    rated driving instruction QA dataset.        The dataset covers
+Transformer detects and tracks dynamic agents within
+the scene, extracting agent-centric tokens  {vagenti  }N      =    a wide range of driving-related reasoning, including per-
+                                              i=1
+Qagent(fbev ), where Na denotes the number of detectedᵃ            ception understanding, motion prediction, attention allo-
+agents. In parallel, Map QueryTransformer extracts static          cation, action reasoning, and high-level decision-making.
+structural information, such as lane boundaries and driv-          By training on this diverse set of driving queries, Open-
+able areas, forming the map token vmap      = Qmap(fbev ).         DriveVLA learns to contextualize the driving scene, fol-
+Through vision-centric perception tasks, including 3D de-          low commands, and generate semantically and behaviorally
+tection, tracking, and segmentation, the visual encoder pro-       grounded planning decisions. We formulate the tuning data
+duces structured environmental tokens that capture both dy-        as instruction-response pairs {Xinput, Xanswer },         where
+namic agent behaviors and static map structures in a spa-          Xinput = (Venv, Sego, Xquery ). Here, Xquery denotes the
+tially grounded manner.    The output tokens, denoted as           driving-related question, and Sego encodes the textual ego
+Venv         = {vscene, vagent, vmap}, serve as visual environ-    vehicle state.         Given this multimodal input, the LLM au-
+ment representation of the subsequent stages.                      toregressively learns to generate the target response. Dur-
+                                                                   ing instruction tuning, the visual encoder remains frozen
+3.2. Hierarchical Vision-Language Alignment                        while the token-specific projectors and the LLM are set to
+                                                                   be trainable. The instruction prediction process is as:
+To bridge the modality gap between the extracted visual to-
+kens and the word embedding space of a pre-trained LLM,                       Xˆ answer = LLM (Venv, Sego, Xquery )     (3)
+we adopt a hierarchical vision-language feature alignment
+strategy. Given the visual tokens extracted from the 3D vi-        3.4. Agent Environment Ego Interaction
+sual perception module, we introduce three token-specific          Reliable trajectory planning in autonomous driving neces-
+projectors {Φscene, Φagent, Φmap}.        During training, each    sitates a spatially grounded 3D representation of the envi-
+active agent query from the 3D detection and tracking task         ronment.         Beyond perception, it must also understand dy-
+denoted as vagenti , is also matched to its corresponding          namic interactions between the ego vehicle and surround-
+ground-truth caption Xiagent.        These captions provide de-    ing agents. Effective interaction modeling is essential to en-
+tailed descriptions, including 2D appearance descriptions          sure that planned trajectories are both feasible and collision-
+and 3D spatial positions. For scene and map tokens, which          free under real-world driving constraints. However, existing
+encode holistic spatial context and static structural proper-      pre-trained LLMs lack an inherent inductive bias for spatial
+ties, a sample-wise alignment is applied, where each token         reasoning in 3D driving scenes, as they are predominantly
+is matched to a scene-level caption Xscene or Xmap. The            trained on 2D vision-language and text-based datasets. To
+scene token vscene captures the global 2D environmental            address the limitation, we introduce a conditional agent mo-
+context, while the map token vmap encodes structural ele-          tion forecasting task, which serves as a proxy task for 3D
+ments such as lane topology, road boundaries, and drivable         agent-environment-ego interaction modeling, allowing the
+areas. Each of these tokens is aligned to its corresponding        model to learn spatially grounded motion patterns. During
+caption, denoted as Xscene and Xmap. During this stage,            this stage, OpenDriveVLA captures the underlying struc-
+both the visual encoder and the pre-trained LLM remain             ture of multi-agent dynamics, enhancing its capability for
+
+scene-aware trajectory generation and improving decision-                                        Stage 1     Stage 2    Stage 2.5    Stage 3
+making in complex traffic scenarios.                                 Data       Annos           2D/3D Cap  Instruct QA  Trajectory  Trajectory
+              Given scene and map tokens, as well as the ego ve-               #Samples            536k        566k        459k        28k
+hicle state          Sego, the LLM predicts the future motion of     Model    Trainable            Proj     Proj, LLM   Proj, LLM   Full Model
+                                                                            0.5B Size (MB)         3.1        496.9       496.9       552.6
+each detected agent based on its projected visual embed-                     3B Size (MB)          14.2       3099.6      3099.6      3155.3
+                                                                             7B Size (MB)          41.3       7654.2      7654.2      7709.9
+ding Φagent(vagenti     ). The future motion of agent ai is rep-            0.5B LR (ψvision)       -           -           -  1      × 10−5
+                                                                            0.5B LR ( proj/LLM}) 1 × 10−4    1 × 10−5    1 × 10−5    1 × 10−5
+resented as a sequence of waypoints Wi . The predicted tra-          Train        {θ
+jectory is conditioned on the scene context, map structure,a                    Epoch               1           1           1           1
+and ego vehicle state, enabling OpenDriveVLA to infer               Table 1. Overview of the multi-stage training pipeline in Open-
+interaction-aware and spatially grounded motion sequences.          DriveVLA, including data, model, and training information.
+The learning objective for the i-th agent is formulated as:
+
+    max YT               p wti | w1:t−1i , Venv, Sego        (4)    information for each stage in Table 1.
+                     t=1                                            Vision-Language Alignment.             For agent feature align-
+          This provides OpenDriveVLA with essential spatial pri-    ment, we post-process instance captions from [20], which
+ors, enabling it to bridge the gap between high-level seman-        provides the 2D visual description of individual objects.
+tic reasoning and physically grounded motion planning.              To further enhance spatial awareness, each object caption
+3.5. End-to-end Trajectory Planning                                 is augmented with its corresponding BEV coordinates, en-
+                                                                    abling the model to associate object attributes with precise
+In this stage, OpenDriveVLA plans future driving actions            spatial locations. For scene tokens, we process multi-view
+as a sequence of waypoints over the next few seconds, de-           scene descriptions from [46], merging them into unified
+noted as Wego        = {w1, w2, . . . , wT }.   Each waypoint wt    summaries that describe the driving environment across
+represents the 2D coordinates (xt, yt) of the ego vehicle at        all camera views.           For map tokens, structured language
+time step t. To enable autoregressive generation using the          descriptions are derived from ground-truth annotations,
+LLM, the waypoints are first tokenized into a sequence of           translating map elements such as lane dividers, crosswalks,
+discrete textual tokens:    T traj        = Tokenizer(Wego). The    and road boundaries into descriptive text.
+generation process is then cast as a causal sequence predic-
+tion task, where each token is predicted conditioned on the         Driving Instruction     Tuning.     We    adopt        multiple
+visual perception tokens Venv, the ego state Sego, and the          instruction-oriented datasets derived from nuScenes to in-
+driving command Xdri:                                               corporate driving-specific knowledge into OpenDriveVLA.
+                                                                    We unify several datasets into a standardized instruction-
+
+                                                                    answer pairs collected from nuCaption [46], nuScenesQA
+Tˆtraj = argmax YT       p (wt | w1:t−1, Venv, Sego, Xdri)   (5)    based   QA format,     including driving-related                question-
+    Ttraj            t=1                                            [32], and nuX [8] dataset.          Each QA pair is conditioned
+                                                                    on structured environmental visual tokens and the ego vehi-
+           The whole model, including the visual encoder, cross-    cle state, ensuring consistency across different data sources.
+modal projectors, and the LLM, is jointly optimized end-            This multimodal instruction tuning process allows Open-
+to-end during training.          At inference, the model autore-    DriveVLA to effectively ground language understanding
+gressively generates the tokenized trajectory Tˆtraj, which         into both environmental perception and scene understand-
+is then decoded back into numerical waypoints:                      ing, bridging perception, reasoning, and action within the
+                                                                    language space.
+                     Wˆ ego = Decoder( Tˆtraj)               (6)
+4. Experiments                                                      Motion Forecasting and Trajectory Prediction. We for-
+                                                                    mulate both agent motion forecasting and ego trajectory
+4.1. Training Data                                                  planning in the ego vehicle system, where the model di-
+                                                                    rectly predicts future displacements within each entity’s lo-
+We conduct experiments on nuScenes dataset [2], follow-             cal coordinate frame relative to the ego vehicle for planning
+ing standard data split into training and validation sets.          and relative to each agent for forecasting. This formulation
+OpenDriveVLA is trained using the training set paired               captures motion dynamics in a spatially consistent manner
+with corresponding QA captions, while the validation set is         across all entities. Following [29], the ego vehicle state is
+exclusively used for performance evaluation to ensure fair          encoded as textual input to ensure ego awareness through-
+comparisons with prior works. We show the training data             out the training process. Both tasks predict 3-second future
+
+      ST-P3 metrics        UniAD metrics
+  Method        L2 (m) ↓  Collision (%) ↓  L2 (m) ↓      Collision (%) ↓      LLM                                                      Input
+                           1s    2s    3s   Avg.   1s    2s    3s   Avg.   1s    2s    3s   Avg.   1s    2s    3s   Avg.
+      None-Autoregressive Methods
+  ST-P3 [13]              1.33  2.11  2.90  2.11  0.23  0.62  1.27  0.71   -     -     -     -     -     -     -     -        -        Visual
+  VAD [17]                0.17  0.34  0.60  0.37  0.07  0.10  0.24  0.14   -     -     -     -     -     -     -     -        -        Visual
+  Ego-MLP [49]            0.46  0.76  1.12  0.78  0.21  0.35  0.58  0.38   -     -     -     -     -     -     -     -        -        Ego
+  UniAD [14]              0.44  0.67  0.96  0.69  0.04  0.08  0.23  0.12  0.48  0.96  1.65  1.03  0.05  0.17  0.71  0.31      -        Visual
+  InsightDrive [35]       0.23  0.41  0.68  0.44  0.09  0.10  0.27  0.15  0.30  0.72  1.41  0.81  0.08  0.15  0.84  0.36      -        Visual
+  FF [11]                  -     -     -     -     -     -     -     -    0.55  1.20  2.54  1.43  0.06  0.17  1.07  0.43      -        LiDAR
+  EO [21]                  -     -     -     -     -     -     -     -    0.67  1.36  2.78  1.60  0.04  0.09  0.88  0.33      -        LiDAR
+      Autoregressive Methods
+  DriveVLM [38]           0.18  0.34  0.68  0.40  0.10  0.22  0.45  0.27   -     -     -     -     -     -     -     -    Qwen-VL-7B   Visual
+  GPT-Driver [29]         0.20  0.40  0.70  0.44  0.04  0.12  0.36  0.17  0.27  0.74  1.52  0.84  0.07  0.15  1.10  0.44   GPT-3.5     Textual
+  RDA-Driver [15]         0.17  0.37  0.69  0.40  0.01  0.05  0.26  0.10  0.23  0.73  1.54  0.80  0.00  0.13  0.83  0.32   LLaVa-7B    Visual
+  EMMA [16]               0.14  0.29  0.54  0.32   -     -     -     -     -     -     -     -     -     -     -     -   Gemini [36]   Visual
+  OpenEMMA [43]           1.45  3.21  3.76  2.81   -     -     -     -     -     -     -     -     -     -     -     -    Qwen-VL-7B   Visual
+  DME-Driver [10]          -     -     -     -     -     -     -     -    0.45  0.91  1.58  0.98  0.05  0.28  0.55  0.29   LLaVa-7B    Visual
+OpenDriveVLA-0.5B (Ours) 0.15 0.32 0.57 0.35 0.01 0.06 0.20 0.09 0.21 0.60 1.22 0.68 0.00 0.15 0.63 0.26 Qwen2.5-0.5B Visual
+  OpenDriveVLA-3B (Ours)  0.14  0.30  0.55  0.33  0.02  0.07  0.22  0.10  0.19  0.58  1.24  0.67  0.02  0.18  0.70  0.30  Qwen2.5-3B   Visual
+  OpenDriveVLA-7B (Ours)  0.15  0.31  0.55  0.33  0.01  0.08  0.21  0.10  0.20  0.58  1.21  0.66  0.00  0.22  0.55  0.25  Qwen2.5-7B   Visual
+
+ Table 2.        Open-Loop planning performance comparison of different driving models, including both autoregressive methods and non-
+ autoregressive methods. OpenDriveVLA shows powerful planning ability and achieves best-in-class results among open-source models,
+ even with the 0.5B version. We refer to the result summary from [15, 23, 29, 35].
+
+
+ trajectories, sampled at 0.5-second intervals, resulting in 6   Transformer modules. Each token type is then mapped into
+ waypoints per trajectory.                                       the language space using a separate two-layer MLP with
+ 4.2. Evaluations                                                GeLU activation. We adopt Qwen 2.5-Instruct [45] as the
+                                                                 pre-trained LLM, which undergoes full parameter tuning
+ We assess OpenDriveVLA on open-loop planning task on            during training. The model is trained on 4 NVIDIA H100
+ nuScenes benchmark, where the model is evaluated follow-        GPUs with a batch size of 1, completed in approximately
+ ing both ST-P3 [13] and UniAD [14] settings. The evalu-         two days. During inference, we set the decoding tempera-
+ ation metrics include L2 displacement errors at 1, 2, and 3     ture to 0 to ensure deterministic trajectory generation. We
+ seconds, along with the average collision rate over the pre-    freeze the 2D backbone during stage 3.       Detailed training
+ diction horizon. To evaluate the scene understanding abil-      configurations are summarized in Table 1.
+ ity of OpenDriveVLA, we assess its performance on three
+ driving VQA datasets directly after the driving instruction      Models            CIDER                    BLEU-4  METEOR ROUGE-L
+ tuning stage, i.e., [46], nuScenesQA [32], and nuX [8]. The      Hint-UniAD [8]     21.7                     4.2     12.7    27.0
+ VQA evaluation adopts standard MLG metrics, including            Hint-VAD [8]       22.4                     4.2     13.2    27.6
+ BLEU, METEOR, CIDEr, BERT-Score, etc.                            GPT-4o [44]        19.0                     4.0     10.3    24.9
+                                                                  Gemini 1.5 [36]    17.6                     3.4     9.3     23.4
+                                                                  Vote2Cap-DETR [6]  15.3                     2.6     10.9    24.2
+ 4.3. Implementation Details                                      TOD³Cap [20]       14.5                     2.5     10.5    23.5
+ The 3D visual perception module in OpenDriveVLA fol-                 OpenDriveVLA
+ lows the vision-centric design from [14], using a ResNet-        0.5B (Ours)        32.3                     5.4     12.5    27.9
+ 101 backbone for 2D feature extraction. The perception           3B (Ours)          25.5                     4.3     12.8    27.8
+                                                                  7B (Ours)          26.2                     4.5     12.8    27.4
+ backbone is pre-trained via multi-task learning on 3D ob-
+ ject detection, object tracking, and map segmentation. The      Table 3. Performance comparison on the Nu-X dataset [8]. Open-
+ resulting BEV feature map has a spatial resolution of 200 ×     DriveVLA outperforms prior works in most metrics.
+ 200. To construct a unified scene representation, the global
+ SceneSampler applies 2D adaptive pooling to each cam-           4.4. Main Results
+ era view, subsequently concatenating the pooled multi-view
+ features into a global scene token. Agent and map tokens        Open Loop Trajectory Planning.               We evaluate Open-
+ are extracted from the final layer of their respective Query-   DriveVLA on the open-loop trajectory planning task using
+
+ Method                         nu-Caption    nuScenes-QA
+    BL-1 BL-2 BL-3 BL-4 BERT-S Ext Cnt Obj Sts Cmp H0 H1 Acc
+ Mini-GPT4 [55]             15.0  6.8   3.7   2.6   84.4   -     -     -     -     -     -     -     -
+ Instruct-BLIP [7]          18.7  13.4  7.4   5.2   85.9   -     -     -     -     -     -     -     -
+ LLaMA-AdapV2 [9]           30.2  17.3  10.4  7.5   86.5  19.3  2.7   7.6   10.8  1.6   15.1  4.8   9.6
+ LLaVA1.5 [27]              20.0  12.1  8.6   5.4   85.0  45.8  7.7   7.8   9.0   52.1  25.7  41.5  26.2
+ LiDAR-LLM [47]             41.0  30.0  23.4  19.3  91.3  74.5  15.0  37.8  45.9  57.8   -     -    48.6
+ BEVDet+BUTD [32]           -      -     -     -     -    83.7  20.9  48.8  52.0  67.7   -     -    57.0
+ OpenDriveVLA-0.5B (Ours)   47.2  35.8  29.4  25.2  91.9  83.9  22.0  50.2  57.0  68.4  62.3  56.5  58.4
+ OpenDriveVLA-3B (Ours)     48.3  36.9  30.3  26.1  92.0  84.0  22.3  50.3  56.9  68.5  62.6  56.5  58.5
+ OpenDriveVLA-7B (Ours)     49.6  38.3  31.9  27.6  92.2  84.2  22.7  49.6  54.5  68.8  62.4  56.1  58.2
+
+Table 4. Comprehensive performance comparison across nu-Caption [46] and nuScenes-QA [32]. Here, BL-1/2/3/4 refer to BLEU scores
+at different n-gram levels, BERT-S refers to BERT-Score, and metrics under nuScenes-QA correspond to different question categories: Ext
+(Existence), Cnt (Counting), Obj (Object), Sts (Status), and Cmp (Comparison), with Acc representing overall accuracy.
+
+
+both ST-P3 and UniAD metrics, ensuring comprehensive                     lightweight LLMs.
+performance assessment across spatial accuracy and col-
+lision avoidance.                    As shown in Table 2, OpenDriveVLA   4.5. Ablation Study
+achieves state-of-the-art performance across both settings.              Our ablation study examines the influence of input modali-
+Specifically, both  3B and    7B version                  OpenDriveVLA   ties on OpenDriveVLA’s trajectory planning. The results in
+achieve an average L2 error of 0.33m under ST-P3 met-                    Table 5 show that visual inputs enhance the action-making
+rics, outperforming prior autoregressive language models                 process, while textual high-level commands and historical
+[29, 38]. On the UniAD metrics, OpenDriveVLA-7B also                     state information further refine trajectory generation, indi-
+achieves great performance with an average L2 error of                   cating the contribution of semantic intent and temporal con-
+0.66m.               These results validate the effectiveness of Open-   text.           Besides, we find that ego-state information plays a
+DriveVLA. Notably, OpenDriveVLA-0.5B, despite having                     significant role in trajectory prediction on nuScenes open-
+significantly fewer parameters, also achieves competitive                planning benchmark, aligning with prior findings [25]. Due
+performance and outperforms prior larger models by a sub-                to the imbalanced distribution of the dataset, where many
+stantial margin.               This highlights the efficiency of Open-   scenarios involve maintaining the current state, the model
+DriveVLA, enabling strong spatial and semantic reasoning                 tends to over-rely on ego-state history, leading to a bias to-
+even with reduced model size, making it an effective and                 ward conservative predictions.           Hence, to further evaluate
+scalable solution for language-guided planning.                          the generalization and instructed action-following capabil-
+Driving    Question  Answering.       We   evaluate              Open-   ity of OpenDriveVLA, we conduct qualitative studies to ex-
+DriveVLA on the driving VQA task across three nuScenes-                  amine its ability to execute diverse actions in response to
+based  datasets,  as shown in     Table  4 and     Table            3.   different human commands.
+OpenDriveVLA reaches best-in-class performance across
+all three datasets,  consistently               outperforming previous   Visual  Ego  Hist  Cmd   Avg. L2 (m) ↓ Avg. Collision (%) ↓
+language-enhanced driving models and general-purpose                         UniAD                     ST-P3  UniAD  ST-P3
+multimodal baselines among most metrics. On nuCaption                      ✓           ✓     ✓    1.34  0.75   0.77   0.24
+dataset, OpenDriveVLA achieves the best captioning per-                    ✓      ✓          ✓    1.30  0.75   1.14   0.49
+formance among all evaluated models, outperforming both                    ✓      ✓    ✓     ✓    0.77  0.39   0.29   0.10
+                                                                                  ✓    ✓          0.80  0.40   0.33   0.13
+general multimodal LLMs LLaVA1.5 [27] and Mini-GPT4                        ✓      ✓    ✓     ✓    0.68  0.35   0.26   0.09
+[55], as well as autonomous driving-specific models such
+as LiDAR-LLM [47].                      For nuScenesQA dataset, Open-    Table 5. Ablation study on the effect with different input combina-
+DriveVLA also achieves strong performance. Compared to                   tions on OpenDriveVLA-0.5B model. The table shows the results
+models that directly fuse BEV features with language mod-                under UniAD and ST-P3 metrics.
+els such as BEVDet+BUTD [32], OpenDriveVLA demon-
+strates clear advantages in object and status-related ques-              4.6. Qualitative Results
+tions, which highlights the benefit of its spatially grounded
+visual-language alignment. Notably, OpenDriveVLA-0.5B                    Driving Command Following.             Figure 4 illustrates trajec-
+outperforms even the larger 7B on the Nu-X dataset, which                tory planning at an intersection under two different driver
+shows its powerful scene-understanding ability even with                 instructions:           keep forward and turn right, with the right
+
+                                                                   Rant     ==
+              =f=                       Forward”                     Os
+                               a
+              —— EB  7 requiring                           |      MT      ”=3
+               :=    -    |    oFey.car'swithfront vi.of cars and        1Is    ¥
+                               (driving an themixstreet. The presenceof    o     -
+                                        vices suggest tat    11.
+                                            a      wrk o    ith
+                                                         ruinᵖᵉˡᵉ
+                                        doy in     the iy.       evends
+
+    Figure 4.  Visualization of OpenDriveVLA-7B planning actions under different driving instructions and the visual question answering
+    results. The agent motion prediction results are visualized after the agent-env-ego interaction stage. QA showcases are from results in
+    Table 3, 4.
+
+    1₋         Ct     =        Cc                        RE
+        |
+
+               =        =  ;   LS                      =                    i
+                  |      >                                 fad     r|      Ny   ||
+
+
+                                                         Kee
+    1₋        Ct      =  Cc   RE
+        .                     1
+                              !
+
+              -     E                              [a       [i
+
+
+              eth RIdET |  3                           ;      Ci     --  =) ||
+
+
+                                                         ees rowan    - —
+
+    Figure 5. Qualitative results comparison of open-loop planning. The top figure shows the planning results of UniAD [14], while the bottom
+    figure presents those of OpenDriveVLA-7B (Ours). The agent motion prediction results are visualized after the agent-env-ego interaction
+    stage.
+
+
+turn as the ground truth. The results demonstrate Open- UniAD [14]. The qualitative results demonstrate that Open-
+DriveVLA’s ability to accurately interpret driver commands DriveVLA generates more stable and adaptable trajecto-
+and generate corresponding trajectory actions. The pre- ries, as UniAD tends to overreact to parked vehicles on the
+dicted trajectories adhere to the given command while re- right in narrow-road scenarios. Compared to UniAD, Open-
+maining environment-aware and contextually reasonable, DriveVLA effectively maintains trajectory smoothness and
+demonstrating strong command-following ability and gen- environmental awareness, demonstrating its improved capa-
+eralization capability of our model in complex driving bility for handling complex driving scenarios.
+scenes.
+Comparison with Prior Methods. Figure 5 compares
+the open-loop planning results of OpenDriveVLA-7B with
+
+4.7. Discussions and Limitation                                       [5] Shaoyu Chen and et al.. Jiang, Bo. Vadv2: End-to-end vec-
+                While OpenDriveVLA performs well across benchmarks,    torized autonomous driving via probabilistic planning. arXiv
+some limitations remain.           It lacks explicit CoT reasoning,   preprint arXiv:2402.13243, 2024. 2
+        relying instead on implicit reasoning from driving instruc-        [6] Sijin Chen, Hongyuan Zhu, Xin Chen, Yinjie Lei, Gang
+            tion tuning, which may weaken inference capabilities in   Yu, and Tao Chen.         End-to-end 3d dense captioning with
+complex scenarios.            Besides, despite limited token inputs        vote2cap-detr. In Proceedings of the IEEE/CVF Conference
+                                                                           on Computer Vision and Pattern Recognition, pages 11124–
+       and outputs, its autoregressive nature hampers real-time de-   11133, 2023. 6
+        ployment in high-speed driving, requiring further optimiza-  [7] Wenliang Dai and Junnan Li et al.        InstructBLIP: To-
+tion.          Additionally, its evaluation in an open-loop setting      wards general-purpose vision-language models with instruc-
+       does not account for robustness in interactive traffic envi-      tion tuning. In Thirty-seventh Conference on Neural Infor-
+ronments.                                                             mation Processing Systems, 2023. 7
+                                                                          [8] Kairui Ding, Boyuan Chen, Yuchen Su, Huan-ang Gao, Bu
+5. Conclusion                                                                   Jin, Chonghao Sima, Xiaohui Li, Wuqiang Zhang, Paul
+                                                                      Barsch, and Hongyang et al. Li. Hint-ad: Holistically aligned
+          In this work, we present OpenDriveVLA, a scalable vision-   interpretability in end-to-end autonomous driving. In 8th An-
+           language action model designed for end-to-end autonomous   nual Conference on Robot Learning. 3, 5, 6
+          driving. By leveraging pre-trained large language models,       [9] Peng Gao, Jiaming Han, Renrui Zhang, Ziyi Lin, Shijie
+           OpenDriveVLA generates reliable driving actions. We pro-   Geng, Aojun Zhou, Wei Zhang, and Pan et al. Lu.        Llama-
+         pose a hierarchical vision-language feature alignment pro-   adapter v2:     Parameter-efficient visual instruction model.
+             cess and an agent-env-ego interaction mechanism to en-   arXiv preprint arXiv:2304.15010, 2023. 7
+         hance spatial reasoning and trajectory prediction. Through      [10] Wencheng Han, Dongqian Guo, Cheng-Zhong Xu, and Jian-
+             a multi-stage training paradigm, OpenDriveVLA achieves   bing Shen.       Dme-driver: Integrating human decision logic
+             state-of-the-art performance in open-loop planning and   and 3d scene perception in autonomous driving, 2024. 6
+          driving-related question answering. Extensive evaluations        [11] Peiyun Hu, Aaron Huang, John Dolan, David Held, and
+            on nuScenes dataset demonstrate its superior trajectory   Deva Ramanan.           Safe local motion planning with self-
+         planning capabilities compared to existing auto-regressive   supervised freespace forecasting.  In      Proceedings of the
+                                                                                 IEEE/CVF Conference on Computer Vision and Pattern
+           and end-to-end driving models. Our work demonstrates the   Recognition, pages 12732–12741, 2021. 6
+      feasibility of a scalable vision-language-driven approach for        [12] Peiyun Hu, Aaron Huang, John Dolan, David Held, and
+           autonomous driving and highlights the potential of large   Deva Ramanan.           Safe local motion planning with self-
+         language models as a foundation for end-to-end driving ac-   supervised freespace forecasting.  In      Proceedings of the
+tion systems.                                                                    IEEE/CVF Conference on Computer Vision and Pattern
+                                                                      Recognition (CVPR), pages 12732–12741, 2021. 2
+References                                                              [13] Shengchao Hu, Li Chen, Penghao Wu, Hongyang Li, Junchi
+                                                                           Yan, and Dacheng Tao. St-p3: End-to-end vision-based au-
+        [1] Jinze Bai, Shuai Bai, Shusheng Yang, Shijie Wang, Sinan   tonomous driving via spatial-temporal feature learning.    In
+               Tan, Peng Wang, Junyang Lin, Chang Zhou, and Jingren          European Conference on Computer Vision (ECCV), 2022. 6
+           Zhou. Qwen-vl: A versatile vision-language model for un-    [14] Yihan Hu, Jiazhi Yang, Li Chen, Keyu Li, Chonghao Sima,
+       derstanding, localization, text reading, and beyond.   arXiv           Xizhou Zhu, Siqi Chai, Senyao Du, Tianwei Lin, Wenhai
+       preprint arXiv:2308.12966, 2023. 3                                   Wang, Lewei Lu, Xiaosong Jia, Qiang Liu, Jifeng Dai, Yu
+      [2] Holger Caesar, Varun Bankiti, Alex H. Lang, Sourabh Vora,       Qiao, and Hongyang Li. Planning-oriented autonomous driv-
+           Venice Erin Liong, Qiang Xu, Anush Krishnan, Yu Pan, Gi-          ing. In Proceedings of the IEEE/CVF Conference on Com-
+       ancarlo Baldan, and Oscar Beijbom.     nuscenes:    A multi-   puter Vision and Pattern Recognition, 2023. 2, 6, 8
+       modal dataset for autonomous driving.   In    Proceedings of    [15] Zhijian Huang, Tao Tang, Shaoxiang Chen, Sihao Lin, and
+             the IEEE/CVF Conference on Computer Vision and Pattern     Zequn et al. Jie. Making large language models better plan-
+       Recognition (CVPR), 2020. 5                                      ners with reasoning-decision alignment. Berlin, Heidelberg,
+     [3] Nicolas Carion, Francisco Massa, Gabriel Synnaeve, Nicolas   2024. Springer-Verlag. 6
+         Usunier, Alexander Kirillov, and Sergey Zagoruyko. End-to-    [16] Jyh-Jing Hwang, Runsheng Xu, Hubert Lin, Wei-Chih Hung,
+       end object detection with transformers. In Computer Vision –     Jingwei Ji, Kristy Choi, Di Huang, Tong He, Paul Covington,
+              ECCV 2020: 16th European Conference, Glasgow, UK, Au-          Benjamin Sapp, Yin Zhou, James Guo, Dragomir Anguelov,
+       gust 23–28, 2020, Proceedings, Part I, page 213–229, Berlin,   and Mingxing Tan.           Emma: End-to-end multimodal model
+       Heidelberg, 2020. Springer-Verlag. 2                           for autonomous driving, 2024. 6
+      [4] Li Chen, Penghao Wu, Kashyap Chitta, Bernhard Jaeger, An-      [17] Bo Jiang, Shaoyu Chen, Qing Xu, Bencheng Liao, Jiajie
+       dreas Geiger, and Hongyang Li.         End-to-end autonomous          Chen, Helong Zhou, Qian Zhang, Wenyu Liu, Chang Huang,
+       driving: Challenges and frontiers. IEEE Transactions on Pat-         and Xinggang Wang. Vad: Vectorized scene representation
+       tern Analysis and Machine Intelligence, 2024. 2                for efficient autonomous driving. ICCV, 2023. 2, 6
+
+[18] Bo Jiang, Shaoyu Chen, Bencheng Liao, Xingyu Zhang, Wei tory prediction. In Proceedings of the IEEE/CVF Conference
+     Yin, Qian Zhang, Chang Huang, Wenyu Liu, and Xinggang on Computer Vision and Pattern Recognition (CVPR), pages
+     Wang. Senna: Bridging large vision-language models and 5517–5526, 2023. 2
+     end-to-end autonomous driving. 2024. 3 [31] OpenAI, Josh Achiam, Steven Adler, Sandhini Agarwal,
+[19] Bu Jin, Xinyu Liu, Yupeng Zheng, Pengfei Li, and Hao Zhao Lama Ahmad, Ilge Akkaya, Florencia Leoni Aleman, Diogo
+     et al. Adapt: Action-aware driving caption transformer, Almeida, and Janko Altenschmidt et al. Gpt-4 technical re-
+     2023. 3 port, 2024. 3
+[20] Bu Jin, Yupeng Zheng, Pengfei Li, Weize Li, Yuhang Zheng, [32] Tianwen Qian, Jingjing Chen, Linhai Zhuo, Yang Jiao, and
+     and Sujie et al. Hu. Tod3cap: Towards 3d dense captioning. Yu-Gang Jiang. Nuscenes-qa: A multi-modal visual ques-
+     In Computer Vision – ECCV 2024: 18th European Confer- tion answering benchmark for autonomous driving scenario.
+     ence, Milan, Italy, September 29 – October 4, 2024, Proceed- arXiv preprint arXiv:2305.14836, 2023. 5, 6, 7
+     ings, Part XVIII, page 367–384, Berlin, Heidelberg, 2024. [33] Qwen, An Yang, Baosong Yang, and Beichen Zhang et al.
+     Springer-Verlag. 5, 6 Qwen2.5 technical report, 2025. 3
+[21] Tarasha Khurana, Peiyun Hu, Achal Dave, Jason Ziglar, [34] Alec Radford, Jong Wook Kim, Chris Hallacy, Aditya
+     David Held, and Deva Ramanan. Differentiable raycasting Ramesh, Gabriel Goh, and Sandhini et al. Agarwal. Learn-
+     for self-supervised occupancy forecasting. In Computer Vi- ing transferable visual models from natural language super-
+     sion – ECCV 2022: 17th European Conference, Tel Aviv, Is- vision. In Proceedings of the 38th International Conference
+     rael, October 23–27, 2022, Proceedings, Part XXXVIII, page on Machine Learning, pages 8748–8763. PMLR, 2021. 2, 3
+     353–369, Berlin, Heidelberg, 2022. Springer-Verlag. 6 [35] Ruiqi Song, Xianda Guo, Hangbin Wu, Qinggong Wei, and
+[22] Moo Jin Kim, Karl Pertsch, Siddharth Karamcheti, Ted Xiao, Long Chen. Insightdrive: Insight scene representation for
+     Ashwin Balakrishna, Suraj Nair, Rafael Rafailov, Ethan Fos- end-to-end autonomous driving, 2025. 6
+     ter, Grace Lam, Pannag Sanketi, Quan Vuong, Thomas Kol- [36] Gemini Team, Petko Georgiev, Ving Ian Lei, Ryan Burnell,
+     lar, Benjamin Burchfiel, Russ Tedrake, Dorsa Sadigh, Sergey Libin Bai, Anmol Gulati, Garrett Tanzer, Damien Vincent,
+     Levine, Percy Liang, and Chelsea Finn. Openvla: An Zhufeng Pan, Shibo Wang, Soroosh Mariooryad, Yifan Ding,
+     open-source vision-language-action model. arXiv preprint Xinyang Geng, Fred Alcober, Roy Frostig, Mark Omernick,
+     arXiv:2406.09246, 2024. 3 and Lexi Walker et al. Gemini 1.5: Unlocking multimodal
+[23] Tengpeng Li, Hanli Wang, Xianfei Li, Wenlong Liao, Tao understanding across millions of tokens of context, 2024. 6
+     He, and Pai Peng. Generative planning with 3d-vision lan- [37] Siyu Teng, Xuemin Hu, Peng Deng, Bai Li, Yuchen Li,
+     guage pre-training for end-to-end autonomous driving, 2025. Yunfeng Ai, Dongsheng Yang, Lingxi Li, Zhe Xuanyuan,
+     6 Fenghua Zhu, and Long Chen. Motion planning for au-
+[24] Zhiqi Li, Wenhai Wang, Hongyang Li, Enze Xie, Chonghao tonomous driving: The state of the art and future per-
+     Sima, Tong Lu, Yu Qiao, and Jifeng Dai. Bevformer: Learn- spectives. IEEE Transactions on Intelligent Vehicles, 8(6):
+     ing bird’s-eye-view representation from nbsp;multi-camera 3692–3711, 2023. 2
+     images vinbsp;spatiotemporal transformers. In Computer Vi-
+     sion – ECCV 2022: 17th European Conference, Tel Aviv, Is- [38] Xiaoyu Tian, Junru Gu, Bailin Li, Yicheng Liu, Yang Wang,
+     rael, October 23–27, 2022, Proceedings, Part IX, page 1–18, Zhiyong Zhao, Kun Zhan, Peng Jia, XianPeng Lang, and
+     Berlin, Heidelberg, 2022. Springer-Verlag. 2 Hang Zhao. DriveVLM: The convergence of autonomous
+[25] Zhiqi Li, Zhiding Yu, Shiyi Lan, Jiahan Li, Jan Kautz, Tong driving and large vision-language models. In 8th Annual
+     Lu, and Jose M. Alvarez. Is ego status all you need for open- Conference on Robot Learning, 2024. 3, 6, 7
+     loop end-to-end autonomous driving? In 2024 IEEE/CVF [39] Hugo Touvron, Thibaut Lavril, Gautier Izacard, and et al.
+     Conference on Computer Vision and Pattern Recognition Xavier Martinet. Llama: Open and efficient foundation lan-
+     (CVPR), pages 14864–14873, 2024. 7 guage models, 2023. 3
+[26] Haotian Liu, Chunyuan Li, Yuheng Li, Bo Li, Yuanhan [40] Yue Wang, Vitor Guizilini, Tianyuan Zhang, Yilun Wang,
+     Zhang, Sheng Shen, and Yong Jae Lee. Llava-next: Im- Hang Zhao, , and Justin M. Solomon. Detr3d: 3d object
+     proved reasoning, ocr, and world knowledge, 2024. 3 detection from multi-view images via 3d-to-2d queries. In
+[27] Haotian Liu, Chunyuan Li, and Yuheng et al. Li. Improved The Conference on Robot Learning (CoRL), 2021. 2
+     baselines with visual instruction tuning. In Proceedings of [41] Zhiyu Wu, Xiaokang Chen, Zizheng Pan, Xingchao Liu,
+     the IEEE/CVF Conference on Computer Vision and Pattern Wen Liu, and Damai Dai et al.. Deepseek-vl2: Mixture-
+     Recognition (CVPR), pages 26296–26306, 2024. 7 of-experts vision-language models for advanced multimodal
+[28] Mingyu Liu, Ekim Yurtsever, Jonathan Fossaert, Xingcheng understanding, 2024. 3
+     Zhou, Walter Zimmer, Yuning Cui, Bare Luka Zagar, and [42] Shaoyuan Xie, Lingdong Kong, Yuhao Dong, Chonghao
+     Alois C. Knoll. A survey on autonomous driving datasets: Sima, and Wenwei Zhang et al. Are vlms ready for au-
+     Statistics, annotation quality, and a future outlook. IEEE tonomous driving? an empirical study from the reliability,
+     Transactions on Intelligent Vehicles, pages 1–29, 2024. 2 data, and metric perspectives, 2025. 4
+[29] Jiageng Mao, Hang Zhao, and Yue Wang. GPT-driver: [43] Shuo Xing, Chengyuan Qian, Yuping Wang, Hongyuan Hua,
+     Learning to drive with GPT, 2024. 5, 6, 7 Kexin Tian, Yang Zhou, and Zhengzhong Tu. Openemma:
+[30] Weibo Mao, Chenxin Xu, Qi Zhu, Siheng Chen, and Yan- Open-source multimodal model for end-to-end autonomous
+     feng Wang. Leapfrog diffusion model for stochastic trajec- driving, 2025. 6
+
+    [44] Zhenhua Xu, Yujia Zhang, Enze Xie, Zhen Zhao, Yong Guo,
+ Kwan-Yee K. Wong, Zhenguo Li, and Hengshuang Zhao.
+ Drivegpt4: Interpretable end-to-end autonomous driving via
+ large language model.         IEEE Robotics and Automation Let-
+ ters, 9(10):8186–8193, 2024. 3, 6
+    [45] An Yang, Baosong Yang, and Beichen Zhang et al. Qwen2.5
+ technical report.    arXiv preprint arXiv:2412.15115, 2024. 6
+    [46] Senqiao Yang, Jiaming Liu, Ray Zhang, Mingjie Pan, Zoey
+ Guo, Xiaoqi Li, Zehui Chen, Peng Gao, Yandong Guo, and
+ Shanghang Zhang.     Lidar-llm:      Exploring the potential of
+ large language models for 3d lidar understanding, 2023. 5,
+ 6, 7
+    [47] Senqiao Yang, Jiaming Liu, Ray Zhang, Mingjie Pan, Zoey
+ Guo, Xiaoqi Li, Zehui Chen, Peng Gao, Yandong Guo, and
+ Shanghang Zhang.     Lidar-llm:      Exploring the potential of
+ large language models for 3d lidar understanding, 2023. 7
+      [48] Pengfei Yao, Yinglong Zhu, Huikun Bi, Tianlu Mao, and
+ Zhaoqi Wang.         TrajCLIP: Pedestrian trajectory prediction
+ method using contrastive learning and idempotent networks.
+ In The Thirty-eighth Annual Conference on Neural Informa-
+ tion Processing Systems, 2024. 2
+[49] Jiang-Tian Zhai, Ze Feng, Jinhao Du,         Yongqiang Mao,
+ Jiang-Jiang Liu, Zichang Tan, Yifu Zhang, Xiaoqing Ye, and
+ Jingdong Wang. Rethinking the open-loop evaluation of end-
+ to-end autonomous driving in nuscenes, 2023. 6
+     [50] Xiaohua Zhai, Basil Mustafa, Alexander Kolesnikov, and
+ Lucas Beyer et al.         Sigmoid loss for language image pre-
+ training, 2023. 2, 3
+  [51] Shuo Zhang, Yupeng Zhai, Jilin Mei, and Yu Hu. Fusionocc:
+ Multi-modal fusion for 3d occupancy prediction. In Proceed-
+ ings of the 32nd ACM International Conference on Multime-
+ dia, page 787–796, New York, NY, USA, 2024. Association
+ for Computing Machinery. 2
+[52] Wei Zhao, Pengxiang Ding,   Zhang Min,         Zhefei Gong,
+ Shuanghao Bai, Han Zhao, and Donglin Wang.                VLAS:
+ Vision-language-action model with speech instructions for
+ customized robot manipulation. In The Thirteenth Interna-
+ tional Conference on Learning Representations, 2025. 3
+[53] Xingcheng Zhou and Alois C. Knoll. Gpt-4v as traffic assis-
+ tant: An in-depth look at vision language model on complex
+ traffic events, 2024. 2
+      [54] Xingcheng Zhou, Mingyu Liu, Ekim Yurtsever, Bare Luka
+ Zagar, Walter Zimmer, Hu Cao, and Alois C. Knoll. Vision
+ language models in autonomous driving: A survey and out-
+ look. IEEE Transactions on Intelligent Vehicles, pages 1–20,
+ 2024. 2, 3
+      [55] Deyao Zhu, Jun Chen, Xiaoqian Shen, Xiang Li, and Mo-
+ hamed Elhoseiny. MiniGPT-4: Enhancing vision-language
+ understanding with advanced large language models. In The
+ Twelfth International Conference on Learning Representa-
+ tions, 2024. 7
+

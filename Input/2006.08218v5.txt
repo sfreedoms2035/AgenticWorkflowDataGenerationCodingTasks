@@ -1,0 +1,1598 @@
+arXiv:2006.08218v5  [cs.LG]  20 Mar 2021
+
+
+
+
+
+
+
+
+
+
+        1
+
+Self-supervised Learning: Generative or Contrastive
+
+      Xiao Liu, Fanjin Zhang, Zhenyu Hou, Li Mian, Zhaoyu Wang, Jing Zhang, Jie Tang*, IEEE Fellow
+
+     Abstract—Deep supervised learning has achieved great success in the last decade. However, its defects of heavy dependence on
+      manual labels and vulnerability to attacks have driven people to find other paradigms. As an alternative, self-supervised learning (SSL)
+      attracts many researchers for its soaring performance on representation learning in the last several years. Self-supervised representation
+      learning leverages input data itself as supervision and benefits almost all types of downstream tasks. In this survey, we take a look into
+      new self-supervised learning methods for representation in computer vision, natural language processing, and graph learning. We
+      comprehensively review the existing empirical methods and summarize them into three main categories according to their objectives:
+      generative, contrastive, and generative-contrastive (adversarial). We further collect related theoretical analysis on self-supervised
+      learning to provide deeper thoughts on why self-supervised learning works. Finally, we briefly discuss open problems and future
+      directions for self-supervised learning. An outline slide for the survey is provided1.
+
+      Index Terms—Self-supervised Learning, Generative Model, Contrastive Learning, Deep Learning
+        F
+
+
+    CONTENTS                                                                                   4.2.2       Instance Discrimination . . . .    11
+    1    Introduction                                                       2        4.3       Self-supervised Contrastive Pre-training
+                                                                                               for Semi-supervised Self-training   . . . .    13
+    2    Motivation of Self-supervised Learning                             3        4.4       Pros and Cons . . . . . . . . . . . . . . .    13
+    3    Generative Self-supervised Learning                                5    5   Generative-Contrastive     (Adversarial)    Self-
+         3.1    Auto-regressive (AR) Model . . . . . . .                    5    supervised Learning                                          14
+         3.2    Flow-based Model             . . . . . . . . . . . .        5        5.1       Generate with Complete Input      . . . . .    14
+         3.3    Auto-encoding (AE) Model               . . . . . . .        5        5.2       Recover with Partial Input . . . . . . . .     14
+                3.3.1    Basic AE Model              . . . . . . . .        5        5.3       Pre-trained Language Model . . . . . . .       15
+                3.3.2    Context Prediction     Model                                5.4       Graph Learning . . . . . . . . . . . . . .     15
+                         (CPM) . . . . . . . . . . . . . .                  6        5.5       Domain Adaptation and Multi-modality
+                                                                                               Representation . . . . . . . . . . . . . . .   16
+                3.3.3    Denoising AE Model                . . . . .        6        5.6       Pros and Cons . . . . . . . . . . . . . . .    16
+                3.3.4    Variational AE Model . . . . .                     6
+         3.4    Hybrid Generative Models . . . . . . . .                    7    6   Theory behind Self-supervised Learning                   16
+                3.4.1    Combining AR and AE Model.                         7        6.1       GAN . . . . . . . . . . . . . . . . . . . .    16
+                3.4.2    Combining   AE  and     Flow-                                         6.1.1    Divergence Matching      . . . . .    16
+                         based Models              . . . . . . . . .        7                  6.1.2         Disentangled Representation .    17
+         3.5    Pros and Cons . . . . . . . . . . . . . . .                 7        6.2       Maximizing Lower Bound      . . . . . . . .    17
+                                                                                               6.2.1          Evidence Lower Bound . . . .    17
+    4    Contrastive Self-supervised Learning                               8                  6.2.2        Mutual Information . . . . . .    17
+         4.1    Context-Instance Contrast . . . . . . . . .                 8        6.3       Contrastive Self-supervised Representa-
+                4.1.1    Predict Relative Position             . . .        8                  tion Learning . . . . . . . . . . . . . . .    18
+                4.1.2    Maximize Mutual Information                        9                  6.3.1    Relationship with Supervised
+         4.2    Instance-Instance Contrast . . . . . . . . .               10                           Learning   . . . . . . . . . . . .    18
+                4.2.1    Cluster Discrimination              . . . .       10                  6.3.2         Understand Contrastive Loss .    18
+                                                                                               6.3.3      Generalization . . . . . . . . .    19
+    •       Xiao Liu, Fanjin Zhang, and Zhenyu Hou are with the Department of    7   Discussions and Future Directions                        19
+        Computer Science and Technology, Tsinghua University, Beijing, China.
+        E-mail: liuxiao17@mails.tsinghua.edu.cn, zfj17@mails.tsinghua.edu.cn,
+        hzy17@mails.tsinghua.edu.cn                                              8
+    •     Jie Tang is with the Department of Computer Science and Technology,        Conclusion                                               20
+        Tsinghua University, and Tsinghua National Laboratory for Information
+        Science and Technology (TNList), Beijing, China, 100084.                 References                                                   20
+        E-mail: jietang@tsinghua.edu.cn, corresponding author
+    •   Li Mian is with the Beijing Institute of Technonlogy, Beijing, China.
+        Email: 1120161659@bit.edu.cn
+    •   Zhaoyu Wang is with the Anhui University, Anhui, China.
+        Email: wzy950507@163.com
+    •   Jing Zhang is with the Renmin University of China, Beijing, China.
+        Email: zhang-jing@ruc.edu.cn
+
+                                                                                                                                           2
+
+      Supervised  Unsupervised          Self-supervised                                                            4000
+    implausible labels  limited power   derives label from a                             mmm Number of Publications
+          Target                        [                                      2  200    —— Number ofCitations     3500
+                                                                                                                   3000        &
+                                                                              £1                                   J
+      ogo                     ogo                                             H                                    20005
+    0000              0000     H           H                                  3E                                   1500§
+          Input      Input  Input 1     Input 2                                Zz  50                              1000        2
+                                                                                                                   500
+          A        2        >                                                       °    201220132014201520162017  0
+        20182019 2020
+Fig. 1: An illustration to distinguish the supervised, unsu- Fig. 2: Number of publications and citations on self-
+pervised and self-supervised learning framework. In self- supervised learning during 2012-2020, from Microsoft Aca-
+supervised learning, the “related information” could be demic [116], [154]. Self-supervised learning is drawing
+another modality, parts of inputs, or another form of the tremendous attention in recent years.
+inputs. Repainted from [30].
+    1     INTRODUCTION                                                     Specifically, the “other part” could be incomplete, trans-
+    D eep neural networks [77] have shown outstanding                               formed, distorted, or corrupted (i.e., data augmentation
+                      performance on various machine learning tasks, es-   technique). In other words, the machine learns to ’recover’
+    pecially on supervised learning in computer vision (image                    whole, or parts of, or merely some features of its original
+    classification [31], [53], [60], semantic segmentation [44],           input.
+    [82]), natural language processing (pre-trained language                  People are often confused by the concepts of unsuper-
+    models [32], [74], [81], [148], sentiment analysis [80], question           vised learning and self-supervised learning. Self-supervised
+    answering [6], [34], [107], [149] etc.) and graph learning (node             learning can be viewed as a branch of unsupervised learning
+    classification [59], [70], [102], [135], graph classification [8],            since there is no manual label involved. However, narrowly
+    [118], [156] etc.). Generally, the supervised learning is trained              speaking, unsupervised learning concentrates on detecting
+    on a specific task with a large labeled dataset, which is                     specific data patterns, such as clustering, community dis-
+    randomly divided for training, validation and test.                         covery, or anomaly detection, while self-supervised learning
+              However, supervised learning is meeting its bottleneck. It        aims at recovering, which is still in the paradigm of super-
+    relies heavily on expensive manual labeling and suffers from                vised settings. Figure 1 provides a vivid explanation of the
+    generalization error, spurious correlations, and adversarial           differences between them.
+    attacks. We expect the neural networks to learn more with                           There exist several comprehensive reviews related to
+    fewer labels, fewer samples, and fewer trials. As a promising                  Pre-trained Language Models [103], Generative Adversarial
+    alternative, self-supervised learning has drawn massive                   Networks [140], autoencoders, and contrastive learning for vi-
+    attention for its data efficiency and generalization ability,               sual representation [63]. However, none of them concentrates
+    and many state-of-the-art models have been following this              on the inspiring idea of self-supervised learning itself. In this
+    paradigm. This survey will take a comprehensive look at                       work, we collect studies from natural language processing,
+    the recent developing self-supervised learning models and                         computer vision, and graph learning in recent years to
+    discuss their theoretical soundness, including frameworks                       present an up-to-date and comprehensive retrospective on
+    such as Pre-trained Language Models (PTM), Generative                           the frontier of self-supervised learning. To sum up, our
+    Adversarial Networks (GAN), autoencoders and their exten-              contributions are:
+    sions, Deep Infomax, and Contrastive Coding. An outline                 •           We provide a detailed and up-to-date review of self-
+    slide is also provided.1                                                            supervised learning for representation. We introduce
+                 The term “self-supervised learning” is first introduced                 the background knowledge, models with variants, and
+    in robotics, where training data is automatically labeled                        important frameworks. One can easily grasp the frontier
+    by leveraging the relations between different input sensor                  ideas of self-supervised learning.
+    signals. Afterwards, machine learning community further                 •             We categorize self-supervised learning models into
+    develops the idea. In the invited speech on AAAI 2020, The                      generative, contrastive, and generative-contrastive (ad-
+    Turing award winner Yann LeCun described self-supervised                           versarial), with particular genres inner each one. We
+    learning as ”the machine predicts any parts of its input for                demonstrate the pros and cons of each category.
+    any observed part”. 2 Combining self-supervised learning’s              •       We identify several open problems in this field, analyze
+    traditional definition and LeCun’s definition, we can further                     the limitations and boundaries, and discuss the future
+    summarize its features as:                                                  direction for self-supervised representation learning.
+       •  Obtain “labels” from the data itself by using a “semi-                         We organize the survey as follows. In Section 2, we
+          automatic” process.                                                  introduce the motivation of self-supervised learning. We also
+       •  Predict part of the data from other parts.                            present our categorization of self-supervised learning and a
+                                                                           conceptual comparison between them. From Section 3 to Sec-
+      1. Slides at https://www.aminer.cn/pub/5ee8986f91e011e66831c59b/        tion 5, we will introduce the empirical self-supervised learn-
+      2. https://aaai.org/Conferences/AAAI-20/invited-speakers/            ing methods utilizing generative, contrastive and generative-
+
+                                                                                                                                 3
+
+                                                                          Generator                Discriminator
+                                   ===                                    -                    H Reconstruction
+                                   Cm)                            Generative        Decoder    |=     Loss
+
+    (EE)                                                                             If            Corrasive
+
+                                                                  Generative-         i          Distributional
+    _                                                             Contrastive        [i            Divergence
+
+Fig. 3: Categorization of Self-supervised learning (SSL):                   Fig. 4: Conceptual comparison between Generative, Con-
+Generative, Contrastive and Generative-Contrastive (Adver-       trastive, and Generative-Contrastive methods.
+sarial).
+                                                                   self-supervision into three general categories (see Fig. 3) and
+contrastive objectives. In Section 6, we introduce some recent   detailed subsidiaries:
+theoretical attempts to understand the hidden mechanism of         •        Generative: train an encoder to encode input x into an
+self-supervised learning’s success. Finally, in Section 7 and              explicit vector z and a decoder to reconstruct x from z
+8, we discuss the open problems, future directions and our            (e.g., the cloze test, graph generation)
+conclusions.                                                       •          Contrastive: train an encoder to encode input x into
+                                                                          an explicit vector z to measure similarity (e.g., mutual
+2 MOTIVATION OF SELF-SUPERVISED LEARNING                           •  information maximization, instance discrimination)
+                                                                      Generative-Contrastive (Adversarial): train an encoder-
+It is universally acknowledged that deep learning algorithms               decoder to generate fake samples and a discriminator to
+are data-hungry. Compared to traditional feature-based                distinguish them from real samples (e.g., GAN)
+methods, deep learning usually follows the so-called “end-                   Their main difference lies in model architectures and
+to-end” fashion (raw-data in, prediction out). It makes very              objectives. A detailed conceptual comparison is shown in
+few prior assumptions, which leads to over-fitting and                 Fig. 4. Their architectures can be unified into two general
+biases in scenarios with little supervised data. Literature has           components: the generator and the discriminator, and the
+shown that simple multi-layer perceptrons have a very poor               generator can be further decomposed into an encoder and a
+generalization ability (always assume a linear relationship      decoder. Different things are:
+for out-of-distribution (OOD) samples) [145], which results       1)      For latent distribution z: in generative and contrastive
+in over-confident (and wrong) predictions.                            methods, z is explicit and is often leveraged by down-
+          To conquer the fundamental OOD and generalization           stream tasks; while in GAN, z is implicitly modeled.
+problem, while numerous works focus on designing new              2)  For discriminator: the generative method does not
+architectures for neural networks, another simple yet effec-          have a discriminator while GAN and contrastive have.
+tive solution is to enlarge the training dataset to make as           Contrastive discriminator has comparatively fewer pa-
+many samples “in-distribution”. However, the fact is, despite            rameters (e.g., a multi-layer perceptron with 2-3 layers)
+massive available unlabeled web data in this big data era,            than GAN (e.g., a standard ResNet [53]).
+high-quality data with human labeling could be costly. For        3)  For objectives: the generative methods use a reconstruc-
+example, Scale.ai3, a data labeling company, charges $6.4             tion loss, the contrastive ones use a contrastive similarity
+per image for the image segmentation labeling. An image                     metric (e.g., InfoNCE), and the generative-contrastive
+segmentation dataset containing 10k+ high-quality samples               ones leverage distributional divergence as the loss (e.g.,
+could cost up to a million-dollar.                                    JS-divergence, Wasserstein Distance).
+      The most crucial point for self-supervised learning’s
+success is that it figures out a way to leverage the tremendous            A properly designed training objective related to down-
+amounts of unlabeled data that becomes available in the                    stream tasks could turn our randomly initialized models
+big data era. It a time for deep learning algorithms to                into excellent pre-trained feature extractors. For example,
+get rid of human supervision and turn back to data’s self-               contrastive learning is found to be useful for almost all
+supervision. The intuition of self-supervised learning is to             visual classification tasks. This is probably because the
+leverage the data’s inherent co-occurrence relationships as            contrastive object is modeling the class-invariance between
+the self-supervision, which could be versatile. For example,          different image instances. The contrastive loss makes images
+in the incomplete sentence “I like  apples”, a well-trained                containing the same object class more similar. It makes
+language model would predict “eating” for the blank (i.e., the        those containing different classes less similar, essentially
+famous Cloze Test [125]) because it frequently co-occurs with             accords with the downstream image classification, object
+the context in the corpora. We can summarize the mainstream            detection, and other classification-based tasks. The art of
+                                                                        self-supervised learning primarily lies in defining proper
+  3. https://scale.com/pricing                                   objectives for unlabeled data.
+
+    4
+
+            Model           FOS   Type  Generator  Self-supervision          Pretext Task        Hard  Hard  NS strategy
+                                                                                                  NS    PS
+    GPT/GPT-2 [105], [106]  NLP    G        AR     Following words       Next word prediction     -     -         -
+    PixelCNN [131], [133]    CV    G        AR     Following pixels     Next pixel prediction     -     -         -
+          NICE [35]          CV    G       Flow                                                   -     -         -
+         RealNVP [36]        CV    G      based      Whole image         Image reconstruction     -     -         -
+          Glow [68]          CV    G                                                              -     -         -
+     word2vec [85], [86]    NLP    G        AE  Context words              CBOW & SkipGram        ×     ×     End-to-end
+FastText [14]               NLP    G        AE                                   CBOW             ×     ×     End-to-end
+        DeepWalk-based     Graph   G        AE       Graph edges           Link prediction        ×     ×     End-to-end
+      [48], [99], [123]
+          VGAE [71]        Graph   G        AE                                                    ×     ×     End-to-end
+          BERT [32]         NLP    G        AE       Masked words       Masked language model,    -     -         -
+                                                    Sentence topic    Next senetence prediction
+        SpanBERT [64]       NLP    G        AE       Masked words       Masked language model     -     -         -
+         ALBERT [74]        NLP    G        AE       Masked words       Masked language model,    -     -         -
+                                                    Sentence order    Sentence order prediction
+      ERNIE [122], [159]    NLP    G        AE       Masked words       Masked language model,    -     -         -
+                                                    Sentence topic    Next senetence prediction
+         GPT-GNN [58]      Graph   G        AE     Attribute & Edge    Masked graph generation    -     -         -
+        VQ-VAE 2 [108]       CV    G        AE       Whole image         Image reconstruction     -     -         -
+         XLNet [148]        NLP    G      AE+AR      Masked words     Permutation language model  -     -         -
+        GraphAF [115]      Graph   G     Flow+AR   Attribute & Edge  Sequential graph generation  -     -         -
+    RelativePosition [37]    CV    C        -                        Relative postion prediction  -     -         -
+          CDJP [67]          CV    C        -     Spatial relations      Jigsaw + Inpainting
+                                                                            + Colorization
+          PIRL [87]          CV    C        -     (Context-Instance)            Jigsaw            ×     ×     End-to-end
+                                                                                                  ×     X    Memory bank
+         RotNet [43]         CV    C        -                            Rotation Prediction      -     -         -
+      Deep InfoMax [55]      CV    C        -                                                     ×     ×     End-to-end
+          AMDIM [7]          CV    C        -                                                     ×     X     End-to-end
+           CPC [95]          CV    C        -                                                     ×     ×     End-to-end
+        InfoWord [72]       NLP    C        -         Belonging                                   ×     ×     End-to-end
+          DGI [136]        Graph   C        -     (Context-Instance)  MI Maximization             X     ×     End-to-end
+       InfoGraph [118]     Graph   C        -                                                     ×     ×     End-to-end
+                                                                                                             (batch-wise)
+        CMC-Graph [51]     Graph   C        -                                                     ×     X     End-to-end
+          S2GRL [97]       Graph   C        -                                                     ×     ×     End-to-end
+     Pre-trained GNN [57]  Graph   C        -         Belonging            MI maximization,       ×     ×     End-to-end
+                                                   Node attributes   Masked attribute prediction
+       DeepCluster [17]      CV    C        -                                                     -     -         -
+   Local Aggregation [162]   CV    C        -                                                     -     -         -
+       ClusterFit [146]      CV    C        -         Similarity        Cluster discrimination    -     -         -
+          SwAV [18]          CV    C        -    (Instance-Instance)                              -     X     End-to-end
+          SEER [46]          CV    C        -                                                     -     X     End-to-end
+          M3S [121]        Graph   C        -                                                     -     -         -
+        InstDisc [142]       CV    C        -                                                     ×     ×    Memory bank
+          CMC [126]          CV    C        -                                                     ×     X     End-to-end
+          MoCo [52]          CV    C        -                                                     ×     ×      Momentum
+         MoCo v2 [23]        CV    C        -                                                     ×     X      Momentum
+         SimCLR [19]         CV    C        -          Identity                                   ×     X     End-to-end
+        InfoMin [127]        CV    C        -    (Instance-Instance) Instance discrimination      ×     X     End-to-end
+          BYOL [47]          CV    C        -                                                   no NS   X     End-to-end
+          ReLIC [88]         CV    C        -                                                     ×     X     End-to-end
+         SimSiam [24]        CV    C        -                                                   no NS   X     End-to-end
+    SimCLR v2 (semi) [20]    CV    C        -                                                     ×     X     End-to-end
+          GCC [101]        Graph   C        -                                                     ×     X      Momentum
+        GraphCL [152]      Graph   C        -                                                     ×     X     End-to-end
+           GAN [45]          CV   G-C       AE                                                    -     -         -
+     Adversarial AE [83]     CV   G-C       AE       Whole image         Image reconstruction     -     -         -
+     BiGAN/ALI [38], [41]    CV   G-C       AE                                                    -     -         -
+        BigBiGAN [39]        CV   G-C       AE                                                    -     -         -
+      Colorization [75]      CV   G-C       AE       Image color             Colorization         -     -         -
+       Inpainting [96]       CV   G-C       AE     Parts of images            Inpainting          -     -         -
+    Super-resolution [78]    CV   G-C       AE    Details of images        Super-resolution       -     -         -
+         ELECTRA [26]       NLP   G-C       AE   Masked words          Replaced token detection   X     ×     End-to-end
+          WKLM [144]        NLP   G-C       AE     Masked entities    Replaced entity detection   X     ×     End-to-end
+           ANE [28]        Graph  G-C       AE       Graph edges           Link prediction        -     -         -
+        GraphGAN [137]     Graph  G-C       AE                                                    -     -         -
+        GraphSGAN [33]     Graph  G-C       AE       Graph nodes         Node classification      -     -         -
+TABLE 1: An overview of recent self-supervised representation learning. For acronyms used, “FOS” refers to fields of study;
+“NS” refers to negative samples; “PS” refers to positive samples; “MI” refers to mutual information. For alphabets in “Type”:
+G Generative ; C Contrastive; G-C Generative-Contrastive (Adversarial). For symbols in “Hard NS” and “Hard PS”, “-”
+means not applicable, “×” means not adopted, “X”’ means adopted; “no NS” particularly means not using negative samples
+in instance-instance contrast.
+
+                                                                                                                           5
+    3   GENERATIVE SELF-SUPERVISED LEARNING                             The advantage of auto-regressive models is that they
+    This section will introduce important self-supervised learn-    can model the context dependency well. However, one
+    ing methods based on generative models, including auto-         shortcoming of the AR model is that the token at each
+    regressive (AR) models, flow-based models, auto-encoding        position can only access its context from one direction.
+    (AE) models, and hybrid generative models.                      3.2 Flow-based Model
+    3.1 Auto-regressive (AR) Model                                  The goal of flow-based models is to estimate complex high-
+                                                                    dimensional densities p(x) from data. Intuitively, directly
+    Auto-regressive (AR) models can be viewed as “Bayes net         formalizing the densities is difficult. To obtain a compli-
+    structure” (directed graph model). The joint distribution can   cated densities, we hope to generate it “step by step” by
+    be factorized as a product of conditionals                      stacking a series of transforming functions that describing
+
+                                                                    based models first define a latent variable z which follows
+        maxθ     pθ(x) = ∑T log pθ(xt|x1:t−1)      (1)              different data characteristics respectively. Generally, flow-
+        t=1                                                         a known distribution pZ (z). Then define z = fθ(x), where
+    where the probability of each variable is dependent on the      fθ is an invertible and differentiable function. The goal is
+    previous variables.                                             to learn the transformation between x and z so that the
+   In NLP, the objective of auto-regressive language model- density of x can be depicted. According to the integral
+ing is usually maximizing the likelihood under the forward rule, pθ(x)dx = p(z)dz. Therefore, the densities of x and
+    autoregressive factorization [148]. GPT [105] and GPT-2 [106]   z satisfies:        ∣              ∣
+    use Transformer decoder architecture [134] for language                 pθ(x) = p(fθ(x))∣∣ ∂fθ(x) ∣∣
+    model. Different from GPT, GPT-2 removes the fine-tuning            ∣     ∂x                       ∣                 (2)
+    processes of different tasks. To learn unified representa-      and the objective is to maximize the likelihood:
+    tions that generalize across different tasks, GPT-2 models
+    p(output|input, task), which means given different tasks,           ∑    ∑
+    the same inputs can have different outputs.                         maxθ     i  log pθ(x(i)) = maxθ log pZ (fθ(x(i)))
+    The auto-regressive models have also been employed                  ∣∣   i                          ∣∣               (3)
+    in computer vision, such as PixelRNN [133] and Pixel-           + log ∣∣ ∂fθ (x(i))∣
+    CNN [131]. The general idea is to use auto-regressive                    ∂x                          ∣
+    methods to model images pixel by pixel. For example, the        The advantage of flow-based models is that the mapping
+    lower (right) pixels are generated by conditioning on the       between x and z is invertible. However, it also requires
+    upper (left) pixels. The pixel distributions of PixelRNN and    that x and z must have the same dimension. fθ needs to
+    PixelCNN are modeled by RNN and CNN, respectively.              be carefully designed since it should be invertible and the
+    For 2D images, auto-regressive models can only factorize        Jacobian determinant in Eq. (2) should also be calculated
+    probabilities according to specific directions (such as right   easily. NICE [35] and RealNVP [36] design affine coupling
+    and down). Therefore, masked filters are employed in CNN        layer to parameterize f
+    architecture. Furthermore, two convolutional networks are                        θ. The core idea is to split x into two
+combined to remove the blind spot in images. Based on Pixel- blocks (x1, x2) and apply a transformation from (x1, x2) to
+        1, z2) in an auto-regressive manner, that is z1 = x1 and
+CNN, WaveNet [130] – a generative model for raw audio was (z
+        z
+proposed. To deal with long-range temporal dependencies, 2 = x2 + m(x1). More recently, Glow [68] was proposed
+the authors develop dilated causal convolutions to improve and it introduces invertible 1 × 1 convolutions and simplifies
+the receptive field. Moreover, Gated Residual blocks and skip RealNVP.
+connections are employed to empower better expressivity.
+   The auto-regressive models can also be applied to graph 3.3 Auto-encoding (AE) Model
+domain problems, such as graph generation. You et al. [151] The auto-encoding model’s goal is to reconstruct (part of)
+propose GraphRNN to generate realistic graphs with deep inputs from (corrupted) inputs. Due to its flexibility, the AE
+auto-regressive models. They decompose the graph genera- model is probably the most popular generative model with
+tion process into a sequence generation of nodes and edges many variants.
+conditioned on the graph generated so far. The objective
+of GraphRNN is defined as the likelihood of the observed 3.3.1 Basic AE Model
+graph generation sequences. GraphRNN can be viewed as a Autoencoder (AE) was first introduced in [9] for pre-training
+hierarchical model, where a graph-level RNN maintains the artificial neural networks. Before autoencoder, Restricted
+state of the graph and generates new nodes, while an edge- Boltzmann Machine (RBM) [117] can also be viewed as
+level RNN generates new edges based on the current graph a special “autoencoder”. RBM is an undirected graphical
+state. After that, MRNN [100] and GCPN [150] are proposed model, and it only contains two layers: the visible layer
+as auto-regressive approaches. MRNN and GCPN both use and the hidden layer. The objective of RBM is to minimize
+a reinforcement learning framework to generate molecule the difference between the marginal distribution of models
+graphs through optimizing domain-specific rewards. How- and data distributions. In contrast, an autoencoder can
+ever, MRNN mainly uses RNN-based networks for state be regarded as a directed graphical model, and it can
+representations, but GCPN employs GCN-based encoder be trained more efficiently. Autoencoder is typically for
+    networks.                                                       dimensionality reduction. Generally, the autoencoder is a
+
+        6
+feed-forward neural network trained to produce its input entity-level and phrase-level knowledge, which obtains good
+at the output layer. The AE is comprised of an encoder results in Chinese natural language processing tasks. ERNIE
+network h = fenc(x) and a decoder network x′ = fdec(h). (Tsinghua) [159] further integrates knowledge (entities and
+The objective of AE is to make x and x′ as similar as possible relations) in knowledge graphs into language models.
+(such as through mean-square error). It can be proved that Compared with the AR model, in denoising AE for
+the linear autoencoder corresponds to the PCA method. language modeling, the predicted tokens have access to
+Sometimes the number of hidden units is greater than the contextual information from both sides. However, the fact
+number of input units, and some interesting structures can that MLM assumes the predicted tokens are independent
+be discovered by imposing sparsity constraints on the hidden if the unmasked tokens are given (which does not hold in
+units [91]. reality) has long been considered as its inherent drawback.
+        In graph learning, Hu et al. [58] proposes GPT-GNN, a
+3.3.2 Context Prediction Model (CPM) generative pre-training method for graph neural networks.
+The idea of the Context Prediction Model (CPM) is to predict It also leverages the graph masking techniques and then
+contextual information based on inputs. asks the graph neural network to generate masked edges
+   In NLP, when it comes to self-supervised learning on and attributes. GPT-GNN’s wide range of experiments on
+word embedding, CBOW and Skip-Gram [86] are pioneering OAG [116], [124], [154], the largest public, academic graph
+works. CBOW aims to predict the input tokens based on with 100 million nodes and 2 billion edges, shows impressive
+context tokens. In contrast, Skip-Gram aims to predict context improvements on various graph learning tasks.
+tokens based on input tokens. Usually, negative sampling is
+employed to ensure computational efficiency and scalability. 3.3.4 Variational AE Model
+Following CBOW architecture, FastText [14] is proposed by The variational auto-encoding model assumes that data are
+utilizing subword information. generated from underlying latent (unobserved) representa-
+   Inspired by the progress of word embedding models in tion. The posterior distribution over a set of unobserved
+NLP, many network embedding models are proposed based variables Z = {z1, z2, ..., zn} given some data X is ap-
+on a similar context prediction objective. Deepwalk [99] proximated by a variational distribution q(z|x) ≈ p(z|x).
+samples truncated random walks to learn latent node embed- In variational inference, the evidence lower bound (ELBO)
+ding based on the Skip-Gram model. It treats random walks on the log-likelihood of data is maximized during training.
+as the equivalent of sentences. However, another network
+embedding approach LINE [123] aims to generate neighbors log p(x) ≥ −DKL(q(z|x)||p(z)) + E∼q(z|x)[log p(x|z)] (5)
+rather than nodes on a path based on current nodes:
+        O = − ∑ wij log p(vj |vi) (4) where p(x) is evidence probability, p(z) is prior and p(x|z)
+        is likelihood probability. The right-hand side of the above
+        (i,j)∈E equation is called ELBO. From the auto-encoding perspective,
+where E denotes edge set, v denotes the node, wij represents the first term of ELBO is a regularizer forcing the posterior
+the weight of edge (vi, vj ). LINE also uses negative sampling to approximate the prior. The second term is the likelihood
+to sample multiple negative edges to approximate the of reconstructing the original input data based on latent
+objective. variables.
+        Variational Autoencoders (VAE) [69] is one important
+3.3.3 Denoising AE Model example where variational inference is utilized. VAE assumes
+The intuition of denoising autoencoder models is that repre- the prior p(z) and the approximate posterior q(z|x) both
+sentation should be robust to the introduction of noise. The follow Gaussian distributions. Specifically, let p(z) ∼ N (0, 1).
+masked language model (MLM), one of the most successful Furthermore, reparameterization trick is utilized for mod-
+architectures in natural language processing, can be regarded eling approximate posterior q(z|x). Assume z ∼ N (μ, σ2),
+as a denoising AE model. To model text sequence, the masked z = μ + σ where ∼ N (0, 1). Both μ and σ are parameter-
+language model (MLM) randomly masks some of the tokens ized by neural networks. Based on calculated latent variable
+from the input and then predicts them based on their context z, decoder network is utilized to reconstruct the input data.
+information, which is similar to the Cloze task [125]. BERT [32] Recently, a novel and powerful variational AE model
+is the most representative work in this field. Specifically, in called VQ-VAE [132] was proposed. VQ-VAE aims to learn
+BERT, a unique token [MASK] is introduced in the training discrete latent variables motivated by the fact that many
+process to mask some tokens. However, one shortcoming modalities are inherently discrete, such as language, speech,
+of this method is that there are no input [MASK] tokens and images. VQ-VAE relies on vector quantization (VQ) to
+for down-stream tasks. To mitigate this, the authors do not learn the posterior distribution of discrete latent variables.
+always replace the predicted tokens with [MASK] in training. The discrete latent variables are calculated by the nearest
+Instead, they replace them with original words or random neighbor lookup using a shared, learnable embedding table.
+words with a small probability. In training, the gradients are approximated through straight-
+   Following BERT, many extensions of MLM emerge. through estimator [11] as
+SpanBERT [64] chooses to mask continuous random spans
+rather than random tokens adopted by BERT. Moreover, L(x, D(e)) = ‖x−D(e)‖22+‖sg[E(x)]−e‖22+β‖sg[e]−E(x)‖22
+it trains the span boundary representations to predict the (6)
+masked spans, inspired by ideas in coreference resolution. where e refers to the codebook, the operator sg refers to a
+ERNIE (Baidu) [122] masks entities or phrases to learn stop-gradient operation that blocks gradients from flowing
+
+                                                                                                                                        7
+
+        AJ      (im                                                               (=)
+        4                                                                       3
+
+        ae                                                             Original Sequence: 21, 2, 3, 24  Permutated Sequence:  2,4, T3, 71
+    Fig. 5: Architecture of VQ-VAE [132]. Compared to VAE, the        Fig. 6: Illustration for permutation language modeling [148]
+    orginal hidden distribution is replaced with a quantized vec-     objective for predicting x3 given the same input sequence x
+    tor dictionary. In addition, the prior distribution is replaced   but with different factorization orders. Adapted from [148]
+    with a pre-trained PixelCNN that models the hierarchical
+    features of images. Taken from [132]                              high-dimensional joint probabilities by combining AE and
+                                                                      AR models.
+    into its argument, and β is a hyperparameter which controls                       In NLP, Permutation Language Model (PLM) [148] is a
+    the reluctance to change the code corresponding to the            representative model that combines the advantage of auto-
+    encoder output.                                                   regressive model and auto-encoding model. XLNet [148],
+   More recently, researchers propose VQ-VAE-2 [108], which introduces PLM, is a generalized auto-regressive
+which can generate versatile high-fidelity images that rival pretraining method. XLNet enables learning bidirectional
+BigGAN [15] on ImageNet [31], the state-of-the-art GAN contexts by maximizing the expected likelihood over all
+model. First, the authors enlarge the scale and enhance the permutations of the factorization order. To formalize the idea,
+autoregressive priors by a powerful PixelCNN [131] prior. let ZT denotes the set of all possible permutations of the
+Additionally, they adopt a multi-scale hierarchical organiza- length-T index sequence [1, 2, ..., T ], the objective of PLM
+tion of VQ-VAE, which enables learning local information can be expressed as follows:
+    and global information of images separately. Nowadays,                            ∑T
+    VAE and its variants have been widely used in the computer             maxθ   Ez∼ZT [                 log pθ(xzₜ|xz<t )]          (7)
+    vision area, such as image representation learning, image                         t=1
+    generation, video generation.                                      Actually, for each text sequence, different factorization or-
+       Variational auto-encoding models have also been em-            ders are sampled. Therefore, each token can see its contextual
+    ployed in node representation learning on graphs. For             information from both sides. Based on the permuted order,
+    example, Variational graph auto-encoder (VGAE) [71] uses          XLNet also conducts reparameterization with positions to
+    the same variational inference technique as VAE with graph        let the model know which position is needed to predict.
+    convolutional networks (GCN) [70] as the encoder. Due to          Then a special two-stream self-attention is introduced for
+    the uniqueness of graph-structured data, the objective of         target-aware prediction.
+    VGAE is to reconstruct the adjacency matrix of the graph by                  Furthermore, different from BERT, inspired by the latest
+measuring node proximity. Zhu et al. [160] propose DVNE, a advancements in the AR model, XLNet integrates the seg-
+deep variational network embedding model in Wasserstein ment recurrence mechanism and relative encoding scheme
+space. It learns Gaussian node embedding to model the of Transformer-XL [29] into pre-training, which can model
+uncertainty of nodes. 2-Wasserstein distance is used to long-range dependency better than Transformer [134].
+measure the similarity between the distributions for its
+effectiveness in preserving network transitivity. vGraph [119] 3.4.2 Combining AE and Flow-based Models
+can perform node representation learning and community In the graph domain, GraphAF [115] is a flow-based auto-
+detection collaboratively through a generative variational regressive model for molecule graph generation. It can
+inference framework. It assumes that each node can be gen- generate molecules in an iterative process and also calculate
+erated from a mixture of communities, and each community the exact likelihood in parallel. GraphAF formalizes molecule
+    is defined as a multinomial distribution over nodes.              generation as a sequential decision process. It incorporates
+                                                                      detailed domain knowledge into the reward design, such
+    3.4   Hybrid Generative Models                                    as valency check. Inspired by the recent progress of flow-
+    3.4.1 Combining AR and AE Model.                                  based models, it defines an invertible transformation from a
+Some researchers propose to combine the advantages of base distribution (e.g., multivariate Gaussian) to a molecular
+both AR and AE. MADE [84] makes a simple modification graph structure. Additionally, Dequantization technique [56]
+to autoencoder. It masks the autoencoder’s parameters is utilized to convert discrete data (including node types and
+to respect auto-regressive constraints. Specifically, for the edge types) into continuous data.
+original autoencoder, neurons between two adjacent layers
+are fully-connected through MLPs. However, in MADE, some 3.5 Pros and Cons
+connections between adjacent layers are masked to ensure A reason for the generative self-supervised learning’s success
+that each input dimension is reconstructed solely from its in self-supervised learning is its ability to recover the original
+dimensions. MADE can be easily parallelized on conditional data distribution without assumptions for downstream tasks,
+computations, and it can get direct and cheap estimates of which enables generative models’ wide applications in
+
+                                                                                                                                             8
+    both classification and generation. Notably, all the existing                   a0
+    generation tasks (including text, image, and audio) rely                                 abo 20        Bol (ax
+    heavily on generative self-supervised learning. Nevertheless,                   +                                           60
+    two shortcomings restrict its performance.
+         First, despite its central status in generation tasks, gen-            £
+    erative self-supervised learning is recently found far less             ~~  >§   |       XPIRL 2%                   v1 (x)
+    competitive than contrastive self-supervised learning in                                          thx
+    some classification scenarios because contrastive learning’s            ~~  7        pil
+    goal naturally conforms the classification objective. Works                 £
+including MoCo [52], SimCLR [19], BYOL [47] and SwAV [18] ~~ § | xa
+    have presented overwhelming performances on various CV                      £
+    benchmarks. Nevertheless, in the NLP domain, researchers
+    still depend on generative language models to conduct text                                                          ol
+    classification.                                                                                                     i      200
+                  Second, the point-wise nature of the generative objec-                 %   0        Bo zo     20 wo   0
+    tive has some inherent defects. This objective is usually                                Number Model
+formulated
+− ∑ log as a maximum likelihood function LM LE = Fig. 7: Self-supervised representation learning performance
+and cx p(x|c) where x is all the samples we hope to model, on ImageNet top-1 accuracy in March, 2021, under linear
+      is a conditional constraint such as context information. classification protocol. The self-supervised learning’s ability
+    Considering its form, MLE has two fatal problems:                              on feature extraction is rapidly approaching the supervised
+  1) Sensitive and Conservative Distribution. When method (ResNet50). Except for BigBiGAN, all the models
+    p(x|c) → 0, LM LE becomes super large, making gen- above are contrastive self-supervised learning methods.
+    erative model extremely sensitive to rare samples. It
+    directly leads to a conservative distribution, which has remains the same. With more dissimilar pairs involved, we
+     2)    a low performance.                                                have the InfoNCE [95] formulated as:
+           Low-level Abstraction Objective. In MLE, the represen-
+           tation distribution is modeled at x’s level (i.e., point-wise                              ef(x)ᵀ f(x⁺)
+             level), such as pixels in images, words in texts, and nodes         L = Ex,x₊,xₖ [−log(       ∑              ]                (9)
+           in graphs. However, most of the classification tasks tar-                             ef(x)ᵀ f(x⁺) +  Kk=1 ef(x)T f(xk)
+           get at high-level abstraction, such as object detection, long                 Here we divide recent contrastive learning frameworks
+           paragraph understanding, and molecule classification.                 into 2 types: context-instance contrast and instance-instance
+    and as an opposite approach, generative-contrastive self-                            contrast. Both of them achieve amazing performance in
+    supervised learning abandons the point-wise objective. It                          downstream tasks, especially on classification problems
+    turns to distributional matching objectives that are more                under the linear protocol.
+    robust and better handle the high-level abstraction challenge
+    in the data manifold.                                                    4.1        Context-Instance Contrast
+                                                                            The context-instance contrast, or so-called global-local contrast,
+    4      CONTRASTIVE SELF-SUPERVISED LEARNING                                     focuses on modeling the belonging relationship between the
+From a statistical perspective, machine learning models are local feature of a sample and its global context representation.
+categorized into generative and discriminative models. Given When we learn the representation for a local feature, we hope
+the joint distribution P (X, Y ) of the input X and target it is associative to the representation of the global content,
+Y , the generative model calculates the p(X |Y = y) while such as stripes to tigers, sentences to its paragraph, and
+the discriminative model tries to model the P (Y |X = x). nodes to their neighborhoods.
+    Because most of the representation learning tasks hope to                           There are two main types of Context-Instance Contrast:
+model relationships between x, for a long time, people Predict Relative Position (PRP) and Maximize Mutual Infor-
+believe that the generative model is the only choice for mation (MI). The differences between them are:•
+    representation learning.                                                          PRP focuses on learning relative positions between local
+                  However, recent breakthroughs in contrastive learning,                  components. The global context serves as an implicit
+    such as Deep InfoMax, MoCo and SimCLR, shed light on                                   requirement for predicting these relations (such as
+    the potential of discriminative models for representation.                           understanding what an elephant looks like is critical
+    Contrastive learning aims at ”learn to compare” through a                            for predicting relative position between its head and
+    Noise Contrastive Estimation (NCE) [49] objective formatted                  •   tail).
+    as:                                                                              MI focuses on learning the direct belonging relationships
+                                                                                          between local parts and global context. The relative
+
+       L = Ex,x₊,x− [−log( ef(x)T fe(xf₊(x)) +ᵀ fe(xf⁺(x)) T f(x−) ] (8) 4.1.1positions between local parts are ignored.
+        Predict Relative Position
+where x+ is similar to x, x− is dissimilar to x and f is an Many data contain rich spatial or sequential relations be-
+encoder (representation function). The similarity measure tween parts of it. For example, in image data such as Fig. 8,
+and encoder may vary from task to task, but the framework the elephant’s head is on the right of its tail. In text data, a
+
+                                                                                                                                     9
+    sentence like ”Nice to meet you.” would probably be ahead of           Real           Fake     Real
+    ”Nice to meet you, too.”. Various models regard recognizing
+    relative positions between parts of it as the pretext task [63].       [a
+    It could be to predict relative positions of two patches from                             |
+    a sample [37], or to recover positions of shuffled segments
+    of an image (solve jigsaw) [67], [92], [141], or to infer the     ~~
+    rotation angle’s degree of an image [43]. PRP may also serve        |__|                                                    ET IT]
+    as tools to create hard positive samples. For instance, the
+    jigsaw technique is applied in PIRL [87] to augment the
+    positive sample, but PIRL does not regard solving jigsaw
+    and recovering spatial relation as its objective.                       {> Encoder    {>       {>     Encoder     {>
+
+    =                                   =                                                              Views
+
+        Cd     |               Right  ©     3      =                               Deep InfoMax    AMDIM
+                                                                         Fig. 9: Two representatives for mutual information’s applica-
+           Predict Relative Position    Rotation                       tion in contrastive learning. Deep InfoMax (DIM) [55] first
+    Fig. 8: Three typical methods for spatial relation contrast: pre-         encodes an image into feature maps, and leverage a read-
+    dict relative position [37], rotation [43] and solve jigsaw [67],        out function (or so-called summary function) to produce a
+    [87], [92], [141].                                                              summary vector. AMDIM [7] enhances the DIM through
+    In the pre-trained language model, similar ideas such as                    randomly choosing another view of the image to produce
+    Next Sentence Prediction (NSP) are also adopted. NSP loss is       the summary vector.
+    initially introduced by BERT [32], where for a sentence, the
+    model is asked to distinguish the following and a randomly          •             a summary function g:RM×M×d → Rd to generate the
+    sampled one. However, some later work empirically proves               context vector s = g(f (x)) ∈ Rd
+    that NSP helps little, even harm the performance. So in             •  another cat image     x− and its context vector s−        =
+    RoBERTa [81], the NSP loss is removed.                                 g(f (x−)).
+         To replace NSP, ALBERT [74] proposes Sentence Order           and the contrastive objective is then formulated as
+    Prediction (SOP) task. That is because, in NSP, the negative                                        evᵀ ·s
+    next sentence is sampled from other passages that may have             L = Ev,x[−log(            )]                           (11)
+    different topics from the current one, turning the NSP into a                                  evᵀ ·s + evᵀ ·s−
+    far easier topic model problem. In SOP, two sentences that                        Deep InfoMax provides us with a new paradigm and
+    exchange their position are regarded as a negative sample,                 boosts the development of self-supervised learning. The
+    making the model concentrate on the semantic meaning’s             first influential follower is Contrastive Predictive Coding
+    coherence.                                                                    (CPC) [95] for speech recognition. CPC maximizes the
+                                                                         association between a segment of audio and its context audio.
+    4.1.2  Maximize Mutual Information                                   To improve data efficiency, it takes several negative context
+    This kind of method derives from mutual information (MI)             vectors at the same time. Later on, CPC has also been applied
+    – a fundamental concept in statistics. Mutual information          in image classification.
+    targets modeling the association between two variables, and                    AMDIM [7] enhances the positive association between
+    our objective is to maximize it. Generally, this kind of models           a local feature and its context. It randomly samples two
+    optimize                                                                different views of an image (truncated, discolored, and so
+                       max I (g1(x1), g2(x2))           (10)           forth) to generate the local feature vector and context vector,
+                   g1∈G1,g2∈G1                                         respectively. CMC [126] extends it into several different views
+        for one image and samples another irrelevant image as the
+where gi is the representation encoder, Gi is a class of negative. However, CMC is fundamentally different from
+encoders with some constraints, and I (·, ·) is a sample- Deep InfoMax and AMDIM because it proposes to measure
+based estimator for the accurate mutual information. In the instance-instance similarity rather than context-instance
+applications, MI is notorious for its complex computation. similarity. We will discuss it in the following subsection.
+    A common practice is to alternatively maximize I ’s lower                In language pre-training, InfoWord [72] proposes to maxi-
+    bound with an NCE objective.                                           mize the mutual information between a global representation
+      Deep InfoMax [55] is the first one to explicitly model              of a sentence and n-grams in it. The context is induced from
+    mutual information through a contrastive learning task,                   the sentence with selected n-grams being masked, and the
+    which maximize the MI between a local patch and its global              negative contexts are randomly picked out from the corpus.
+    context. For real practices, take image classification as an                     In graph learning, Deep Graph InfoMax (DGI) [136]
+example, we can encode a cat image x into f (x) ∈ RM×M×d, regards a node’s representation as the local feature and
+and take out a local feature vector v ∈ Rd. To conduct the average of randomly samples 2-hop neighbors as the
+contrast between instance and context, we need two other context. However, it is hard to generate negative contexts
+    things:                                                                     on a single graph. To solve this problem, DGI proposes
+
+                                                                                                                                 10
+
+        ®A                              @                              Cross-entropy Loss   Soft-clustering Loss
+                               ®                                                                i
+                                                                       ooo, eo                                   o°°
+                                                                       SE
+        —                                                                RCL Embedding
+        ++ 70                                                          =                           a
+           ©                                 ©                                                   Space ay        1%.
+        @ GONN     71         $1      T1     GNN     ®                     :                ees                  :
+    Fig. 10: Deep Graph InfoMax [136] uses a readout function to           abel             Close
+    generate summary vector s1, and puts it into a discriminator       DeepCluster          Local Aggregation
+with node 1’s embedding x1 and corrupted embedding
+x˜1 respectively to identify which embedding is the real Fig. 11: Cluster-based instance-instance contrastive emthods:
+embedding. The corruption is to shuffle the positions of DeepCluster [17] and Local Aggregation [162]. In the embed-
+    nodes.                                                             ding space, DeepCluster uses clustering to yield pseudo
+        labels for discrimination to draw near similar samples.
+to corrupt the original context by keeping the sub-graph However, Local Aggregation shows that a egocentric soft-
+structure and permuting the node features. DGI is followed clustering objective would be more effective.
+by many works, such as InfoGraph [118], which targets
+learning graph-level representation rather than node level, metric learning does. Instance-level representation, rather
+maximizing the mutual information between graph-level than context-level, is more crucial for a wide range of classi-
+representation and substructures at different levels. As what fication tasks. For example, in an image classified as “dog”,
+CMC has done to improve Deep InfoMax, in [51] authors while there must be dog instances, some other irrelevant
+propose a contrastive multi-view representation learning context objects such as grass might appear. But what matters
+method for the graph. They also discover that graph diffusion for the image classification is the dog rather than the context.
+is the most effective way to yield augmented positive sample Another example would be sentence emotional classification,
+    pairs in graph learning.                                           which primarily relies on few but important keywords.
+                 As an attempt to unify graph pre-training, in [57],     In the early stage of instance-instance contrastive learn-
+    the authors systematically analysis the pre-training strate-       ing’s development, researchers borrow ideas from semi-
+    gies for graph neural networks from two dimensions: at-            supervised learning to produce pseudo labels via cluster-
+    tribute/structural and node-level/graph-level. For structural      based discrimination and achieve rather good performance
+    prediction at node-level, they propose Context Prediction          on representations. More recently, CMC [126], MoCo [52],
+    to maximize the MI between the k-hop neighborhood’s                SimCLR [19], and BYOL [47] further support the above
+    representations and its context graph. For attributes in the       conclusion by outperforming the context-instance contrastive
+    chemical domain, they propose Attribute Mask to predict a          methods and achieve a competitive result to supervised
+    node’s attribute according to its neighborhood, which is a         methods under the linear classification protocol. We will
+    generative objective similar to token masks in BERT.               start with cluster-based discrimination proposed earlier and
+   S2GRL [98] further separates nodes in the context graph then turn to instance-based discrimination.
+into k-hop context subgraphs and maximizes their MI with
+target node, respectively. However, a fundamental problem 4.2.1 Cluster Discrimination
+of graph pre-training is about learning inductive biases Instance-instance contrast is first studied in clustering-based
+across graphs, and existing graph pre-training work is only methods [17], [79], [93], [147], especially the DeepCluster [17]
+    applicable for a specific domain.                                  which first achieves competitive performance to the super-
+    4.2        Instance-Instance Contrast        vised model AlexNet [73].
+                                                                           Image classification asks the model to categorize images
+    Though MI-based contrastive learning achieves great success,       correctly, and the representation of images in the same cate-
+    some recent studies [19], [23], [52], [129] cast doubt on the      gory should be similar. Therefore, the motivation is to pull
+    actual improvement brought by MI.                                  similar images near in the embedding space. In supervised
+              The [129] provides empirical evidence that the success   learning, this pulling-near process is accomplished via label
+    of the models mentioned above is only loosely connected            supervision; in self-supervised learning, however, we do
+    to MI by showing that an upper bound MI estimator leads            not have such labels. To solve the label problem, Deep
+    to ill-conditioned and lower performance representations.          Cluster [17] proposes to leverage clustering to yield pseudo
+    Instead, more should be attributed to encoder architecture         labels and asks a discriminator to predict images’ labels. The
+    and a negative sampling strategy related to metric learning.       training could be formulated in two steps. In the first step,
+    A significant focus in metric learning is to perform hard          DeepCluster uses K-means to cluster encoded representation
+    positive sampling while increasing the negative sampling           and produces pseudo labels for each sample. Then in the
+    efficiency. They probably play a more critical role in MI-based    second step, the discriminator predicts whether two samples
+    models’ success.                                                   are from the same cluster and back-propagates to the encoder.
+           As an alternative, instance-instance contrastive learning   These two steps are performed iteratively.
+    discards MI and directly studies the relationships between               Recently, Local Aggregation (LA) [162] has pushed for-
+    different samples’ instance-level local representations as what    ward the cluster-based method’s boundary. It points out
+
+        11
+several drawbacks of DeepCluster and makes the corre- 4.2.2 Instance Discrimination
+sponding optimization. First, in DeepCluster, samples are The prototype of leveraging instance discrimination as a
+assigned to mutual-exclusive clusters, but LA identifies pretext task is InstDisc [142]. Based on InstDisc, CMC [126]
+neighbors separately for each example. Second, DeepCluster proposes to adopt multiple different views of an image as
+optimizes a cross-entropy discriminative loss, while LA positive samples and take another one as the negative. CMC
+employs an objective function that directly optimizes a local draws near multiple views of an image in the embedding
+soft-clustering metric. These two changes substantially boost space and pulls away from other samples. However, it is
+the performance of LA representation on downstream tasks. somehow constrained by the idea of Deep InfoMax, which
+    A similar work to LA would be VQ-VAE [108], [132] only samples one negative sample for each positive one.
+    that we introduce in Section 3. To conquer the traditional                     In MoCo [52], researchers further develop the idea of
+    deficiency for VAE to generate high-fidelity images, VQ-VAE                leveraging instance discrimination via momentum contrast,
+    proposes quantizing vectors. For the feature matrix encoded            which substantially increases the amount of negative samples.
+    from an image, VQ-VAE substitutes each 1-dimensional                  For example, given an input image x, our intuition is to learn
+    vector in the matrix to the nearest one in an embedding                 a instinct representation q = fq(x) by a query encoder fq(·)
+    dictionary. This process is somehow the same as what LA is                  that can distinguish x from any other images. Therefore,
+    doing.                                                                     for a set of other images xi, we employ an asynchronously
+                                                                         updated key encoder fk(·) to yield k+          = fk(x) and ki =
+                  Clustering-based discrimination may also help in the   fk(xi), and optimize the following objective
+    generalization of other pre-trained models, transferring                 L = −log ∑exp(q · k+/τ )                               (12)
+    models from pretext objectives to downstream tasks better.                          K     exp(q · k /τ )
+    Traditional representation learning models have only two             where K        i=0         i
+                                                                                      is the number of negative samples. This formula is
+    stages: one for pre-training and the other for evaluation. Clus-     in the form of InfoNCE.
+    terFit [146] introduces a cluster prediction fine-tuning stage            Besides, MoCo presents two other critical ideas in dealing
+    similar to DeepCluster between the above two stages, which           with negative sampling efficiency.
+    improves the representation’s performance on downstream               •       First, it abandons the traditional end-to-end training
+    classification evaluation.                                                      framework. It designs the momentum contrast learning
+    Despite the previous success of cluster discrimination-                        with two encoders (query and key), which prevents the
+    based contrastive learning, the two-stage training paradigm                 fluctuation of loss convergence in the beginning period.
+    is time-consuming and poor performing compared to later               •  Second, to enlarge negative samples’ capacity, MoCo
+    instance discrimination-based methods, including CMC [126],                       employs a queue (with K as large as 65536) to save
+    MoCo [52] and SimCLR [19]. These instance discrimination-                     the recently encoded batches as negative samples. This
+    based methods have got rid of the slow clustering stage                     significantly improves the negative sampling efficiency.
+    and introduced efficient data augmentation (i.e., multi-
+    view) strategies to boost the performance. In light of these                 contain oss
+    problems, authors in SwAV [18] bring online clustering
+    ideas and multi-view data augmentation strategies into the
+    cluster discrimination approach. SwAV proposes a swapped                 +
+    prediction contrastive objectives to deal with multi-view             ww     asc —-         el     one
+    augmentation. The intuition is that, given some (clustered)              +      +      +    pe     +      +
+    prototypes, different views of the same images should                                           ©
+    be assigned into the same prototypes. SwAV names this                       Fig. 12: Conceptual comparison of three contrastive loss
+    “assignment” as “codes”. To accelerate code computing, the           mechanisms. Taken from MoCo [52].
+    authors of SwAV design an online computing strategy. SwAV
+    outperforms instance discrimination-based methods when                       There are some other auxiliary techniques to ensure the
+    model size is small and is more computationally efficient.            training convergence, such as batch shuffling to avoid trivial
+    Based on SwAV, a 1.3-billion-parameter SEER [46] is trained                solutions and temperature hyper-parameter τ to adjust the
+    on 1 billion web images collected from Instagram.                    scale.
+                                                                                       However, MoCo adopts a too simple positive sample
+                 In graph learning, M3S [121] adopts a similar idea to        strategy: a pair of positive representations come from the
+    perform DeepCluster-style self-supervised pre-training for                   same sample without any transformation or augmentation,
+    better semi-supervised prediction. Given little labeled data         making the positive pair far too easy to distinguish. PIRL [87]
+    and many unlabeled data, for every stage, M3S first pre-                adds jigsaw augmentation as described in Section 4.1.1. PIRL
+    train itself to produce pseudo labels on unlabeled data as               asks the encoder to regard an image and its jigsawed one as
+    DeepCluster does and then compares these pseudo labels               similar pairs to produce a pretext-invariant representation.
+    with those predicted by the model being supervised trained            In SimCLR [19], the authors further illustrate the im-
+    on labeled data. Only top-k confident labels are added into               portance of a hard positive sample strategy by introducing
+    a labeled set for the next stage of semi-supervised training.                  data augmentation in 10 forms. This data augmentation
+    In [153], this idea is further developed into three pre-training          is similar to CMC [126], which leverages several different
+    tasks: topology partitioning (similar to spectral clustering),       views to augment the positive pairs. SimCLR follows the end-
+    node feature clustering, and graph completion.                                to-end training framework instead of momentum contrast
+
+                                                                                                                                                                                          12
+                                                                                                                   vew                         prjcion      —
+                                      EI                                            -                              =      fo      9                3
+     I¥  \}      Be,                      hy31                                                                                                                                    =
+     (a) Original  (b)Crop and   (¢)  Crop, resize(and flip) (d) Color distort. drop) Colordistort.(jitter)           B                        B
+    ==
+     &              ?                     i                                                                        Fig. 14: The architecture of BYOL [47]. Noted that the online
+    =               44                RE                                                                           encoder has an additional layer qθ compared to the target
+                                                                                                                   one, which gives the representations some flexibility to be
+    Fig. 13: Ten different views adopted by SIMCLR [19]. The                                                       improved during the training. Taken from [47]
+    enhancement of positive samples substantially improves the
+    self-supervised learning performance. Taken from [19]                                                          use a fixed randomly initialized network (which would
+from MoCo, and to handle the large-scale negative samples not collapse because it is not trained) to serve as the key
+problem, SimCLR chooses a batch size of N as large as 8196. encoder, the representation produced by query encoder
+        would still be improved during training. If then we set
+   The details are as follows. A minibatch of N samples the target encoder to be the trained query encoder and
+is augmented to be 2N samples xˆj (j = 1, 2, ..., 2N ). For a iterate this procedure, we would progressively achieve better
+pair of a positive sample xˆi and xˆj (derive from one original performance. Therefore, BYOL proposes an architecture
+sample), other 2(N − 1) are treated as negative ones. A (Figure 14) with an exponential moving average strategy
+    pairwise contrastive loss NT-Xent loss [21] is defined as                                                      to update the target encoder just as MoCo does. Additionally,
+                                      exp(sim(ˆ
+         li,j     = −log ∑2N          I      xi, xˆj )/τ, x)                       )  )                    (13)    instead of using cross-entropy loss, they follow the regression
+                                      xi                                        ˆk /τ
+         k=1                                       [k=i]exp(sim(ˆ                                                  paradigm in which mean square error is used as:
+    noted that li,j                                                 is asymmetrical, and the sim(·, ·) function                                    〈q   (z ), z′ 〉
+    here is a cosine similarity function that can normalize the                     ~~                             LBYOLθ  , ||q¯θ(zθ) − z¯ξ′||22 = 2 − 2 · ||qθ(zθθ)||θ2 · ||zξ  ′ ||  (15)
+    representations. The summed up loss is                                                                                                                                        ξ     2
+                                 N                                                                                                         This not only makes the model better-performed in
+         1                       ∑
+         L = 2N k=1[l2i−1,2i + l2i,2i−1]                                                                   (14)    downstream tasks, but also more robust to smaller batch
+                                                                                                                   size. In MoCo and SimCLR, a drop in batch size results
+     SimCLR also provides some other practical techniques,                                                         in a significant decline in performance. However, in BYOL,
+    including a learnable nonlinear transformation between the                                                     although batch size still matters, it is far less critical. The
+    representation and the contrastive loss, more training steps,                                                  ablation study shows that a batch size of 512 only causes
+    and deeper neural networks. [23] conducts ablation studies                                                     a drop of 0.3% compared to a standard batch size of 4096,
+    to show that techniques in SimCLR can also further improve                                                     while SimCLR shows a drop of 1.4%.
+    MoCo’s performance.                                                                                                             In SimSiam [24], researchers further study how necessary
+     More investigation into augmenting positive samples is                                                        is negative sampling, and even batch normalization in
+    made in InfoMin [127]. The authors claim that we should                                                        contrastive representation learning. They show that the most
+    select those views with less mutual information for better-                                                    critical component in BYOL is the stop gradient operation,
+    augmented views in contrastive learning. In the optimal                                                        which makes the target representation stable. SimSiam is
+    situation, the views should only share the label information.                                                  proved to converge faster than MoCo, SimCLR, and BYOL
+    To produce such optimal views, the authors first propose                                                       with even smaller batch sizes, while the performance only
+    an unsupervised method to minimize mutual information                                                          slightly decreases.
+    between views. However, this may result in a loss of                                                                          Some other works are inspired by theoretical analysis into
+    information for predicting labels (such as a pure blank view).                                                 the contrastive objective. ReLIC [88] argues that contrastive
+    Therefore, a semi-supervised method is then proposed to                                                        pre-training teaches the encoder to causally disentangle
+    find views sharing only label information. This technique                                                      the invariant content (i.e., main objects) and style (i.e.,
+    leads to an improve about 2% over MoCo v2.                                                                     environments) in an image. To better enforce this observation
+     A more radical step is made by BYOL [47], which discards                                                      in the data augmentation, they propose to add an extra
+    negative sampling in self-supervised learning but achieves                                                     KL-divergence regularizer between prediction logits of an
+    an even better result over InfoMin. For contrastive learning                                                   image’s different views. The results show that this can
+    methods we mentioned above, they learn representations                                                         enhance the models’ generalization ability and robustness
+    by predicting different views of the same image and cast                                                       and improve the performance.
+    the prediction problem directly in representation space.                                                                         In graph learning, Graph Contrastive Coding (GCC) [101]
+However, predicting directly in representation space can is a pioneer to leverage instance discrimination as the pretext
+lead to collapsed representations because multi-views are task for structural information pre-training. For each node,
+generally too predictive for each other. Without negative we sample two subgraphs independently by random walks
+samples, it would be too easy for the neural networks to with restart and use top eigenvectors from their normalized
+    distinguish those positive views.                                                                              graph Laplacian matrices as nodes’ initial representations.
+     In BYOL, researchers argue that negative samples may                                                                           Then we use GNN to encode them and calculate the InfoNCE
+    not be necessary in this process. They show that, if we                                                        loss as what MoCo and SimCLR do, where the node
+
+                                                                                                                                    13
+    embeddings from the same node (in different subgraphs)                     computer vision tasks, Zoph et al. [163] study the MoCo
+    are viewed as similar. Results show that GCC learns bet-                pre-training and a self-training method in which a teacher
+    ter transferable structural knowledge than previous work                 is first trained on a downstream dataset (e.g., COCO) and
+    such as struc2vec [110], GraphWave [40] and ProNE [155].              then yield pseudo labels on unlabeled data (e.g., ImageNet),
+    GraphCL [152] studies the data augmentation strategies in                 and finally a student learns jointly over real labels on
+    graph learning. They propose four different augmentation                     the downstream dataset and pseudo labels on unlabeled
+    methods based on edge perturbation and node dropping. It              data. They surprisingly find that pre-training’s performance
+    further demonstrates that the appropriate combination of                 hurts while self-training still benefits from strong data
+    these strategies can yield even better performance.                        augmentation. Besides, more labeled data diminishes the
+        value of pre-training, while semi-supervised self-training
+4.3 Self-supervised Contrastive Pre-training for Semi- always improves. They also discover that the improvements
+    supervised Self-training                                                from pre-training and self-training are orthogonal to each
+                                                                           other, i.e., contributing to the performance from different
+    While contrastive learning-based self-supervised learning                perspectives. The model with joint pre-training and self-
+    continues to push the boundaries on various benchmarks,           training is the best.
+    labels are still important because there is a gap between                     Chen et al. [20]’s SimCLR v2 supports the conclusion
+    training objectives of self-supervised learning and supervised                mentioned above by showing that with only 10% of the
+    learning. In other words, no matter how self-supervised                    original ImageNet labels, the ResNet-50 can surpass the
+    learning models improve, they are still the only powerful           supervised one with joint pre-training and self-training. They
+    feature extractor, and to transfer to the downstream task, we     propose a 3-step framework:
+    still need labels more or less. As a result, to bridge the gap     1)           Do self-supervised pre-training as SimCLR v1, with
+    between self-supervised pre-training and downstream tasks,             some minor architecture modification and a deeper
+    semi-supervised learning is what we are looking for.                   ResNet.
+                  Recall the MoCo [52] that have topped the ImageNet   2)         Fine-tune the last few layers with only 1% or 10% of
+    leader-board. Although it is proved beneficial for many other          original ImageNet labels.
+    downstream vision tasks, it fails to improve the COCO object       3)     Use the fine-tuned network as teacher to yield labels on
+    detection task. Some following work [90], [163] investigates          unlabeled data to train a smaller student ResNet-50.
+    this problem and attributes it to the gap between the instance
+    discrimination and object detection. In such a situation,          The success in combining self-supervised contrastive pre-
+    while pure self-supervised pre-training fails to help, semi-          training and semi-supervised self-training opens up our eyes
+    supervised-based self-training can contribute a lot to it.                for a future data-efficient deep learning paradigm. More
+   First, we will clarify the definitions of semi-supervised work is expected for investigating their latent mechanisms.
+learning and self-training. Semi-supervised learning is an
+approach to machine learning that combines a small amount 4.4 Pros and Cons
+of labeled data with many unlabeled data during training.
+Various methods derive from several different assumptions Because contrastive learning has assumed the downstream
+made on the data distribution, with self-training (or self- applications to be classifications, it only employs the encoder
+labeling) being the oldest. In self-training, a model is trained and discards the decoder in the architecture compared
+on the small amount of labeled data and then yield labels to generative models. Therefore, contrastive models are
+on unlabeled data. Only those data with highly confident usually light-weighted and perform better in discriminative
+labels are combined with original labeled data to train a new downstream applications.
+    model. We iterate this procedure to find the best model.               Contrastive learning is closely related to metric learning,
+              The current state-of-the-art supervised model [143] on           a discipline that has been long studied. However, self-
+    ImageNet follows the self-training paradigm, where we first            supervised contrastive learning is still an emerging field,
+    train an EfficientNet model on labeled ImageNet images            and many problems remain to be solved, including:
+    and use it as a teacher to generate pseudo labels on 300M          1)  Scale to natural language pre-training.         Despite its
+    unlabeled images. We then train a larger EfficientNet as a                    success in computer vision, contrastive pre-training
+    student model based on labeled and pseudo labeled images.              does not present a convincing result in the NLP bench-
+    We iterate this process by putting back the student as the                        marks. Most contrastive learning in NLP now lies
+    teacher. During the pseudo labels generation, the teacher                      in BERT’s supervised fine-tuning, such as improving
+    is not noised so that the pseudo labels are as accurate                    BERT’s sentence-level representation [109], information
+    as possible. However, during the student’s learning, we                       retrieval [65]. Few algorithms have been proposed to
+    inject noise such as dropout, stochastic depth, and data                  apply contrastive learning in the pre-training stage. As
+    augmentation via RandAugment to the student to generalize                   most language understanding tasks are classifications,
+    better than the teacher.                                                    a contrastive language pre-training approach should be
+          In light of semi-supervised self-training’s success, it is       better than the current generative language models.
+    natural to rethink its relationship with the self-supervised       2)         Sampling efficiency. Negative sampling is a must for
+    methods, especially with the successful contrastive pre-                      most contrastive learning, but this process is often
+    trained methods. In Section 4.2.1, we have introduced                            tricky, biased, and time-consuming. BYOL [47] and
+    M3S [120] that attempts to combine cluster-based contrastive             SimSiam [24] are the pioneers to get contrastive learning
+           pre-training and downstream semi-supervised learning. For       rid of negative samples, but it can be improved. It is also
+
+                                                                                                                                      14
+                not clear enough that what role negative sampling plays
+        in contrastive learning.                                          min max E        )]     E
+    3)             Data augmentation. Researchers have proved that data   G   D x∼pdata(x)[logD(x           + z∼pz (z)[log(1 − D(G(z)))]
+        augmentation can boost contrastive learning’s perfor-                                                                       (16)
+                mance, but the theory for why and how it helps is still                 Before VQ-VAE2, GAN maintains dominating perfor-
+               quite ambiguous. This hinders its application into other           mance on image generation tasks over purely generative
+                     domains, such as NLP and graph learning, where the          models, such as autoregressive PixelCNN and autoencoder
+        data is discrete and abstract.                                        VAE. It is natural to think about how this framework could
+                                                                          benefit representation learning.
+    5   GENERATIVE-CONTRASTIVE                            (ADVERSARIAL)            However, there is a gap between generation and repre-
+    SELF-SUPERVISED LEARNING                                                 sentation. Compared to autoencoder’s explicit latent sample
+    Generative-contrastive representation learning, or in a more          distribution pz(z), GAN’s latent distribution pz(z) is implic-
+    familiar name adversarial representation learning, leverage              itly modeled. We need to extract this implicit distribution
+    discriminative loss function as the objective. Yann Lecun             out. To bridge this gap, AAE [83] first proposes a solution to
+    comments on adversarial learning as ”the most interesting                follow the autoencoder’s natural idea. The generator in GAN
+    idea in the last ten years in machine learning.”. Its application         could be viewed as an implicit autoencoder. We can replace
+    in learning representation is also booming.                             the generator with an explicit variational autoencoder (VAE)
+               The idea of adversarial learning derives from generative   to extract the representation out. Recall the objective of VAE
+    learning, where researchers have observed some inherent                L
+    shortcomings of point-wise generative reconstruction (See                 VAE = −Eq(z|x)(−log(p(x|z)) + KL(q(z|x)‖p(z))         (17)
+    Section 3.5). As an alternative, adversarial learning learns             As we mentioned before, compared to l2 loss of autoencoder,
+    to reconstruct the original data distribution rather than the                discriminative loss in GAN better models the high-level
+    samples by minimizing the distributional divergence.                   abstraction. To alleviate the problem, AAE substitutes the KL
+            In terms of contrastive learning, adversarial methods still   divergence function for a discriminative loss
+    preserve the generator structure consisting of an encoder and                 L
+    a decoder. In contrast, the contrastive abandons the decoder                  Disc = CrossEntropy(q(z), p(z))                   (18)
+    component (as shown in Fig. 4). It is critical because, on the        that asks the discriminator to distinguish representation from
+    one hand, the generator endows adversarial learning with              the encoder and a prior distribution.
+    strong expressiveness that is peculiar to generative models;                  However, AAE still preserves the reconstruction error,
+    on the other hand, it also makes the objective of adversarial                   which contradicts GAN’s core idea. Based on AAE, Bi-
+    methods far more challenging to learn than that of contrastive           GAN [38] and ALI [41] argue to embrace adversarial learning
+    methods, leading to unstable convergence. In the adversarial                    without reservation and put forward a new framework.
+    setting, the decoder’s existence asks the representation to be        Given an actual sample x
+    ”reconstructive,” in other words, it contains all the necessary
+    information for constructing the inputs. However, in the               •  Generator G: the generator here virtually acts as the
+    contrastive setting, we only need to learn ”distinguishable”                   decoder, generates fake samples x′ = G(z) by z from a
+    information to discriminate different samples.                         prior latent distribution (e.g. [uniform(-1,1)]d, d refers to
+                  To sum up, the adversarial methods absorb merits from       dimension).
+    both generative and contrastive methods together with some             •            Encoder E: a newly added component, mapping real
+    drawbacks. In a situation where we need to fit on an implicit             sample x to representation z′ = E(x). This is also exactly
+    distribution, it is a better choice. In the following several             what we want to train.
+    subsections, we will discuss its various applications on               •      Discriminator D: given two inputs [z, G(z)] and [E(x),
+    representation learning.                                                  x], decide which one is from the real sample distribution.
+                                                                            It is easy to see that their training goal is E    = G−1. In
+    5.1 Generate with Complete Input                                          other words, encoder E should learn to ”convert” generator
+This section introduces GAN and its variants for representa- G. This goal could be rewritten as a l0 loss for autoen-
+tion learning, focusing on capturing the sample’s complete coder [38], but it is not the same as a traditional autoencoder
+    information.                                                                   because the distribution does not make any assumption
+    The inception of adversarial representation learning about the data itself. The distribution is shaped by the
+should be attributed to Generative Adversarial Networks discriminator, which captures the semantic-level difference.
+(GAN) [104], which proposes the adversarial training frame- Based on BiGAN and ALI, later studies [25], [39] discover
+work. Follow GAN, many variants [15], [61], [62], [66], [78], that GAN with deeper and larger networks and modified
+[96] emerge and reshape people’s understanding of deep architectures can produce even better results on downstream
+learning’s potential. GAN’s training process could be viewed task.
+as two players play a game; one generates fake samples
+while another tries to distinguish them from real ones. To 5.2 Recover with Partial Input
+formulate this problem, we define G as the generator, D as As we mentioned above, GAN’s architecture is not born
+the discriminator, pdata(x) as the real sample distribution, for representation learning, and modification is needed to
+pz(z) as the learned latent sample distribution, we want to apply its framework. While BiGAN and ALI choose to extract
+    optimize this min-max game                                               the implicit distribution directly, some other methods such
+
+                                                                                                                                    15
+                                                                                    Replaced Token Detection (RTD) and leverages GAN’s
+                                                 _   a _                 structure to pre-train a language model. In this setting, the
+            “i           BR 2c]                                                  a generator G is a small Masked Language Model (MLM),
+                             LB   =X                                              which replaces masked tokens in a sentence to words.
+                         [=                                                    The discriminator D is asked to predict which words are
+                                                 Super     panting   replaced. Notice that replaced            means not the same with
+    Fig. 15: Illustration of typical ”recovering with partial in-           original unmasked inputs. The training is conducted in two
+    put” methods: colorization, inpainting and super-resolution.     stages:
+    Given the original input on the left, models are asked to         1)           Warm-up the generator: train the G with MLM pretext
+    recover it with different partial inputs given on the right.         task LMLM(x, θG)                for some steps to warm up the
+                                                                         parameters.
+    as colorization [75], [76], [157], [158], inpainting [61], [96]   2)    Trained with the discriminator: D’s parameters is initial-
+    and super-resolution [78] apply the adversarial learning via                ized with G’s and then trained with the discriminative
+    in a different way. Instead of asking models to reconstruct             objective LDisc(x, θD) (a cross-entropy loss). During this
+    the whole input, they provide models with partial input              period, G’s parameter is frozen.
+    and ask them to recover the rest parts. This is similar to       The final objective could be written as
+    denoising autoencoder (DAE) such as BERT’s family in                     min ∑  L
+                                                                             θ      MLM(x, θG) + λLDisc(x, θD)                    (19)
+    natural language processing but conducted in an adversarial              G,θD x∈X
+    manner.                                                                     Though ELECTRA is structured as GAN, it is not trained
+   Colorization is first proposed by [157]. The problem in the GAN setting. Compared to image data, which is con-
+can be described as given one color channel L in an image tinuous, word tokens are discrete, which stops the gradient
+and predicting the value of two other channels A, B. The backpropagation. A possible substitution is to leverage policy
+encoder and decoder networks can be set to any form of gradient, but ELECTRA experiments show that performance
+convolutional neural network. Interestingly, to avoid the is slightly lower. Theoretically speaking, LDisc(x, θD) is actu-
+uncertainty brought by traditional generative methods such ally turning the conventional k-class softmax classification
+as VAE, the author transforms the generation task into a into a binary classification. This substantially saves the com-
+classification one. The first figure out the common locating putation effort but may somehow harm the representation
+area of (A, B) and then split it into 313 categories. The quality due to the early degeneration of embedding space.
+classification is performed through a softmax layer with In summary, ELECTRA is still an inspiring pioneer work in
+hyper-parameter T as an adjustment. Based on [157], a leveraging discriminative objectives.
+    range of colorization-based representation methods [75], [76],                    At the same time, WKLM [144] proposes to perform
+    [158] are proposed to benefit downstream tasks.                     RTD at the entity-level. For entities in Wikipedia paragraphs,
+        Inpainting [61], [96] is more straight forward. We will ask  WKLM replaced them with similar entities and trained the
+    the model to predict an arbitrary part of an image given the           language model to distinguish them in a similar discrimina-
+    rest of it. Then a discriminator is employed to distinguish               tive objective as ELECTRA, performing exceptionally well
+    the inpainted image from the original one. Super-resolution              in downstream tasks like question answering. Similar work
+    method SRGAN [78] follows the same idea to recover high-              is REALM [50], which conducts higher article-level retrieval
+    resolution images from blurred low-resolution ones in the                    augmentation to the language model. However, REALM is
+    adversarial setting.                                             not using the discriminative objective.
+
+    5.3     Pre-trained Language Model                               5.4 Graph Learning
+    For a long time, the pre-trained language model (PTM)              There are also attempts to utilize adversarial learning ( [28],
+    focuses on maximum likelihood estimation based pretext task      [33], [137]). Interestingly, their ideas are quite different from
+    because discriminative objectives are thought to be helpless     each other.
+    due to languages’ vibrant patterns. However, recently some                       The most natural idea is to follow BiGAN [38] and
+    work shows excellent performance and sheds light on                   ALI [41]’s a practice that asks discriminator to distinguish
+    contrastive objectives’ potential in PTM.                             representation from generated and prior distribution. Adver-
+                                                                               sarial Network Embedding (ANE) [28] designs a generator
+                                                                           G that is updated in two stages: 1) G encodes sampled graph
+        te    —> chef    —>             |                                      into target embedding and computes traditional NCE with
+        chef
+         and             | Generator                                 a context encoder F         like Skip-gram, 2) discriminator D is
+        the   —>  the    —> small MLM)  |    ape                               asked to distinguish embedding from G and a sampled one
+                                             the
+        meal  —> meal                        meal       original           from a prior distribution. The optimized objective is a sum
+    Fig. 16: The architecture of ELECTRA [26]. It follows GAN’s           of the above two objectives, and the generator G could yield
+    framework but uses a two-stage training paradigm to avoid        better node representation for the classification task.
+    using policy gradient. The MLM is Masked Language Model.                     GraphGAN [137] considers to model the link prediction
+                                                                                 task and follow the original GAN style discriminative
+              The pioneering work is ELECTRA [26], surpassing BERT         objective to distinguish directly at node-level rather than
+    given at the same computation budget. ELECTRA proposes                representation-level. The model first selects nodes from the
+
+                                                                                                                                     16
+    target node’s subgraph vc according to embedding encoded                        has been found to be much worse than unidirectional
+    by the generator G. Then some neighbor nodes to vc selected               language models such as GPTs.
+    from the subgraph, together with those selected by G, are              •    Easy to collapse. It is also notorious that adversarial
+    put into a binary classifier D          to decide whether they are           models are prone to collapse during the training, with
+    linked to           vc. Because this framework involves a discrete         numerous techniques developed to stabilize its training,
+    selection procedure, while gradient descents could update                     such as spectral normalization [89], W-GAN [4] and so
+    the discriminator D, the generator G is updated via policy                on.
+    gradients.                                                             •  Not for feature extraction.        Although works such as
+                                                                                        BiGAN [38] and BigBiGAN [39] have explored some
+                                                                                   ways to leverage GAN’s learned latent representation
+                  0.          AA   = XI                                          and achieve good performance, contrastive learning has
+                                                                              soon outperformed them with fewer parameters.
+                  ATEN                                                           Despite the challenges, however, it is still promising
+                  L/          RY   ©Le Ny                                     because it overcomes some inherent deficits of the point-
+                      we        Graphsaan                                  wise generative objective. Maybe we still need to wait for a
+                                                                         better future implementation of this idea.
+    Fig. 17: The architecture of GraphSGAN [33], which inves-
+    tigates density gaps in embedding space for classification
+    problems. Taken from [33]                                            6    THEORY BEHIND SELF-SUPERVISED LEARNING
+   GraphSGAN [33] applies the adversarial method in semi-
+supervised graph learning with the motivation that marginal In last three sections, we introduces a number of empirical
+nodes cause most classification errors in the graph. Consider works for self-supervised learning. However, we are also
+samples in the same category; they are usually clustered in ~ curious about their theoretical foundations. In this part, we
+the embedding space. Between clusters, there are density will provide some theoretical insights on self-supervised
+gaps where few samples exist. The author provides rigorous learning’s success from different perspectives.
+mathematical proof that we can perform complete classi-
+fication theoretically if we generate enough fake samples
+in density gaps. GraphSGAN leverages a generator G to 6.1 GAN
+generate fake nodes in density gaps during the training and
+asks the discriminator D to classify nodes into their original 6.1.1 Divergence Matching
+categories and a category for those fake ones. In the test As generative models, GANs [45] pays attention to the differ-
+period, fake samples are removed, and classification results ence between real data distribution Pdata(x) and generated
+    on original categories could be improved substantially.              data distribution PG(x; θ):
+
+    5.5     Domain Adaptation and Multi-modality Representa-                     θ∗ = arg max Πm          P (xi; θ)
+                                                                                                      i=1  G
+    tion                                                                      ≈ arg minθ      KL(Pdata(x)||PG(x; θ))               (20)
+    Essentially, the discriminator in adversarial learning serves                      θ
+    to match the discrepancy between latent representation
+    distribution and data distribution. This function naturally                    f-GAN [94] shows that the generative-adversarial ap-
+relates to domain adaptation and multi-modality represen- proach is a special case of an exsiting more general variational
+tation problems, aiming to align different representation divergence estimation problem, and uses f-divergence to
+distribution. [1], [2], [42], [113] studies how GAN can help on train the generative models. f-divergence reflects the differ-
+domain adaptation. [16], [138] leverage adversarial sampling ence of two distributions P and Q:
+to improve the negative samples’ quality. For multi-modality
+    representation,        [161]’s image to image translation, [114]’s        Df (P ||Q) = E  p(x)
+    text style transfer, [27]’s word to word translation and [112]               q(x)[f ( q(x) )]                                  (21)
+    image to text translation show great power of adversarial                    = max(E  x∼p(x)[T (x)] − Ex∼q(x)[g(T (x))])
+    representation learning.                                                     T
+                                                                                  Replace KL-divergence in (20) with Jensen-Shannon(JS)
+    5.6     Pros and Cons                                                divergence JS = 12 [Ep(x) log     2p(x)  + E
+                                                                                                        p(x)+q(x)    q(x) log 2q(x)   ]
+                                                                                                                            p(x)+q(x)
+    Generative-contrastive (adversarial) self-supervised learning            and calculate the replaced one with (21), the optimization
+    is particularly successful in image generation, transformation       target of the minmax GAN is achieved.
+    and manipulation, but there are also some challenges for its
+    future development:                                                       min max(EPdata(x)[log D (x)] + EP  G(x;θ)[log(1 − D(x))])
+    •                Limited applications in NLP and graph. Due to the     G        D                                              (22)
+              discrete nature of languages and graphs, the adversarial      Different divergence functions leads to different GAN vari-
+                 methods do not perform as well as they do in computer      ants. [94] also discusses the effects of various choices of
+                    vision. Furthermore, GAN-based language generation   divergence functions.
+
+                                                                                                                                     17
+         Original        Counterfactual                                6.2   Maximizing Lower Bound
+                                                     ad                6.2.1  Evidence Lower Bound
+                                                                       VAE (variational auto-encoder) learns the representation
+               WV       EL                                             through learning a distribution qφ(z|x) to approximate the
+                        3s                                             posteriori distribution pθ(z|x),
+                                                                        KL(qφ(z|x)||pθ(z|x)) = −ELBO(θ; φ; x) + log pθ(x)          (24)
+    Fig. 18: GAN is able to learn disentangled features and                 ELBO = Eqφ(z|x)[log qφ(z|x)] − Epθ[log pθ(z, x)]       (25)
+    encode them in its modular structure. In [12], researchers
+    show that in GAN the features of cock is disentangled with         where ELBO (Evidence Lower Bound Objective) is the lower
+    the features of background. Repainted from [12]                    bound of the optimization target KL(qφ(z|x)||pθ(z|x)). VAE
+                                                                       maximizes the ELBO to minimize the difference between
+                                                                       qφ(z|x) and pθ(z|x).
+    6.1.2 Disentangled Representation                                   ELBO(θ; φ; x) = −KL(qφ(z|x)||pθ (z)) + Eq [log pθ(x|z)]
+    An important drawback of supervised learning is that it                                                      φ                 (26)
+easily get trapped into spurious information. A famous where KL(qφ(z|x)||pθ (z)) is the regularization loss to approx-
+example is that supervised neural networks learn to dis- imate the Gaussian Distribution and Eq [log pθ(x|z)] is the
+    tinguish dogs and wolves by whether they are in the grass          reconstruction loss.    φ
+or snow [111], which means the supervised models do not
+learn the disentangled representations of the grass and the 6.2.2 Mutual Information
+    dog, which should be mutual independent.                           Most of current contrastive learning methods aim to maxi-
+            As an alternative, GAN show its superior potential in      mize the MI(Mutual Information) of the input and its repre-
+    learning disentangled features empirically and theoretically.      sentation with joint density p(x, y) and marginal densities
+    InfoGAN [22] first proposes to learn disentangled repre-           p(x) and p(y):
+    sentation with DCGAN. Conventionally, we sample white                                   p(x, y)
+    noise from a uniform or Gaussian distribution as input to                 I (X, Y ) = Ep(x,y)[log      ]
+    generator of GAN. However, this white noise does not make                              p(y)p(x)                                (27)
+    any sense to the characteristics of the image we generated. We              = KL(p(x, y)|p(x)p(y))
+    assume that there should be a latent code c whose dimensions                Deep Infomax [55]w maximizes the MI of local and global
+    represent different characteristics of the image respectively      features and replaces KL-divergence with JS-divergence,
+        (such as rotation degree and width). We will learn this c                which is similar to GAN mentioned above. Therefore the
+    jointly in the discrimination period by the discriminator D,       optimization target of Deep Infomax becomes:
+    and maximize c’s mutual information I (c; x) with the image
+    x = G(z, c), where G refers to the generator (actually the          max(T Ep(x,y)[log(T (x, y)]+ Ep(x)p(y)[log(1 − T (x, y))]) (28)
+    decoder).
+         Since mutual information is notoriously hard to compute,            The form of the objective optimization function is similar
+    the authors leverage the variational inference approcach to        to (22), except that the data distribution becomes the global
+    estimates its lower bound LI (c, x), and the final objective for   and local feature distributions. From a probability point of
+    InfoGAN is modified as:                                            view, GAN and DeepInfoMax are derived from the same
+                                                                       process but for a different learning target. The encoder
+     min max V (  G =   (  G −     (c     G z, ))                      in GAN, to an extent, works the same as the encoder in
+        G D I D,   )  V D,  )     λLI    ;     (     c       (23)      representation learning models. The idea of generative-
+                                                                       contrastive learning deserves to be used in self-learning
+    Experiments show that InfoGAN surely learns a good                 areas.
+    disentangled representation on MNIST. This further encour-                Instance Discrimination [142] [95] directly optimizes the
+    age researchers to identify whether the modular structures         proportion of gap of positive pairs and negative pairs. One
+    for generation inner the GAN could be disentangled and             of the commonly used estimators is InfoNCE [95]:
+    independent with each others. GAN dissection [10] is a                      exp(x · y/τ )
+pioneer work in applying causal analysis into understading L = EX [− log ΣK exp(x · x−/τ ) + exp(x · y/τ ) ]
+    GAN. They identify the correlations between channels in the                 i=0    p(x|y)/p(x)
+    convolutional layers and objects in the generated images, and           = EX [− log        ]
+    examine whether they are causally-related with the output.              p(x|y)/p(x) + Σx−∈X¬p(x−|y)/p(x−)
+    [12] takes another step to examine these channels’ conditional          ≈ EX log[1 +   p(x) (N − 1)E p(x−|y) ]                 (29)
+    independence via rigorous counterfactual interventions over                 p(x|y)      x−              p(x−)
+    them. Results indicate that in BigGAN researchers are able to               p(x)
+    disentangle backgrounds and objects, such as replacing the              ≥ EX log[ p(x|y) N ]
+    background of a cock from the bare soil with the grassland.             = −I (y, x) + log(N )
+          These work indicates the ability of GAN to learn disen-
+    tangled features and other self-supervised learning methods             Therefore the MI   I (x, y) ≥ log(N ) − L. The approx-
+    are likely to be capable too.                                      imation becomes increasingly accurate, and    I (x, y)      also
+
+                                                                                                                                         18
+    increases as N grows. This implies that it is useful to                                           pretrained w/ selfsupervision
+    use large negative samples(large values of N). But [5] has                                               @ trained from scratch
+    demonstrated that increasing the number of negative samples
+    does not necessarily help. Negative sampling remains a key            ~~ 3
+    challenge to study.                                                      H    7 3 7                             7H 7
+                    Though maximizing ELBO and MI has been achieved to    ~~ #        gif                           8
+    obtain the state-of-art result in self-supervised representation
+    learning, it is demonstrated that MI and ELBO are loosely                  # labels  # labels                          # labels
+    connected with the downstream task performance [69] [129].                    (a)      (b)                          (c)
+    Maximizing the lower bound(MI and ELBO) is not sufficient              Fig. 19: Three possible assumptions about supervised pre-
+    to learn useful representations. On the one hand, looser               training v.s. supervised training from scratch. Taken from [90]
+    bounds often yield better test accuracy in downstream tasks.
+    On the other hand, achieving the same lower bound value                indicating that self-supervised learning cannot learn more
+    can lead to vastly different representations and performance           than supervised learning, but can make it with few labels.
+    on downstream tasks, which indicates that it does not                          Although self-supervised learning cannot help on improv-
+    necessarily capture useful information of data [3] [128] [13].         ing accuracy, there are many other aspects it can learn more,
+    There is a non-trivial interaction between the representation          such as model robustness and stability. Hendrycks et al. [54]
+    encoder, critic, and loss function [129].                              discovers that self-supervised trained neural networks are
+                  MI maximization can also be analyzed from the metric     much robust to adversarial examples, label corruption, and
+    learning view. [129] provides some insight by connecting In-           common input corruptions. What’ more, it greatly benefits
+    foNCE to the triplet (k-plet) loss in deep learning community.         out-of-distribution detection on difficult, near-distribution
+    The InfoNCE (29) can be rewriten as follows:                           outliers, so much so that it exceeds the performance of fully
+    IN CE = E[ k1 Σki=1 log k1 Σkje=1f(xeif,y(xi)i,yj) ]                   supervised methods.
+                                                                           6.3.2  Understand Contrastive Loss
+        = log k − E[ k1 Σki=1 log(1 + Σkj=ief(xⁱ,yʲ)−f(xⁱ,yⁱ))]            In [139], Wang et al. conduct interesting theoretical analysis
+                                                                           on functions of contrastive loss, and split it into two terms:
+                                                                  (30)
+        In particular f    is contrained to the form     f (x, y)    =       L                      efₓᵀ fy/τ
+    φ(x)T φ(y) for a certain function φ. Then the InfoNCE is                   contrast = E[− log efxT fy/τ + ∑i efxT fy− /τ ]
+    corresponding to the expectation of the multi-class k-pair loss:                                                   i
+                                                                                  = E[−f T f    /τ ] + E[log(efᵀ f  /τ  ∑ fT f     /τ
+    Lk−pair(φ) = k1 Σki=1 log(1 + Σj=ieφ(xⁱ)ᵀ φ(yʲ)−φ(xⁱ)ᵀ φ(yⁱ))                     ︸  ︷︷x  y ︸ ︸   x     y           + i     e x  yi− )]
+                                                                  (31)                alignment                         ︷︷                ︸
+                                                                                                                    uniformity
+    In metric learning, the encoder is shared across views(φ(x)                                                                        (32)
+and φ(y)) and the critic function f (x, y) = φ(x)T φ(y) is where the first term aims at “alignment” and the second
+symmetric, while the MI maximization is not constrained by aims at “uniformity” of sample vectors on a sphere given
+these conditions. (31) can be viewed as learning encoders the normalization condition. Experiments show that these
+    with a parameter-less inner product.                                   two terms have a large agreement with downstream tasks. In
+        addition, the authors explore to directly optimize alignment
+6.3 Contrastive Self-supervised Representation Learn- and uniformity loss as:
+    ing                                                                        L
+    6.3.1  Relationship with Supervised Learning                                  align(f ; α) , E(x,y)∼ppos [||f (x) − f (y)||α2 ]    (33)
+    Self-supervised learning, as is indicated literally, follows the         Luniform(f ; t) , log Ex,y∼pdata [e−t||f(x)−f(y)||²₂ ]
+    supervised learning pattern. Empirical evidence shows that             in a joint additive form. They conduct experiments in wide
+    contrastive learning for pre-training is especially effective for      range of scenarios including using CNN or RNN in computer
+    downstream classification tasks (while this improvement is             vision or natural language processing tasks, and discover
+    not obvious on many generation tasks). We want to know                 that direct optimization is consistently better than contrastive
+    how contrastive pre-training benefits supervised learning,             loss. Besides, both alignment and uniformity are necessary
+    especially on whether self-supervised learning could learn             for a good representation. When one of the weights for these
+    more, at least for accuracy, than supervised learning does.            two losses is too large, the representation would collapse.
+        Newell et al. [90] examine the three possible assump-                            However, it is doubtful that whether alignment and
+    tions in Figure 19 that pre-training: (a) always provides              uniformity are necessarily in the form of upper two losses,
+    an improvement, (b) reaches higher accuracy with fewer                 because in BYOL [47], the authors display a framework
+    labels but plateaus to the same accuracy as baseline, (c)              without direct negative sampling but outperform all pre-
+    converges to baseline performance before accuracy plateaus.            vious contrastive learning pre-training. This illustrates us
+    They conducts experiment on synthetic COCO by rendering                that we may still achieve uniformity via other techniques
+             which can provide as many labels as possible and discover     such as exponential moving average, batch normalization,
+    that self-supervised pre-training follows the patterns in (c),         regularization and random initialization.
+
+                                                                                                                                                         19
+    6.3.3 Generalization                                                                         For all
+        √ > 0 and with the probability at least 1 − δ, γ = 1 +
+It seems intuitive that minimizing the aforementioned loss c′Rσ log R . Under the assumption and context, optimizing
+functions should lead the representations better to capture
+the ”similarity” between different entities, but it is unclear the unsupervised loss indeed helps pick the best downstream
+why the learned representations should also lead to better task supervised loss.
+                                      performance on downstream tasks, such as linear classi-       As in the aformentioned models [52] [23], (36) can also
+                                fication tasks. Intuitively, a self-supervised representation    be extended to more than one negative samples for every
+                                    learning framework must capture the feature in unlabelled    similar pair. Then average loss is
+                                    data and the similarity with semantic information that is        Lsup( fˆ) := EΥ∼D [Lsup(Υ, fˆ)]                   (37)
+                                       implicitly present in downstream tasks. [5] proposed a     Besides, the general belief is that increasing the number
+                                      conceptual framework to analyze contrastive learning on    of negative samples always helps, at the cost of increased
+    average classification tasks.                                                                computational costs. Noise Contrastive Estimation(NCE) [49]
+(x, xContrastive learning assumes that similar data pair explains that increasing the number of negative samples
+(x− +) comes from a distribution Dsim and negative sample can provably improve the variance of learning parameters.
+  1 , ..., x−k ) from a dstribution Dneg that is presumably However, [5] argues that this does not hold for contrastive
+unrelated to x. Under the hypothesis that semantically learning and shows that it can hurt performance when the
+similar points are sampled from the same latent class, the negative samples exceed a threshold.
+    unsupervised loss can be expressed as:                                                              Under the assumptions, contradictive representation
+   Lun(f ) = Ex₊∼Dsim [l({f (x)T (f (x+) − f (x−))})] (34) learning is theoretically proved to benefit the downstream
+        x−∼Dneg                                                                                  classification tasks. More detailed proofs can be found in
+    The self-supervised learning is to find a funtion fˆ ∈ [5]. This connects the ”similarity” in unlabelled data with
+arg minf Lˆun(f ) that minimizes the empirical unsupervised the semantic information in downstream tasks. Though the
+loss within the capacity of the used encoder. As negative connection temporarily is only in a restricted context, more
+points are sampled independently identically from the generalized research deserves exploration.
+datasets, Lun can be decomposed into τ L=
+        un and (1 − τ )L=
+        un 7 DISCUSSIONS AND FUTURE DIRECTIONS
+according to the latent class the negative sample drawed
+from. The intraclass deviation s(f ) ≥ c′(Lun(f )−1) controls In this section, we will discuss several open problems and fu-
+the Lun(f ) and implies the unexpected loss contradictive ture directions in self-supervised learning for representation.
+to our optimization target, which is caused by the negative Theoretical Foundation Though self-supervised learning
+sampling strategies. Under the context of only 1 negative has achieved great success, few works investigate the mecha-
+sample, it is proved that optimizing unsupervised loss nisms behind it. In this survey, we have listed several recent
+    benefits the downstream classification tasks:                                                works on this topic and show that theoretical analysis is
+    Lsup( fˆ) ≤ Lμsup( fˆ) ≤ L=     (f ) + βs(f ) + ηGen
+        un                                                                 M             (35)    significant to avoid misleading empirical conclusions.
+                                    With probability at least 1 − δ, f is the feature mapping    In [5], researchers present a conceptual framework to
+function the encoder can capture, GenM is the generalization analyze the contrastive objective’s function in generalization
+error. When the sampled pair M → inf and the numebr of ability. [129] empirically proves that mutual information
+latent class |C| → inf , GenM and δ → 0. If the encoder is is only loosely related to the success of several MI-based
+powerful enough and trained using suffiently large number methods, in which the sampling strategies and architecture
+    of samples, the learned function f with low L=                                               design may count more. This type of works is crucial for self-
+    low βs(f )                                                                  un as well as    supervised learning to form a solid foundation, and more
+    (low Lsup( fwill have good performance on supervised tasksˆ)                                 work related to theory analysis is urgently needed.
+        ).
+    Contrastive learning also has limitations. In fact, con- Transferring to downstream tasks There is an essential gap
+trastive learning does not always pick the best supervised between pre-training and downstream tasks. Researchers
+representation function f . Minimizing the unsupervised design elaborate pretext tasks to help models learn some
+loss to get low Lsup( fˆ) does not mean that fˆ ≈ f˜ = critical features of the dataset that can transfer to other jobs,
+    arg minf Lsup because high                                    L=       )
+    imply high Lsup        un and high s(f                                           does not    but sometimes this may fail to realize. Besides, the process
+        , resulting the failure of the algorithm.                                                of selecting pretext tasks seems to be too heuristic and tricky
+                                     The relationship between Lsup(f ) and Lsup( fˆ) are fur-    without patterns to follow.
+                                ther explored on the condition of mean classifier loss Lμsup,      A typical example is the selection of pre-training tasks
+where μ indicates that a label c only corresponds to a in BERT and ALBERT. BERT uses Next Sentence Prediction
+embedding vector μc := Ex∼D [f (x)]. If there exists a (NSP) to enhance its ability for sentence-level understanding.
+                                                                        c     in strong sense    However, ALBERT shows that NSP equals a naive topic
+functoin f that has intraclass concentration
+and can separate latent classes with high margin(on average) model, which is far too easy for language model pre-training
+with mean classifier, then Lμsup( fˆ) will be low. If f (X ) is and even decreases BERT’s performance.
+                                   σ2 − sub − Gaussian in every direction for every class and       For the pre-training task selection problem, a probably
+                                     has maximum norm R = maxx inX ||f (x)||, then Lμsup( fˆ)    exciting direction would be to design pre-training tasks
+    can be controlled by Lμsup(f ).                                                              for a specific downstream task automatically, just as what
+                                                                                                 Neural Architecture Search [164] does for neural network
+    Lusup( fˆ) ≤ γ(f )Lμγ(f),sup(f ) + βs(f ) + ηGenM +                                  (36)    architecture.
+
+        20
+Transferring across datasets This problem is also known category and sub-categories. Moreover, we discuss the pros
+as how to learn inductive biases or inductive learning. and cons of each category and their unique application sce-
+Traditionally, we split a dataset into the training used for narios. Finally, fundamental problems and future directions
+learning the model parameters and the testing part for eval- of self-supervised learning are listed.
+uation. An essential prerequisite for this learning paradigm
+is that data in the real world conform to our dataset’s ACKNOWLEDGMENTS
+distribution. Nevertheless, this assumption frequently fails
+    in experiments.                                                    The work is supported by the National Key R&D Program
+    Self-supervised representation learning solves part of of China (2018YFB1402600), NSFC for Distinguished Young
+this problem, especially in the field of natural language Scholar (61825602), and NSFC (61836013).
+processing. Vast amounts of corpora used in the language
+model pre-training help cover most language patterns and, REFERENCES
+therefore, contribute to the success of PTMs in various [1] H. Ajakan, P. Germain, H. Larochelle, F. Laviolette, and M. Marc-
+    language tasks. However, this is based on the fact that text              hand.       Domain-adversarial neural networks.      arXiv preprint
+    in the same language shares the same embedding space. For                 arXiv:1412.4446, 2014.
+other tasks like machine translation and fields like graph [2] F. Alam, S. Joty, and M. Imran. Domain adaptation with adversar-
+    learning where embedding spaces are different for different               ial training and graph embeddings. arXiv preprint arXiv:1805.05151,
+    datasets, learning the transferable inductive biases efficiently   [3]    2018.
+                                                                              A. A. Alemi, B. Poole, I. Fischer, J. V. Dillon, R. A. Saurous, and
+    is still an open problem.                                                 K. Murphy. Fixing a broken elbo. arXiv preprint arXiv:1711.00464,
+    Exploring potential of sampling strategies In        [129], the    [4]    2017.
+                                                                              M. Arjovsky, S. Chintala, and L. Bottou. Wasserstein generative
+    authors attribute one of the reasons for the success of mutual            adversarial networks. In International conference on machine learning,
+information-based methods to better sampling strategies. [5] pages 214–223. PMLR, 2017.
+    MoCo [52], SimCLR [19], and a series of other contrastive                 S. Arora, H.  Khandeparkar,     M. Khodak,   O.  Plevrakis,     and
+                                                                              N. Saunshi. A theoretical analysis of contrastive unsupervised
+    methods may also support this conclusion. They propose                    representation learning.  arXiv preprint arXiv:1902.09229, 2019.
+to leverage super large amounts of negative samples and [6] A. Asai, K. Hashimoto, H. Hajishirzi, R. Socher, and C. Xiong.
+    augmented positive samples, whose effects are studied in                  Learning to retrieve reasoning paths over wikipedia graph for
+deep metric learning. How to further release the power of [7] question answering. arXiv preprint arXiv:1911.10470, 2019.
+        P. Bachman, R. D. Hjelm, and W. Buchwalter. Learning represen-
+    sampling is still an unsolved and attractive problem.                     tations by maximizing mutual information across views. In NIPS,
+        pages 15509–15519, 2019.
+Early Degeneration for Contrastive Learning Contrastive [8] Y. Bai, H. Ding, S. Bian, T. Chen, Y. Sun, and W. Wang. Simgnn: A
+    learning methods such as MoCo [52] and SimCLR [19] are                    neural network approach to fast graph similarity computation. In
+    rapidly approaching the performance of supervised learning                WSDM, pages 384–392, 2019.
+for computer vision. However, their incredible performances [9] D. H. Ballard. Modular learning in neural networks. In AAAI,
+        pages 279–284, 1987.
+are generally limited to the classification problem. Mean- [10] D. Bau, J.-Y. Zhu, H. Strobelt, B. Zhou, J. B. Tenenbaum, W. T.
+    while, the generative-contrastive method ELETRA [26] for                  Freeman, and A. Torralba.           Gan dissection: Visualizing and
+    language model pre-training is also outperforming other                   understanding generative adversarial networks.       arXiv preprint
+                                                                              arXiv:1811.10597, 2018.
+    generative methods on several standard NLP benchmarks              [11]   Y. Bengio, N. Leonard, ´  and A. Courville.     Estimating or prop-
+    with fewer model parameters. However, some remarks                        agating gradients through stochastic neurons for conditional
+    indicate that ELETRA’s performance on language generation                 computation. arXiv preprint arXiv:1308.3432, 2013.
+    and neural entity extraction is not up to expectations.            [12]   M. Besserve, R. Sun, and B. Scholkopf. ¨    Counterfactuals uncover
+                                                                              the modular structure of deep generative models. arXiv preprint
+                Problems above are probably because the contrastive           arXiv:1812.03253, 2018.
+objectives often get trapped into embedding spaces’ early [13] Y. Blau and T. Michaeli. Rethinking lossy compression: The rate-
+    degeneration problem, which means that the model over-fits                distortion-perception tradeoff.    arXiv preprint arXiv:1901.07821,
+        2019.
+to the discriminative pretext task too early, and therefore [14] P. Bojanowski, E. Grave, A. Joulin, and T. Mikolov. Enriching word
+    lost the ability to generalize. We expect that there would be             vectors with subword information. Transactions of the Association
+    techniques or new paradigms to solve the early degeneration               for Computational Linguistics, 5:135–146, 2017.
+problem while preserving contrastive learning’s advantages. [15] A. Brock, J. Donahue, and K. Simonyan. Large scale gan
+        training for high fidelity natural image synthesis. arXiv preprint
+        arXiv:1809.11096, 2018.
+        [16] L. Cai and W. Y. Wang. Kbgan: Adversarial learning for knowledge
+    8 CONCLUSION                                                       [17]   graph embeddings. arXiv preprint arXiv:1711.04071, 2017.
+                                                                              M. Caron, P. Bojanowski, A. Joulin, and M. Douze. Deep clustering
+    This survey comprehensively reviews the existing self-                    for unsupervised learning of visual features. In Proceedings of the
+supervised representation learning approaches in natural [18] ECCV (ECCV), pages 132–149, 2018.
+    language processing (NLP), computer vision (CV), graph                    M. Caron, I. Misra, J. Mairal, P. Goyal, P. Bojanowski, and A. Joulin.
+    learning, and beyond. Self-supervised learning is the present             Unsupervised learning of visual features by contrasting cluster
+        assignments. arXiv preprint arXiv:2006.09882, 2020.
+and future of deep learning due to its supreme ability to [19] T. Chen, S. Kornblith, M. Norouzi, and G. Hinton. A simple
+    utilize Web-scale unlabeled data to train feature extractors              framework for contrastive learning of visual representations. arXiv
+and context generators efficiently. Despite the diversity [20] preprint arXiv:2002.05709, 2020.
+        T. Chen, S. Kornblith, K. Swersky, M. Norouzi, and G. Hinton. Big
+    of algorithms, we categorize all self-supervised methods                  self-supervised models are strong semi-supervised learners. arXiv
+    into three classes: generative, contrastive, and generative               preprint arXiv:2006.10029, 2020.
+contrastive according to their essential training objectives. [21] T. Chen, Y. Sun, Y. Shi, and L. Hong. On sampling strategies for
+    We introduce typical and representative methods in each                   neural network-based collaborative filtering. In SIGKDD, pages
+                                                                              767–776, 2017.
+
+                                                                                                                                                                21
+
+    [22]   X. Chen, Y. Duan, R. Houthooft, J. Schulman, I. Sutskever, and                  Bootstrap your own latent: A new approach to self-supervised
+           P. Abbeel.          Infogan: Interpretable representation learning by           learning.   arXiv preprint arXiv:2006.07733, 2020.
+      information maximizing generative adversarial nets. In NIPS, [48] A. Grover and J. Leskovec. node2vec: Scalable feature learning
+           pages 2172–2180, 2016.                                                          for networks. In SIGKDD, pages 855–864, 2016.
+    [23]   X. Chen, H. Fan, R. Girshick, and K. He. Improved baselines with         [49]   M. Gutmann and A. Hyvarinen.¨             Noise-contrastive estimation:
+           momentum contrastive learning. arXiv preprint arXiv:2003.04297,                 A new estimation principle for unnormalized statistical models.
+           2020.                                                                           In Proceedings of the Thirteenth International Conference on Artificial
+    [24]   X. Chen and K. He.            Exploring simple siamese representation           Intelligence and Statistics, pages 297–304, 2010.
+           learning.    arXiv preprint arXiv:2011.10566, 2020.                      [50]   K. Guu, K. Lee, Z. Tung, P. Pasupat, and M.-W. Chang. Realm:
+    [25]   L. Chongxuan, T. Xu, J. Zhu, and B. Zhang.          Triple generative           Retrieval-augmented language model pre-training. arXiv preprint
+           adversarial nets. In NIPS, pages 4088–4098, 2017.                               arXiv:2002.08909, 2020.
+[26] K. Clark, M.-T. Luong, Q. V. Le, and C. D. Manning. Electra: Pre- [51] K. Hassani and A. H. Khasahmadi. Contrastive multi-view
+           training text encoders as discriminators rather than generators.                representation learning on graphs. arXiv preprint arXiv:2006.05582,
+           arXiv preprint arXiv:2003.10555, 2020.                                          2020.
+[27] A. Conneau, G. Lample, M. Ranzato, L. Denoyer, and [52] K. He, H. Fan, Y. Wu, S. Xie, and R. Girshick. Momentum contrast
+           H. Jegou. ´    Word translation without parallel data. arXiv preprint           for unsupervised visual representation learning.         arXiv preprint
+           arXiv:1710.04087, 2017.                                                         arXiv:1911.05722, 2019.
+[28] Q. Dai, Q. Li, J. Tang, and D. Wang. Adversarial network [53] K. He, X. Zhang, S. Ren, and J. Sun. Deep residual learning for
+           embedding. In AAAI, 2018.                                                       image recognition. In CVPR, pages 770–778, 2016.
+[29] Z. Dai, Z. Yang, Y. Yang, J. G. Carbonell, Q. Le, and R. Salakhutdi- [54] D. Hendrycks, M. Mazeika, S. Kadavath, and D. Song. Using
+           nov. Transformer-xl: Attentive language models beyond a fixed-                  self-supervised learning can improve model robustness and
+           length context.      In Proceedings of the 57th Annual Meeting of the           uncertainty. In NeurIPS, pages 15663–15674, 2019.
+           Association for Computational Linguistics, pages 2978–2988, 2019.        [55]   R. D. Hjelm, A. Fedorov, S. Lavoie-Marchildon, K. Grewal, P. Bach-
+    [30]   V. R. de Sa. Learning classification with unlabeled data. In NIPS,              man, A. Trischler, and Y. Bengio. Learning deep representations by
+           pages 112–119, 1994.                                                            mutual information estimation and maximization. arXiv preprint
+    [31]   J. Deng, W. Dong, R. Socher, L.-J. Li, K. Li, and L. Fei-Fei. Imagenet:         arXiv:1808.06670, 2018.
+      A large-scale hierarchical image database. In CVPR, pages 248–255. [56] J. Ho, X. Chen, A. Srinivas, Y. Duan, and P. Abbeel. Flow++:
+           Ieee, 2009.                                                                     Improving flow-based generative models with variational de-
+    [32]   J. Devlin, M.-W. Chang, K. Lee, and K. Toutanova.          Bert: Pre-           quantization and architecture design. In ICML, pages 2722–2730,
+           training of deep bidirectional transformers for language under-                 2019.
+      standing. In Proceedings of the 2019 Conference of the North American [57] W. Hu, B. Liu, J. Gomes, M. Zitnik, P. Liang, V. Pande, and
+           Chapter of the Association for Computational Linguistics: Human                 J. Leskovec. Strategies for pre-training graph neural networks. In
+           Language Technologies, Volume 1 (Long and Short Papers), pages                  ICLR, 2019.
+           4171–4186, 2019.                                                         [58]   Z. Hu, Y. Dong, K. Wang, K.-W. Chang, and Y. Sun.              Gpt-gnn:
+    [33]   M. Ding, J. Tang, and J. Zhang.           Semi-supervised learning on           Generative pre-training of graph neural networks. arXiv preprint
+           graphs with generative adversarial nets. In Proceedings of the 27th             arXiv:2006.15437, 2020.
+           ACM CIKM, pages 913–922, 2018.                                           [59]   Z. Hu, Y. Dong, K. Wang, and Y. Sun.                Heterogeneous graph
+    [34]   M. Ding, C. Zhou, Q. Chen, H. Yang, and J. Tang. Cognitive graph                transformer. arXiv preprint arXiv:2003.01332, 2020.
+      for multi-hop reading comprehension at scale. arXiv preprint [60] G. Huang, Z. Liu, and K. Q. Weinberger. Densely connected
+           arXiv:1905.05460, 2019.                                                         convolutional networks. 2017 IEEE CVPR, pages 2261–2269, 2017.
+[35] L. Dinh, D. Krueger, and Y. Bengio. Nice: Non-linear independent [61] S. Iizuka, E. Simo-Serra, and H. Ishikawa. Globally and locally
+           components estimation. arXiv preprint arXiv:1410.8516, 2014.                    consistent image completion. ACM Transactions on Graphics (ToG),
+    [36]   L. Dinh, J. Sohl-Dickstein, and S. Bengio. Density estimation using             36(4):1–14, 2017.
+           real nvp. arXiv preprint arXiv:1605.08803, 2016.                         [62]   P. Isola, J.-Y. Zhu, T. Zhou, and A. A. Efros.           Image-to-image
+    [37]   C. Doersch, A. Gupta, and A. A. Efros.            Unsupervised visual           translation with conditional adversarial networks. In CVPR, pages
+           representation learning by context prediction. In Proceedings of the            1125–1134, 2017.
+           IEEE ICCV, pages 1422–1430, 2015.                                        [63]   L. Jing and Y. Tian. Self-supervised visual feature learning with
+    [38]   J. Donahue, P. Krahenb¨  uhl, ¨   and T. Darrell. Adversarial feature           deep neural networks: A survey. arXiv preprint arXiv:1902.06162,
+           learning.    arXiv preprint arXiv:1605.09782, 2016.                             2019.
+[39] J. Donahue and K. Simonyan. Large scale adversarial representa- [64] M. Joshi, D. Chen, Y. Liu, D. S. Weld, L. Zettlemoyer, and O. Levy.
+           tion learning. In NIPS, pages 10541–10551, 2019.                                Spanbert: Improving pre-training by representing and predicting
+    [40]   C. Donnat, M. Zitnik, D. Hallac, and J. Leskovec.            Learning           spans. Transactions of the Association for Computational Linguistics,
+           structural node embeddings via diffusion wavelets. In SIGKDD,                   8:64–77, 2020.
+           pages 1320–1329, 2018.                                                   [65]   V. Karpukhin, B. Oguz, ˘ S. Min, L. Wu, S. Edunov, D. Chen, and
+    [41]   V. Dumoulin, I. Belghazi, B. Poole, O. Mastropietro, A. Lamb,                   W.-t. Yih.             Dense passage retrieval for open-domain question
+           M. Arjovsky, and A. Courville. Adversarially learned inference.                 answering. arXiv preprint arXiv:2004.04906, 2020.
+           arXiv preprint arXiv:1606.00704, 2016.                                   [66]   T. Karras, S. Laine, and T. Aila. A style-based generator archi-
+    [42]   Y. Ganin, E. Ustinova, H. Ajakan, P. Germain, H. Larochelle,                    tecture for generative adversarial networks.     In         CVPR, pages
+           F. Laviolette, M. Marchand, and V. Lempitsky. Domain-adversarial                4401–4410, 2019.
+      training of neural networks. The Journal of Machine Learning [67] D. Kim, D. Cho, D. Yoo, and I. S. Kweon. Learning image
+           Research, 17(1):2096–2030, 2016.                                                representations by completing damaged jigsaw puzzles. In 2018
+    [43]   S. Gidaris, P. Singh, and N. Komodakis.           Unsupervised repre-           IEEE Winter Conference on Applications of Computer Vision (WACV),
+           sentation learning by predicting image rotations.      arXiv preprint           pages 793–802. IEEE, 2018.
+           arXiv:1803.07728, 2018.                                                  [68]   D. P. Kingma and P. Dhariwal.                Glow: Generative flow with
+    [44]   R. Girshick, J. Donahue, T. Darrell, and J. Malik. Rich feature hier-           invertible 1x1 convolutions. In NIPS, pages 10215–10224, 2018.
+      archies for accurate object detection and semantic segmentation. [69] D. P. Kingma and M. Welling. Auto-encoding variational bayes.
+           In CVPR, pages 580–587, 2014.                                                   arXiv preprint arXiv:1312.6114, 2013.
+[45] I. Goodfellow, J. Pouget-Abadie, M. Mirza, B. Xu, D. Warde-Farley, [70] T. N. Kipf and M. Welling. Semi-supervised classification with
+           S. Ozair, A. Courville, and Y. Bengio. Generative adversarial nets.             graph convolutional networks.          arXiv preprint arXiv:1609.02907,
+           In NIPS, pages 2672–2680, 2014.                                                 2016.
+[46] P. Goyal, M. Caron, B. Lefaudeux, M. Xu, P. Wang, V. Pai, M. Singh, [71] T. N. Kipf and M. Welling. Variational graph auto-encoders. arXiv
+           V. Liptchinsky, I. Misra, A. Joulin, and P. Bojanowski.         Self-           preprint arXiv:1611.07308, 2016.
+      supervised pretraining of visual features in the wild. arXiv preprint [72] L. Kong, C. d. M. d’Autume, W. Ling, L. Yu, Z. Dai, and
+           arXiv:2103.01988, 2021.                                                         D. Yogatama. A mutual information maximization perspective of
+    [47]   J.-B.     Grill, F. Strub, F. Altche,´ C. Tallec,  P.  H.  Richemond,           language representation learning. arXiv preprint arXiv:1910.08350,
+           E. Buchatskaya, C. Doersch, B. A. Pires, Z. D. Guo, M. G. Azar, et al.          2019.
+
+                                                                                                                                                        22
+
+[73] A. Krizhevsky, I. Sutskever, and G. E. Hinton. Imagenet classifi- [100] M. Popova, M. Shvets, J. Oliva, and O. Isayev. Molecularrnn:
+           cation with deep convolutional neural networks. In NIPS, pages               Generating realistic molecular graphs with optimized properties.
+           1097–1105, 2012.                                                             arXiv preprint arXiv:1905.13372, 2019.
+[74] Z. Lan, M. Chen, S. Goodman, K. Gimpel, P. Sharma, and [101] J. Qiu, Q. Chen, Y. Dong, J. Zhang, H. Yang, M. Ding, K. Wang, and
+           R. Soricut.  Albert: A lite bert for self-supervised learning of             J. Tang. Gcc: Graph contrastive coding for graph neural network
+           language representations. arXiv preprint arXiv:1909.11942, 2019.             pre-training. arXiv preprint arXiv:2006.09963, 2020.
+[75] G. Larsson, M. Maire, and G. Shakhnarovich. Learning repre- [102] J. Qiu, J. Tang, H. Ma, Y. Dong, K. Wang, and J. Tang. Deepinf:
+           sentations for automatic colorization. In ECCV, pages 577–593.               Social influence prediction with deep learning. In KDD’18, pages
+           Springer, 2016.                                                              2110–2119. ACM, 2018.
+[76] G. Larsson, M. Maire, and G. Shakhnarovich. Colorization as a [103] X. Qiu, T. Sun, Y. Xu, Y. Shao, N. Dai, and X. Huang. Pre-trained
+           proxy task for visual understanding. In CVPR, pages 6874–6883,               models for natural language processing: A survey. arXiv preprint
+           2017.                                                                        arXiv:2003.08271, 2020.
+[77] Y. LeCun, Y. Bengio, and G. Hinton. Deep learning. nature, [104] A. Radford, L. Metz, and S. Chintala. Unsupervised representation
+           521(7553):436–444, 2015.                                                     learning with deep convolutional generative adversarial networks.
+    [78]   C. Ledig, L. Theis, F. Huszar, ´       J. Caballero, A. Cunningham,          arXiv preprint arXiv:1511.06434, 2015.
+      A. Acosta, A. Aitken, A. Tejani, J. Totz, Z. Wang, et al. Photo- [105] A. Radford, K. Narasimhan, T. Salimans, and I. Sutskever. Im-
+           realistic single image super-resolution using a generative adver-            proving language understanding by generative pre-training.
+           sarial network. In CVPR, pages 4681–4690, 2017.                       [106]  A. Radford, J. Wu, R. Child, D. Luan, D. Amodei, and I. Sutskever.
+    [79]   D. Li, W.-C. Hung, J.-B. Huang, S. Wang, N. Ahuja, and M.-H.                 Language models are unsupervised multitask learners. OpenAI
+           Yang.         Unsupervised visual representation learning by graph-          Blog, 1(8):9, 2019.
+      based consistent constraints. In ECCV, pages 678–694. Springer, [107] P. Rajpurkar, J. Zhang, K. Lopyrev, and P. Liang. Squad: 100,000+
+           2016.                                                                        questions for machine comprehension of text.        arXiv preprint
+    [80]   B. Liu. Sentiment analysis and opinion mining. Synthesis lectures            arXiv:1606.05250, 2016.
+           on human language technologies, 5(1):1–167, 2012.                     [108]  A. Razavi, A. van den Oord, and O. Vinyals. Generating diverse
+    [81]   Y. Liu, M. Ott, N. Goyal, J. Du, M. Joshi, D. Chen, O. Levy,                 high-fidelity images with vq-vae-2. In NIPS, pages 14837–14847,
+           M. Lewis, L. Zettlemoyer, and V. Stoyanov. Roberta: A robustly op-           2019.
+      timized bert pretraining approach. arXiv preprint arXiv:1907.11692, [109] N. Reimers and I. Gurevych. Sentence-bert: Sentence embeddings
+           2019.                                                                        using siamese bert-networks. arXiv preprint arXiv:1908.10084, 2019.
+[82] J. Long, E. Shelhamer, and T. Darrell. Fully convolutional networks [110] L. F. Ribeiro, P. H. Saverese, and D. R. Figueiredo. struc2vec: Learn-
+           for semantic segmentation. In CVPR, pages 3431–3440, 2015.                   ing node representations from structural identity.      In SIGKDD,
+    [83]   A. Makhzani, J. Shlens, N. Jaitly, I. Goodfellow, and B. Frey.               pages 385–394, 2017.
+           Adversarial autoencoders. arXiv preprint arXiv:1511.05644, 2015.      [111]  M. T. Ribeiro, S. Singh, and C. Guestrin.     ” why should i trust
+    [84]   M. Mathieu.         Masked autoencoder for distribution estimation.          you?” explaining the predictions of any classifier.     In SIGKDD,
+           2015.                                                                        pages 1135–1144, 2016.
+[85] T. Mikolov, K. Chen, G. S. Corrado, and J. Dean. Efficient [112] N. Sarafianos, X. Xu, and I. A. Kakadiaris. Adversarial represen-
+           estimation of word representations in vector space.           CoRR,          tation learning for text-to-image matching. In Proceedings of the
+           abs/1301.3781, 2013.                                                         IEEE ICCV, pages 5814–5824, 2019.
+[86] T. Mikolov, I. Sutskever, K. Chen, G. S. Corrado, and J. Dean. [113] J. Shen, Y. Qu, W. Zhang, and Y. Yu. Adversarial representation
+           Distributed representations of words and phrases and their                   learning for domain adaptation. stat, 1050:5, 2017.
+           compositionality. In NIPS’13, pages 3111–3119, 2013.                  [114]  T. Shen, T. Lei, R. Barzilay, and T. Jaakkola. Style transfer from
+    [87]   I. Misra and L. van der Maaten.         Self-supervised learning of          non-parallel text by cross-alignment. In NIPS, pages 6830–6841,
+           pretext-invariant representations. arXiv preprint arXiv:1912.01991,          2017.
+           2019.                                                                 [115]  C. Shi, M. Xu, Z. Zhu, W. Zhang, M. Zhang, and J. Tang. Graphaf: a
+    [88]   J. Mitrovic, B. McWilliams, J. Walker, L. Buesing, and C. Blundell.          flow-based autoregressive model for molecular graph generation.
+           Representation learning via invariant causal mechanisms. arXiv               arXiv preprint arXiv:2001.09382, 2020.
+           preprint arXiv:2010.07922, 2020.                                      [116]  A. Sinha, Z. Shen, Y. Song, H. Ma, D. Eide, B.-j. P. Hsu, and
+    [89]   T. Miyato, T. Kataoka, M. Koyama, and Y. Yoshida.          Spectral          K. Wang. An overview of microsoft academic service (mas) and
+           normalization for generative adversarial networks. arXiv preprint            applications. In WWW’15, pages 243–246, 2015.
+           arXiv:1802.05957, 2018.                                               [117]  P. Smolensky.         Information processing in dynamical systems:
+    [90]   A. Newell and J. Deng. How useful is self-supervised pretraining             Foundations of harmony theory. Technical report, Colorado Univ
+           for visual tasks? In CVPR, pages 7345–7354, 2020.                            at Boulder Dept of Computer Science, 1986.
+[91] A. Ng et al. Sparse autoencoder. CS294A Lecture notes, 72(2011):1– [118] F.-Y. Sun, J. Hoffmann, and J. Tang. Infograph: Unsupervised and
+           19, 2011.                                                                    semi-supervised graph-level representation learning via mutual
+    [92]   M. Noroozi and P. Favaro.           Unsupervised learning of visual          information maximization. arXiv preprint arXiv:1908.01000, 2019.
+      representations by solving jigsaw puzzles. In ECCV, pages 69–84. [119] F.-Y. Sun, M. Qu, J. Hoffmann, C.-W. Huang, and J. Tang. vgraph:
+           Springer, 2016.                                                              A generative model for joint community detection and node
+    [93]   M. Noroozi, A. Vinjimoor, P. Favaro, and H. Pirsiavash. Boosting             representation learning. In NIPS, pages 512–522, 2019.
+      self-supervised learning via knowledge transfer. In CVPR, pages [120] K. Sun, Z. Lin, and Z. Zhu. Multi-stage self-supervised learning
+           9359–9367, 2018.                                                             for graph convolutional networks on graphs with few labeled
+    [94]   S. Nowozin, B. Cseke, and R. Tomioka. f-gan: Training generative             nodes. In Proceedings of the AAAI Conference on Artificial Intelligence,
+           neural samplers using variational divergence minimization. In                volume 34, pages 5892–5899, 2020.
+           NIPS, pages 271–279, 2016.                                            [121]  K. Sun, Z. Zhu, and Z. Lin. Multi-stage self-supervised learning
+    [95]   A. v. d. Oord, Y. Li, and O. Vinyals.       Representation learning          for graph convolutional networks. arXiv preprint arXiv:1902.11038,
+           with contrastive predictive coding. arXiv preprint arXiv:1807.03748,         2019.
+           2018.                                                                 [122]  Y. Sun, S. Wang, Y. Li, S. Feng, X. Chen, H. Zhang, X. Tian, D. Zhu,
+    [96]   D. Pathak, P. Krahenbuhl, J. Donahue, T. Darrell, and A. A. Efros.           H. Tian, and H. Wu.         Ernie: Enhanced representation through
+           Context encoders: Feature learning by inpainting. In CVPR, pages             knowledge integration. arXiv preprint arXiv:1904.09223, 2019.
+           2536–2544, 2016.                                                      [123]  J. Tang, M. Qu, M. Wang, M. Zhang, J. Yan, and Q. Mei. Line:
+    [97]   Z. Peng, Y. Dong, M. Luo, X. ming Wu, and Q. Zheng.           Self-          Large-scale information network embedding. In WWW’15, pages
+           supervised graph representation learning via global context                  1067–1077, 2015.
+           prediction.  ArXiv, abs/2003.01604, 2020.                             [124]  J. Tang, J. Zhang, L. Yao, J. Li, L. Zhang, and Z. Su. Arnetminer:
+    [98]   Z. Peng, Y. Dong, M. Luo, X.-M. Wu, and Q. Zheng.             Self-          extraction and mining of academic social networks. In Proceedings
+           supervised graph representation learning via global context                  of the 14th ACM SIGKDD international conference on Knowledge
+           prediction.  arXiv preprint arXiv:2003.01604, 2020.                          discovery and data mining, pages 990–998, 2008.
+[99] B. Perozzi, R. Al-Rfou, and S. Skiena. Deepwalk: Online learning [125] W. L. Taylor. “cloze procedure”: A new tool for measuring
+           of social representations. In SIGKDD, pages 701–710, 2014.                   readability. Journalism quarterly, 30(4):415–433, 1953.
+
+                                                                                                                                                                 23
+
+[126] Y. Tian, D. Krishnan, and P. Isola. Contrastive multiview coding. [152] Y. You, T. Chen, Y. Sui, T. Chen, Z. Wang, and Y. Shen.
+           arXiv preprint arXiv:1906.05849, 2019.                                             Graph contrastive learning with augmentations.         arXiv preprint
+    [127]  Y. Tian, C. Sun, B. Poole, D. Krishnan, C. Schmid, and P. Isola.                   arXiv:2010.13902, 2020.
+      What makes for good views for contrastive learning. arXiv preprint [153] Y. You, T. Chen, Z. Wang, and Y. Shen. When does self-
+           arXiv:2005.10243, 2020.                                                            supervision help graph convolutional networks?         arXiv preprint
+    [128]  M. Tschannen, O. Bachem, and M. Lucic.                   Recent advances           arXiv:2006.09136, 2020.
+      in autoencoder-based representation learning. arXiv preprint [154] F. Zhang, X. Liu, J. Tang, Y. Dong, P. Yao, J. Zhang, X. Gu, Y. Wang,
+           arXiv:1812.05069, 2018.                                                            B. Shao, R. Li, and K. Wang.          Oag: Toward linking large-scale
+    [129]  M. Tschannen, J. Djolonga, P. K. Rubenstein, S. Gelly, and M. Lucic.                      heterogeneous entity graphs. In KDD’19, pages 2585–2595, 2019.
+      On mutual information maximization for representation learning. [155] J. Zhang, Y. Dong, Y. Wang, J. Tang, and M. Ding. Prone: fast
+           arXiv preprint arXiv:1907.13625, 2019.                                             and scalable network representation learning. In         IJCAI, pages
+    [130]  A. van den Oord, S. Dieleman, H. Zen, K. Simonyan, O. Vinyals,                     4278–4284, 2019.
+      A. Graves, N. Kalchbrenner, A. Senior, and K. Kavukcuoglu. [156] M. Zhang, Z. Cui, M. Neumann, and Y. Chen. An end-to-end
+           Wavenet: A generative model for raw audio. In 9th ISCA Speech                        deep learning architecture for graph classification. In AAAI, 2018.
+           Synthesis Workshop, pages 125–125.                                          [157]      R. Zhang, P. Isola, and A. A. Efros. Colorful image colorization.
+    [131]  A. Van den Oord, N. Kalchbrenner, L. Espeholt, O. Vinyals,                         In ECCV, pages 649–666. Springer, 2016.
+      A. Graves, et al. Conditional image generation with pixelcnn [158] R. Zhang, P. Isola, and A. A. Efros. Split-brain autoencoders:
+           decoders. In NIPS, pages 4790–4798, 2016.                                          Unsupervised learning by cross-channel prediction.   In         CVPR,
+    [132]  A. van den Oord, O. Vinyals, et al. Neural discrete representation                 pages 1058–1067, 2017.
+           learning. In NIPS, pages 6306–6315, 2017.                                   [159]         Z. Zhang, X. Han, Z. Liu, X. Jiang, M. Sun, and Q. Liu. Ernie:
+    [133]  A. Van Oord, N. Kalchbrenner, and K. Kavukcuoglu.                  Pixel               Enhanced language representation with informative entities. arXiv
+           recurrent neural networks. In ICML, pages 1747–1756, 2016.                         preprint arXiv:1905.07129, 2019.
+[134] A. Vaswani, N. Shazeer, N. Parmar, J. Uszkoreit, L. Jones, A. N. [160] D. Zhu, P. Cui, D. Wang, and W. Zhu. Deep variational network
+           Gomez,          Kaiser, and I. Polosukhin. Attention is all you need. In           embedding in wasserstein space. In SIGKDD, pages 2827–2836,
+           NIPS, pages 5998–6008, 2017.                                                [161]  2018.
+    [135]  P. Velickoviˇ   c, ´        G. Cucurull, A. Casanova, A. Romero, P. Lio,           J.-Y. Zhu, R. Zhang, D. Pathak, T. Darrell, A. A. Efros, O. Wang, and
+           and Y. Bengio.      Graph attention networks.             arXiv preprint                  E. Shechtman. Toward multimodal image-to-image translation. In
+           arXiv:1710.10903, 2017.                                                     [162]  NIPS, pages 465–476, 2017.
+    [136]  P. Velickoviˇ   c, ´  W. Fedus, W. L. Hamilton, P. Lio, ` Y. Bengio, and           C. Zhuang, A. L. Zhai, and D. Yamins.           Local aggregation for
+           R. D. Hjelm. Deep graph infomax. arXiv preprint arXiv:1809.10341,                      unsupervised learning of visual embeddings. In Proceedings of the
+           2018.                                                                       [163]  IEEE ICCV, pages 6002–6012, 2019.
+    [137]  H. Wang, J. Wang, J. Wang, M. Zhao, W. Zhang, F. Zhang, X. Xie,                          B. Zoph, G. Ghiasi, T.-Y. Lin, Y. Cui, H. Liu, E. D. Cubuk, and
+           and M. Guo.                 Graphgan: Graph representation learning with             Q. V. Le. Rethinking pre-training and self-training. arXiv preprint
+           generative adversarial nets. In AAAI, 2018.                                 [164]  arXiv:2006.06882, 2020.
+                                                                                                   B. Zoph and Q. V. Le. Neural architecture search with reinforce-
+    [138]  P. Wang, S. Li, and R. Pan. Incorporating gan for negative sampling                ment learning. arXiv preprint arXiv:1611.01578, 2016.
+           in knowledge representation learning. In AAAI, 2018.
+    [139]  T. Wang and P. Isola. Understanding contrastive representation
+           learning through alignment and uniformity on the hypersphere.               REVISION HISTORY
+           arXiv preprint arXiv:2005.10242, 2020.
+    [140]  Z. Wang, Q. She, and T. E. Ward. Generative adversarial networks:            •                       v2/v3 (June 2020): correct several typos and mistakes.
+           A survey and taxonomy. arXiv preprint arXiv:1906.01529, 2019.                •                         v4 (July 2020): add papers newly published; add a
+    [141]  C. Wei, L. Xie, X. Ren, Y. Xia, C. Su, J. Liu, Q. Tian, and A. L. Yuille.                       new theoretical analysis part for contrastive objective;
+           Iterative reorganization with weak spatial constraints: Solving                                    add semi-supervised self-training’s connection with self-
+           arbitrary jigsaw puzzles for unsupervised representation learning.
+           In CVPR, pages 1910–1919, 2019.                                                   supervised contrastive learning.
+    [142]  Z. Wu, Y. Xiong, S. X. Yu, and D. Lin.              Unsupervised feature     •                       v5 (March 2021): add papers newly published; update
+           learning via non-parametric instance discrimination. In CVPR,                                      statistics in Fig. 2 and Fig. 7; add a motivation section
+    [143]  pages 3733–3742, 2018.                                                                           to better introduce the reason of using SSL; remove the
+           Q. Xie, M.-T. Luong, E. Hovy, and Q. V. Le. Self-training with
+           noisy student improves imagenet classification. In CVPR, pages                    preliminary section.
+           10687–10698, 2020.
+    [144]  W. Xiong, J. Du, W. Y. Wang, and V. Stoyanov.                 Pretrained
+           encyclopedia: Weakly supervised knowledge-pretrained language
+           model. arXiv preprint arXiv:1912.09637, 2019.
+    [145]  K. Xu, J. Li, M. Zhang, S. S. Du, K.-i. Kawarabayashi, and S. Jegelka.
+           How neural networks extrapolate: From feedforward to graph
+           neural networks. arXiv preprint arXiv:2009.11848, 2020.
+    [146]  X. Yan, I. Misra, A. Gupta, D. Ghadiyaram, and D. Mahajan.                                               Xiao Liu is a senior undergraduate student with
+           Clusterfit: Improving generalization of visual representations.                                    the Department of Computer Science and Tech-
+    [147]  arXiv preprint arXiv:1912.03330, 2019.                                                                    nology, Tsinghua University. His main research
+           J. Yang, D. Parikh, and D. Batra.            Joint unsupervised learning                                 interests include data mining, machine learning
+           of deep representations and image clusters.    In            CVPR, pages                                   and knowledge graph. He has published a paper
+    [148]  5147–5156, 2016.                                                                                   on KDD.
+           Z. Yang, Z. Dai, Y. Yang, J. Carbonell, R. R. Salakhutdinov, and Q. V.
+           Le. Xlnet: Generalized autoregressive pretraining for language
+           understanding. In NIPS, pages 5754–5764, 2019.
+    [149]  Z. Yang, P. Qi, S. Zhang, Y. Bengio, W. W. Cohen, R. Salakhutdinov,
+           and C. D. Manning. Hotpotqa: A dataset for diverse, explainable
+           multi-hop question answering.           arXiv preprint arXiv:1809.09600,                                      Fanjin Zhang is a PhD candidate in the De-
+           2018.                                                                                                       partment of Computer Science and Technology,
+    [150]  J. You, B. Liu, Z. Ying, V. Pande, and J. Leskovec.                Graph                                   Tsinghua University. She got her bachelor de-
+           convolutional policy network for goal-directed molecular graph                                              gree from the Department of Computer Science
+           generation. In NIPS, pages 6410–6421, 2018.
+    [151]  J. You, R. Ying, X. Ren, W. Hamilton, and J. Leskovec. Graphrnn:                                        and Technology, Nanjing Unviersity. Her research
+           Generating realistic graphs with deep auto-regressive models. In                                       interests include data mining and social network.
+           ICML, pages 5708–5717, 2018.
+
+    24
+
+Zhenyu Hou is an undergraduate with the de-
+partment of Computer Science and Technology,
+Tsinghua University. His main research interests
+include graph representation learning and rea-
+soning.
+
+
+
+
+
+
+
+
+
+
+Li Mian received bachelor degree(2020) from De-
+partment of Computer Science, Beijing Institute of
+Technology. She is now admitted into a graduate
+program in Georgia Institute of Technology. Her
+research interests focus on data mining, natural
+language processing and machine learning.
+
+
+
+
+
+
+
+
+
+
+Zhaoyu Wang is a graduate student with the De-
+partment of Computer Science and Technology of
+Anhui University. His research interests include
+data mining, natural language processing and
+their applications in recommender systems.
+
+
+
+
+
+
+
+
+
+
+Jing Zhang received the master and PhD de-
+gree from the Department of Computer Science
+and Technology, Tsinghua University. She is an
+assistant professor in Information School, Ren-
+min University of China. Her research interests
+include social network mining and deep learning.
+
+
+
+
+
+
+
+
+
+
+Jie Tang received the PhD degree from Tsinghua
+University. He is full professor in the Department
+of Computer Science and Technology, Tsinghua
+University. His main research interests include
+data mining, social network, and machine learn-
+ing. He has published over 200 research papers
+in top international journals and conferences.
+

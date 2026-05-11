@@ -1,0 +1,116 @@
+       i Safety Case Considerations
+        For
+\ Scenario-Based Assurance
+Prof. Philip Koopman
+
+PHILIP KOOPMAN PHILIP KOOPMAN ARTS 2023
+sare vehice Sates ll pris July 12, 2023 Carnegie.
+        Mellon
+     : University
+
+       Safety Case        Carnegie
+
+ Claim – what you think is true
+   “Scenario-based testing proves safety”        CLAIM
+ Argument – why this is true
+
+  Evidence – supports argument
+  “A & B & C & D and not E”        …
+   Tests, analysis, simulations, …        5        5
+ Sub-claims/arguments address
+  complexity
+   “No loss events in scenario simulations”
+   “Simulation results predict real-world safety”
+   … other considerations we’ll discuss today …
+       © 2023 Philip Koopman     2
+
+        Limits To Simulation Scope? NE
+ What, exactly, is out of scope for scenario-based validation?
+   Perception limitations?
+     – Misclassified objects, age-related degradation, …
+   Equipment failures (e.g., degraded modes)?
+     – Camera lens cleaning system failure ii
+   Infrastructure failures? ET
+     – Missing/degraded road markings
+
+    Novel road users, objects, events
+   – HD map missing a bridge collapse a4
+     – Tumblegeddon (Jan. 2020, WA state) J
+ Track these for resolution in safety case https://bit.ly/3COCkrg i
+        © 2023 Philip Koopman 3
+
+        Tool Qualification Carnegie
+ Could someone die because of a tool defect?
+   Simulations are life critical if they replace road testing
+ Simulation software quality
+ Simulated object/event completeness >
+   Do you have 1 billion miles of weirdness captured? | ~ -
+ Simulation campaign management EB i
+   Simulations being run correctly? bid
+   Low probability * high consequence accounted for? https://bit.ly/3Xt30ay
+   Pass/fail criteria defined and reported accurately?
+   Results recorded & reported accurately?
+        © 2023 Philip Koopman 4
+
+    Surprises
+  Claim: “Scenario set is complete”
+     Every surprise is a safety case defect
+ Need to instrument surprise arrival rate    LL    1
+– Ideas from Software Reliability Modeling
+    | TRAINING & ⇒ INFREQUENT +        https://bit.ly/444r4TB
+      TESTING DATA  SEVERE
+        REAL WORLD
+
+        HOW MANY SURPRISES LEFT?
+        . . .
+      TESTING MILES        © 2023 Philip Koopman     5
+
+
+
+
+
+
+
+
+
+
+SURPRISE ARRIVALS
+
+   Acceptable Safety                                         Carnegie
+ Set robust pass/fail expectations
+   Getting lucky is not enough for safety!
+   Did AV violate traffic laws?
+   Did AV honor safety buffers?
+   Is prediction capability accurate enough?
+
+ Prioritize lack of negligent driving
+   Average driver improvement is not enough
+   Compare to a Reasonable Driver
+   (i.e., lack of negligent behaviors)
+                                             https://bit.ly/46oAYkn
+                                             © 2023 Philip Koopman  6
+
+        Take-Aways pt
+ Use a written safety case = =
+
+        2
+  Simulations are doomed to succeed 4 4
+  It helps expose gaps in safety thinking SN gg
+        %>
+   Ensure safety even if holes in scenario set ZZ 4
+ Tooling just got life critical
+   If you skip any part of real-world validation… i
+    … that simulation is now life critical https://on.gei.co/2r2rjzg
+   That includes models, test orchestration, report spreadsheets, …
+ The real world does not follow your rules
+   “That wasn’t supposed to happen” … will find a way to happen
+        © 2023 Philip Koopman 7
+
+You Might Forget the
+Rare Events
+…
+
+But They Won’t Forget You!
+
+    8
+

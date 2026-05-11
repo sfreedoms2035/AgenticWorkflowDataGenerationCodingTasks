@@ -538,7 +538,7 @@ def validate_and_save_json(llm_response, out_json_path, thinking_text=None):
 
 
 
-def run_gemini(pdf_path, prompt_file, deep_think=False):
+def run_gemini(pdf_path, prompt_file, deep_think=False, output_dir=None, thinking_dir=None):
     with open(prompt_file, 'r', encoding='utf-8') as f:
         prompt_text = f.read()
 
@@ -546,8 +546,10 @@ def run_gemini(pdf_path, prompt_file, deep_think=False):
     core_name = basename.replace("_Prompt.txt", "").replace("_RepairPrompt.txt", "")
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    out_json = os.path.join(script_dir, "Output", "json", f"{core_name}.json")
-    out_txt = os.path.join(script_dir, "Output", "thinking", f"{core_name}.txt")
+    json_dir = output_dir or os.path.join(script_dir, "Output", "json")
+    think_dir = thinking_dir or os.path.join(script_dir, "Output", "thinking")
+    out_json = os.path.join(json_dir, f"{core_name}.json")
+    out_txt = os.path.join(think_dir, f"{core_name}.txt")
 
     abs_pdf_path = os.path.abspath(pdf_path)
 
@@ -1721,12 +1723,33 @@ CRITICAL AVOIDANCE: DO NOT use "Canvas" mode, "Gems", or any interactive coding 
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 3:
-        print("Usage: python run_gemini_playwright_v2.py <pdf_path> <prompt_path>", file=sys.stderr)
+    # Parse known flags from sys.argv
+    args = sys.argv[1:]
+    deep_think_flag = False
+    output_dir_flag = None
+    thinking_dir_flag = None
+    positional = []
+
+    i = 0
+    while i < len(args):
+        if args[i] == '--deep-think':
+            deep_think_flag = True
+        elif args[i] == '--output-dir' and i + 1 < len(args):
+            i += 1
+            output_dir_flag = args[i]
+        elif args[i] == '--thinking-dir' and i + 1 < len(args):
+            i += 1
+            thinking_dir_flag = args[i]
+        else:
+            positional.append(args[i])
+        i += 1
+
+    if len(positional) < 2:
+        print("Usage: python run_gemini_playwright_v2.py <pdf_path> <prompt_path> [--deep-think] [--output-dir DIR] [--thinking-dir DIR]", file=sys.stderr)
         sys.exit(1)
 
-    deep_think_flag = '--deep-think' in sys.argv
-    result = run_gemini(sys.argv[1], sys.argv[2], deep_think=deep_think_flag)
+    result = run_gemini(positional[0], positional[1], deep_think=deep_think_flag,
+                        output_dir=output_dir_flag, thinking_dir=thinking_dir_flag)
 
     elapsed = time.time() - _WORKFLOW_START_TIME
     minutes = int(elapsed // 60)
